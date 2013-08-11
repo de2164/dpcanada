@@ -6,7 +6,7 @@
 function default_page_heading()
 {
 global $code_url;
-$real_site_url = 'http://www.pgdpcanada.net';
+$real_site_url = 'http://www.pgdpcanada.org';
 
 if ($code_url != "$real_site_url/c" )
 {
