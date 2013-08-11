@@ -258,6 +258,7 @@ function Page_replaceText( $projectid, $image, $text_file_path, $user )
 
 function Page_modifyText( $projectid, $image, $page_text, $text_column, $user )
 {
+    $page_text = mysql_real_escape_string($page_text);
     _Page_UPDATE( $projectid, $image, 
         $text_column."='$page_text'");
 
@@ -292,6 +293,7 @@ function Page_checkout( $projectid, $image, $round, $user )
 
 function Page_saveAsInProgress( $projectid, $image, $round, $user, $page_text )
 {
+    $page_text = mysql_real_escape_string($page_text);
     _Page_require( $projectid, $image,
         array( $round->page_out_state, $round->page_temp_state ),
         $round->user_column_name, $user,
@@ -315,6 +317,7 @@ function Page_saveAsInProgress( $projectid, $image, $round, $user, $page_text )
 
 function Page_saveAsDone( $projectid, $image, $round, $user, $page_text )
 {
+    $page_text = mysql_real_escape_string($page_text);
     _Page_require( $projectid, $image,
         array( $round->page_out_state, $round->page_temp_state ),
         $round->user_column_name, $user,
@@ -532,6 +535,7 @@ function _Page_require(
     }
 }
 
+// $settings is an array of fields and values
 function _Page_UPDATE( $projectid, $image, $settings )
 {
     global $writeBIGtable;
