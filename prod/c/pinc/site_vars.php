@@ -5,16 +5,20 @@
 // During site configuration, identifiers delimited by double angle-brackets
 // are replaced by the corresponding values in SETUP/configuration.sh.
 
-$code_dir = '/home/pgdpcanada/htdocs/c';
-$code_url='http://www.pgdpcanada.net/c';
+define("APP_PATH", "/sharehome/htdocs/");
+define("APP_URL", "http://www.pgdpcanada.org");
 
-$site_url = 'http://www.pgdpcanada.net';
+$site_url = APP_URL;
 
-$projects_dir = '/home/pgdpcanada/htdocs/projects';
-$projects_url = 'http://www.pgdpcanada.net/projects';
+$code_dir = APP_PATH . '/htdocs/c/';
+$code_url = APP_URL . '/c/';
 
-$dyn_dir = '/home/pgdpcanada/htdocs/d';
-$dyn_url = 'http://www.pgdpcanada.net/d';
+
+$projects_dir = APP_PATH . 'projects';
+$projects_url = $site_url . '/projects';
+
+$dyn_dir = APP_PATH . 'd';
+$dyn_url = APP_URL . '/d';
 
 $dynstats_dir = "$dyn_dir/stats";
 $dynstats_url = "$dyn_url/stats";
@@ -23,17 +27,17 @@ $dyn_locales_dir = "$dyn_dir/locale";
 
 $xmlfeeds_dir = "$dyn_dir/xmlfeeds";
 
-$jpgraph_dir = '/home/pgdpcanada/htdocs/jpgraph';
+$jpgraph_dir = APP_PATH . 'jpgraph';
 
-$wiki_url = 'http://www.pgdpcanada.net/wiki';
+$wiki_url = APP_URL . '/wiki';
 
-$wikihiero_dir = '/home/pgdpcanada/htdocs/wikihiero';
-$wikihiero_url = 'http://www.pgdpcanada.net/wikihiero';
+$wikihiero_dir = APP_PATH . 'wikihiero';
+$wikihiero_url = APP_URL . '/wikihiero';
 
-$archive_projects_dir = '/home/pgdpcanada/htdocs/archive';
+$archive_projects_dir = APP_PATH . 'archive';
 
-$forums_dir = '/home/pgdpcanada/htdocs/phpBB2';
-$forums_url = 'http://www.pgdpcanada.net/phpBB2';
+$forums_dir = APP_PATH . 'phpBB2';
+$forums_url = APP_URL . '/phpBB2';
 $reset_password_url        = "$forums_url/profile.php?mode=sendpassword";
 
 
