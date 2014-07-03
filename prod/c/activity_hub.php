@@ -8,312 +8,261 @@
 // (Leaves out non-project-related activities like:
 // forums, documentation/faqs, development, admin.)
 
-$relPath="./pinc/";
-include_once($relPath.'misc.inc');
-include_once($relPath.'site_vars.php');
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+$relPath = "./pinc/";
+include_once($relPath.'dpinit.php');
 include_once($relPath.'stages.inc');
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'theme.inc');
-include_once($relPath.'project_states.inc');
-include_once($relPath.'gradual.inc');
 include_once($relPath.'site_news.inc');
 include_once($relPath.'mentorbanner.inc');
+include_once($relPath.'RoundsInfo.php');
 
-$_Activity_Hub = _("Activity Hub");
+$pagename = "activityhub";
 
-theme($_Activity_Hub, "header");
+$ahtitle = _("Activity Hub");
 
-echo "<center><img src='$code_url/graphics/Activity_Hub.jpg' width='350' height='60' border='0' title='$_Activity_Hub' alt='$_Activity_Hub'></center>\n";
+$opts = array();
+//$opts = array("hdr_include" => "c.php");
+theme($ahtitle, "header", $opts);
 
-echo "<p>\n";
-echo _("Welcome to the DP Activity Hub. From this page you can view the phases of DP production.");
-echo "\n";
-/*
-echo _("The information below is customised for you, and details the phases of production in which you can particpate.");
-echo "\n";
-*/
-echo _("Follow the links to the specific areas of the site.");
-echo "</p>\n";
-
-
-$pagesproofed = get_pages_proofed_maybe_simulated();
+echo "
+    <div class='center overflow'>
+        <img src='$code_url/graphics/Activity_Hub.jpg' alt='$ahtitle'>
+        <p class='center'>
+        ".link_to_metal_list("Gold", "Recently Published Ebooks")."
+        </p>
+    </div>\n";
 
 
-// Unread messages
-if ($pagesproofed <= 300)
-{
-    $result = mysql_query("SELECT user_id FROM phpbb_users WHERE username='".$GLOBALS['pguser']."' LIMIT 1");
-    $pguser_id = mysql_result($result, 0, "user_id");
+if($User->IsSiteManager() || $User->IsProjectFacilitator() || $User->IsProjectManager()) {
+    echo "
+    <div id='admin_links' class='center w25'>
+    <h5>Admin Links</h5>
+    <pre class='left'>
+    <a href='http://www.pgdpcanada.net/c/tools/prep.php'>Projects Before P1</a>
+    <a href='http://www.pgdpcanada.net/c/tools/site_admin/user_roles.php'>Manage Roles for a User</a>
+    <a href='http://www.pgdpcanada.net/c/user_pages.php'>User Diffs for a Round</a>
+    <a href='http://www.pgdpcanada.net/c/tools/p1release.php'>Project P1 Release</a>
+    <a href='http://www.pgdpcanada.net/c/tools/p1counts.php'>P1 Genre Counts</a>
+    <a href='http://www.pgdpcanada.net/c/tools/trace.php'>Project Trace</a>
+    </pre>
+    </div>
+    <hr class='left clear hidden' />\n";
+}
 
-    $result = mysql_query("SELECT COUNT(*) as num FROM phpbb_privmsgs WHERE privmsgs_to_userid = $pguser_id && privmsgs_type = 1 || privmsgs_to_userid = $pguser_id && privmsgs_type = 5");
-    $numofPMs = (int) mysql_result($result, 0, "num");
-    if ($numofPMs > 0)
-    {
-        
-        echo "<center><hr width='75%'></center>\n";
+$pagecount = $User->PageCount();
+echo _("<p class='center'>Welcome to the DP Activity Hub. From this page you can view the
+phases of DP production.  Follow the links to the specific areas of the site.</p>");
 
-        echo "<br><br><font color='red' size=3><b>";
-        echo _("You have received a private message in your Inbox!");
-        echo "</b></font><br><br><font color='red'>";
-        echo _("This could be from somebody sending you feedback on some of the pages you had proofread earlier. We strongly recommend you READ your messages. In the links at the top of this page, there is one that says My Inbox. Just click on that to open your Inbox.");
-        echo "</font><br><br><i><font size=-1>";
-        echo _("(After a while this explanatory paragraph will not appear when you have new messages, but the link to your Inbox will always be up there and when you have new messages that will be shown in the link)");
-        echo "</font></i><br><br>\n";
+
+if ($pagecount <= 300) {
+    if ($User->InboxCount() > 0) {
+        echo 
+        "<hr class='w75'>
+        <div class='center'>\n";
+
+        echo _("
+        <p style='color: red;'>You have received a private message in your Inbox!</p>");
+        echo _("<p>This could be from somebody sending you feedback on some of the
+        pages you had proofread earlier. We strongly recommend you READ your
+        messages. In the links at the top of this page, there is one that says
+        My Inbox. Just click on that to open your Inbox.</p>");
+        echo _("<p>(After a while this explanatory paragraph will not appear when
+        you have new messages, but the link to your Inbox will always be up
+        there and when you have new messages that will be shown in the link)</p>");
+        echo "</div>";
     }
-
 }
 
 
-welcome_see_beginner_forum( $pagesproofed );
+
+if ($pagecount <= 100) {
+    echo "
+        <hr class='w75'>
+        <div class='center'>
+        <h1 style='color: blue;'>"
+        ._("Welcome")
+        ."</h1>\n"
+        ._("<p>Please see our ") ."<a href='$beginners_site_forum_url'>"
+        ._("Beginner's Forum")
+        ."</a>". _(" for answers to common questions.</p>
+        </div>\n");
+}
 
 
 // Site News
-if ($pagesproofed >= 20)
-{
-    echo "<center><hr width='75%'>\n";
+echo "
+<div class='center'>
+<hr class='w75'>\n";
 
-    if ($pagesproofed < 40)
-    {
-        echo "<font size=-1 face=" . $theme['font_mainbody'] . "><i>";
-        echo _("Now that you have proofread 20 pages you can see the Site News. This is updated regularly with announcements from the administrators.");
-        echo "<br>";
-        echo _("(This explanatory line will eventually vanish.)");
-        echo "</i></font><br><br>\n";
-    }
+show_news_for_page("HUB");
 
-    show_news_for_page("HUB");
+echo "</div>\n";
 
-    include("./stats/currentstatestats.inc");
-    echo "</center>\n";
-}
+$feedback_url = "$forums_url/viewtopic.php?f=3&amp;t=388";
+echo "
+<div class='center'>
+<hr class='w75'>\n"
+._("<h4>New Proofreaders</h4>")
+."<p><a href='$feedback_url'>"
+._("What did you think of the Mentor feedback you received?")
+."</a></p>
+</div>
 
-thoughts_re_mentor_feedback( $pagesproofed );
+<hr class='w75'>
+<ul>\n";
 
-// Show any mentor banners.
-foreach ( $Round_for_round_id_ as $round )
-{
-    if ( $round->is_a_mentor_round() &&
-        user_can_work_on_beginner_pages_in_round($round) )
-    {
-        mentor_banner($round);
-    }
-}
-
-// =============================================================================
-
-echo "\n<hr>\n";
-
-echo "<ul>\n";
-
-if ( user_is_PM() )
-{
-    echo "<br>\n";
-    echo "<li><a href='$code_url/tools/project_manager/projectmgr.php'>" . _("Manage My Projects") . "</a></li>";
-    echo "<br>\n";
+if ( $User->IsProjectManager() ) {
+    echo "
+    <li>" . link_to_projectmgr("Manage My Projects") . "</li>\n";
 }
 
 // ----------------------------------
 
-$res = mysql_query("
-    SELECT state, COUNT(*)
+$acounts = array();
+$rows = $dpdb->SqlObjects("
+    SELECT phase, COUNT(1) AS scount
     FROM projects
-    GROUP BY state
-") or die(mysql_error());
-
-$n_projects_in_state_ = array();
-while ( list($project_state,$count) = mysql_fetch_row($res) )
-{
-    $n_projects_in_state_[$project_state] = $count;
-}
-
-// -----------
-
-function summarize_projects( $project_states, $filtertype_stem )
-{
-    global $n_projects_in_state_;
-    global $pguser;
-    global $theme;
-
-    $total = 0;
-    foreach ($project_states as $project_state)
-    {
-        $count = array_get( $n_projects_in_state_, $project_state, 0 );
-        $total += $count;
-    }
-
-    $font_str = "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='-1'>";
-
-    echo "<table border='3' CELLSPACING='1' CELLPADDING='5'>";
-    echo "<tr bgcolor='".$theme['color_navbar_bg']."'><td align='center' rowspan='2'>".$font_str.
-         _("All projects")."</font></td>";
-    $title_row = '';
-    foreach ($project_states as $project_state)
-    {
-        $state_label_name = project_states_text($project_state);
-        if (strpos($state_label_name, ':') > 0) {
-            $state_label_name = substr($state_label_name,strpos($state_label_name, ':') + 1);
-        }
-        $title_row .= "<td align='center'>".$font_str.$state_label_name."</font></td>";
-    }
-
-    $title_row .= "<td align='center'>".$font_str._("Total projects")."</font></td></tr>";
-
-    echo $title_row;
-
-    echo "<tr>";
-
-    foreach ($project_states as $project_state)
-    {
-        $count = array_get( $n_projects_in_state_, $project_state, 0 );
-        echo "<td align='center'>$count</td>";
-    }
-
-    echo "<td align='center'>$total</td></tr>";
-
-    // -----------------------
-
-    // And now, with filtering...
-
-    $res1 = mysql_query("
-        SELECT value
-        FROM user_filters
-        WHERE username='$pguser' AND filtertype='{$filtertype_stem}_internal'
-    ") or die(mysql_error());
-    if ( mysql_num_rows($res1) == 0 )
-    {
-        // echo _("You have no project filtering set up for this stage.");
-        echo "</table>";
-        return;
-    }
-
-    list($project_filter) = mysql_fetch_row($res1);
-
-    $states_list = '';
-    foreach ( $project_states as $project_state )
-    {
-        if ($states_list) $states_list .= ',';
-        $states_list .= "'$project_state'";
-    }
-
-    $res2 = mysql_query("
-        SELECT state, COUNT(*)
-        FROM projects
-        WHERE state IN ($states_list) $project_filter
-        GROUP BY state
-    ") or die(mysql_error());
-
-    $n_filtered_projects_in_state_ = array();
-    $filtered_total = 0;
-    while ( list($project_state,$count) = mysql_fetch_row($res2) )
-    {
-        $n_filtered_projects_in_state_[$project_state] = $count;
-        $filtered_total += $count;
-    }
-
-    echo "<tr bgcolor='".$theme['color_navbar_bg']."'><td align='center' rowspan='2'>".
-         $font_str._("After applying<br>your filter")."</font></td>";
-    echo $title_row;
-
-    foreach ($project_states as $project_state)
-    {
-        $count = array_get( $n_filtered_projects_in_state_, $project_state, 0 );
-        echo "<td align='center'>$count</td>\n";
-    }
-    echo "<td align='center'>$filtered_total</td>\n";
-    echo "</tr>";
-    echo "</table>";
-
+    GROUP BY phase
+    ORDER BY phase");
+foreach($rows as $row) {
+    $acounts[$row->phase] = $row->scount;
 }
 
 
 
 // Providing Content
-{
-    echo "<li>\n";
-    echo _("Providing Content");
-    echo "</b></font><br>";
-    echo _("Want to help out the site by providing material for us to proofread? ");
-    echo "<a href='$code_url/faq/cp.php'>";
-    echo _("Find out how!");
-    echo "</a>\n";
-    echo "</li>\n";
+echo "
+    <li>" . _("Providing Content") 
+    . "<br>"
+    . _("Want to help out the site by providing material for us to proofread? ")
+    . "<a href='$code_url/faq/cp.php'>"
+    . _("Find out how!")
+    . "</a>
+    </li>\n";
+
+foreach ( $Context->Rounds() as $roundid ) {
+    $phase_icon_path = "$dyn_dir/stage_icons/$roundid.jpg";
+    $phase_icon_url  = "$dyn_url/stage_icons/$roundid.jpg";
+    if ( file_exists($phase_icon_path) ) {
+        $round_img = "<img src='$phase_icon_url' alt='($roundid)' align='middle'>";
+    }
+    else {
+        $round_img = "($roundid)";
+    }
+    $rname = RoundIdName($roundid);
+    $rdesc = RoundIdDescription($roundid);
+    $rlink = link_to_round($roundid, $rname);
+
+    echo "
+        <li> 
+        <hr class='w75'>
+        $round_img $rlink <br> $rdesc <br /><br />\n";
+
+    summarize_projects($roundid);
+}
+
+$phase = "PP";
+$rname = NameForPhase($phase);
+$rdesc = DescriptionForPhase($phase);
+$rlink = link_to_pp($rname);
+echo "
+        <li>
+        <hr class='w75'>
+        ($phase) $rlink <br> $rdesc <br /><br />\n";
+summarize_projects( $phase );
+
+$n_checked_out = $dpdb->SqlOneValue("
+        SELECT COUNT(1) FROM projects
+        WHERE postproofer='{$User->Username()}'
+            AND phase='PP'");
+if ($n_checked_out) {
+    echo sprintf( _("You currently have %d projects checked out in this phase."), $n_checked_out );
     echo "<br>\n";
 }
 
-foreach ( $Stage_for_id_ as $stage )
-{
-    echo "<li>\n";
+// ----------------------------------------------------
 
-    $stage_icon_path = "$dyn_dir/stage_icons/$stage->id.jpg";
-    $stage_icon_url  = "$dyn_url/stage_icons/$stage->id.jpg";
-    if ( file_exists($stage_icon_path) )
-    {
-        $stage_id_bit = "<img src='$stage_icon_url' alt='($stage->id)' title='$stage->id' align='middle'>";
-    }
-    else
-    {
-        $stage_id_bit = "($stage->id)";
-    }
-    echo "$stage_id_bit <a href='$code_url/{$stage->relative_url}'>{$stage->name}</a>";
-    echo "<br>\n";
+$phase = "PPV";
+$rname = NameForPhase($phase);
+$rdesc = DescriptionForPhase($phase);
+$rlink = link_to_ppv($rname);
+echo "
+        <hr class='w75'>
+        <li> ($phase) $rlink <br> $rdesc <br /><br />\n";
+summarize_projects( $phase );
 
-    echo $stage->description;
-    echo "<br>\n";
-
-
-    /*
-	$uao = $stage->user_access( $pguser, $pagesproofed );
-    show_user_access_object( $uao );
-    echo "<br>\n";
-    */
-
-    if ( is_a( $stage, 'Round' ) )
-    {
-        echo "<br>\n";
-        summarize_projects( array(
-            $stage->project_waiting_state,
-            $stage->project_available_state,
-            // $stage->project_complete_state,
-            // $stage->project_unavailable_state,
-            // $stage->project_bad_state
-            ),
-            $stage->id
-        );
-    }
-    elseif ( is_a($stage, 'Pool' ) )
-    {
-        echo "<br>\n";
-        summarize_projects( array(
-            // $stage->project_unavailable_state,
-            $stage->project_available_state,
-            $stage->project_checkedout_state,
-            ),
-            "{$stage->id}_av"
-        );
-
-        $res = mysql_query("
-            SELECT COUNT(*)
-            FROM projects
-            WHERE checkedoutby='$pguser' && state='{$stage->project_checkedout_state}'
-        ");
-        $n_projects_checked_out_to_user = mysql_result($res,0);
-        if ($n_projects_checked_out_to_user  > 0)
-        {
-            echo sprintf(
-                _("You currently have %d projects checked out in this stage."),
-                $n_projects_checked_out_to_user );
-            echo "<br>\n";
-        }
-    }
-
-    echo "</li>\n";
+$n_checked_out = $dpdb->SqlOneValue("
+        SELECT COUNT(1) FROM projects
+        WHERE ppverifier='{$User->Username()}'
+            AND phase='PPV'");
+if ($n_checked_out) {
+    echo sprintf( _("You currently have %d projects checked out in this phase."), $n_checked_out );
     echo "<br>\n";
 }
 
-echo "</ul>\n";
+echo "
+    </li>
+</ul>\n";
 
 
 theme("", "footer");
 
-// vim: sw=4 ts=4 expandtab
+function summarize_projects( $phase) {
+    global $dpdb;
+
+    if($phase == "P1" || $phase == "P2" || $phase == "P3" || $phase == "F1" || $phase == "F2") {
+        $row = $dpdb->SqlOneRow("
+            SELECT SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM project_holds
+                                             WHERE projectid = p.projectid
+                                                 AND phase = '$phase')
+                            THEN 1 ELSE 0
+                       END) navail,
+                   COUNT(1) ntotal
+            FROM projects p WHERE p.phase = '$phase'");
+        $navail = $row["navail"];
+        $ntotal   = $row["ntotal"];
+        $nwaiting = $ntotal - $navail;
+
+        echo _("
+            <table class='bordered hub_table'>
+            <tr class='navbar'><td rowspan='2'>All projects</td>
+                               <td>On Hold</td>
+                               <td>Available</td>
+                               <td>Total Projects</td></tr>
+
+            <tr><td>$nwaiting</td><td>$navail</td><td>$ntotal</td></tr>
+            </table>\n");
+        return;
+    }
+
+    if($phase == "PP") {
+        $row = $dpdb->SqlOneRow("
+             SELECT SUM(CASE WHEN IFNULL(postproofer, '') = '' THEN 1 ELSE 0 END) navail,
+                    COUNT(1) ntotal
+             FROM projects where phase = '$phase'");
+    }
+    else {
+        $row = $dpdb->SqlOneRow("
+             SELECT SUM(CASE WHEN IFNULL(ppverifier, '') = '' THEN 1 ELSE 0 END) navail,
+                    COUNT(1) ntotal
+             FROM projects where phase = '$phase'");
+    }
+    $navail = $row["navail"];
+    $ntotal = $row["ntotal"];
+    $nchecked_out = $ntotal - $navail;
+
+    echo _("
+        <table class='bordered hub_table'>
+        <tr class='navbar'><td rowspan='2'>All projects</td>
+                           <td>Available for $phase</td>
+                           <td>Checked Out</td>
+                           <td>Total Projects</td></tr>
+
+        <tr><td>$navail</td><td>$nchecked_out</td><td>$ntotal</td></tr>
+        </table>\n");
+
+}
+
 ?>
