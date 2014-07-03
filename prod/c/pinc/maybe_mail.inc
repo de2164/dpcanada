@@ -1,42 +1,21 @@
 <?
-include($relPath.'site_vars.php');
+global $relPath;
+include_once($relPath.'dpinit.php');
 
-    function maybe_mail( $to, $subject, $message, $additional_headers )
     // If this is for real, send the message.
     // If we're testing, just report what would have been sent.
-    {
-        global $testing;
-
-        if ( $testing )
-        {
-            echo "\n<hr>\n";
-            echo "\$testing is $testing. If it were FALSE, the following mail would have been sent:\n";
-            echo "<pre>\n";
-            echo "To: $to\n";
-            echo "Subject: $subject\n";
-            echo "$additional_headers";
-            echo "\n";
-            echo htmlspecialchars("$message\n", ENT_NOQUOTES);
-            echo "</pre>\n";
-            echo "<hr>\n";
-        }
-        else
-        {
-            mail( $to, $subject, $message, $additional_headers, "-r <dphelp@pgdpcanada.net>" );
-        }
-    }
-
-function maybe_mail_project_manager( $project, $info, $prefix)
+function maybe_mail( $to, $subject, $message, $additional_headers ) {
+    mail( $to, $subject, $message, $additional_headers, "-r <dphelp@pgdpcanada.net>" );
+}
 // $project is either a string containing a projectid,
 // or an associative array containing various attributes of a project.
-{
+function maybe_mail_project_manager( $project, $info, $prefix) {
 	global $code_url, $auto_email_addr;
+    global $dpdb;
 
-	if (is_string($project))
-	{
-		$project = mysql_fetch_assoc(mysql_query("
-			SELECT * FROM projects WHERE projectid='$project'
-		"));
+	if (is_string($project)) {
+		$project = $dpdb->SqlOneRow("
+			SELECT * FROM projects WHERE projectid='$project'");
 	}
 
 	$projectid  = $project['projectid'];
@@ -58,13 +37,9 @@ $info
 "._("Distributed Proofreaders Canada")."
 ";
 
-	$email_addr = mysql_result(mysql_query("
-		SELECT email FROM users WHERE username = '$username'
-	"),0);
+	$email_addr = $dpdb->SqlOneValue("
+		SELECT email FROM users WHERE username = '$username'");
 
 	maybe_mail($email_addr, "$prefix: \"$nameofwork\"", $body,
 		"From: $auto_email_addr\r\nReply-To: $auto_email_addr\r\n");
 }
-
-
-?>

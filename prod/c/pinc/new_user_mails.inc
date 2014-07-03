@@ -39,7 +39,7 @@ The Distributed Proofreaders Canada Team
 
 PS - Your user name, in case you forget, is %s.
   ", $real_name, "$code_url/accounts/activate.php?id=$ID", $username),
-  "From: DPHelp <dphelp@pgdpcanada.net>\nX-Sender: <dphelp@pgdpcanada.net>\nX-Mailer: PHP\nReturn-Path: <dphelp@pgdpcanada.net>\n");
+  "From: DPHelp <$general_help_email_addr>\nX-Sender: <$general_help_email_addr>\nX-Mailer: PHP\nReturn-Path: <$general_help_email_addr>\n");
 }
 
 function maybe_welcome_mail($email, $real_name, $username) {
@@ -63,8 +63,8 @@ To make sure you will be able to access and use our web site
 properly, please check that your browser settings are as follows:
 
 - javascript enabled
-- cookies accepted (at least from us at www.pgdpcanada.net)
-- popup windows allowed (at least from us at www.pgdpcanada.net)
+- cookies accepted (at least from us at $site_url)
+- popup windows allowed (at least from us at $site_url)
 
 Also, please ensure your PC clock is set to the correct date
 and time.
@@ -74,8 +74,9 @@ As a new user, we recommend you read over our main page
 a selection of the works that we are working on, along
 with the books that have been completed through the site.
 The Beginning Proofreaders FAQ <$code_url/faq/ProoferFAQ.php>
-also provides a nice overview of the site. The Proofreading
-Guidelines <$code_url/faq/proofreading_guidelines.php> cover most proofreading
+also provides a nice overview of the site. The "
+. link_to_proofing_guidelines("Proofreading Guidelines") ."
+cover most proofreading
 questions, and it is worth browsing through early on, but
 don't feel you have to memorize everything in it immediately -
 it really comes into its own as a detailed reference whenever
@@ -212,6 +213,6 @@ If your password doesn't work, go to
 <$reset_password_url>
 to have it reset.
   ",
-  "From: DPHelp <dphelp@pgdpcanada.net>\nX-Sender: <dphelp@pgdpcanada.net>\nX-Mailer: PHP\nReturn-Path: <dphelp@pgdpcanada.net>\n");
+  "From: DPHelp <$general_help_email_addr>\nX-Sender: <$general_help_email_addr>\nX-Mailer: PHP\nReturn-Path: <$general_help_email_addr>\n");
 }
 ?>

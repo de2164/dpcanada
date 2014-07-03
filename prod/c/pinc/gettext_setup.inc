@@ -1,7 +1,6 @@
 <?PHP
 // Localization setup
-include_once('languages.inc');
-include_once($relPath.'site_vars.php'); // $charset $dyn_locales_dir $system_locales_dir
+//include_once('languages.inc');
 
 /* Explanation of logic:
 
@@ -24,37 +23,13 @@ If everything else fails, default to English.
 
 */
 
-if (isset($_GET['lang']) && lang_code($_GET['lang'])) {
-    $intlang = lang_code($_GET['lang']);
-    setcookie("language",$intlang,time()+31536000,"/");
-} else if (isset($userP)  && $userP['u_intlang']){
-    $intlang = $userP['u_intlang'];
-} else if (isset($_COOKIE['language']) && $_COOKIE['language']) {
-    $intlang=$_COOKIE['language'];
-} else if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-    $langs=explode(",",$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-    $intlang = "";
-    foreach($langs as $i) {
-        $i = explode(";",$i);
-        $i = trim($i[0]);
-        if(lang_code($i)) {
-            $intlang=lang_code($i);
-            break;
-        }
-    }
-    if (!$intlang) { $intlang = "en_EN"; }
-} else {
-    $intlang = "en_EN";
-}
 
+/*
+$intlang = $User->Language();
 $locale = setlocale(LC_ALL, $intlang);
-
-if(!headers_sent()) header("Content-Type: text/html; charset=$charset");
-
 // Specify location of translation tables and choose domain
 $gettext_domain = 'messages';
-if ( function_exists('bindtextdomain') )
-{
+if ( function_exists('bindtextdomain') ) {
     bindtextdomain($gettext_domain, $dyn_locales_dir);
     bindtextdomain("iso_639", $system_locales_dir);
     if(function_exists("bind_textdomain_codeset")) {
@@ -63,5 +38,6 @@ if ( function_exists('bindtextdomain') )
     }
     textdomain($gettext_domain);
 }
+*/
 
 ?>

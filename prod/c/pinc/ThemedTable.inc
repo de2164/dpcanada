@@ -1,37 +1,42 @@
 <?PHP
 
-// A "themed table" is an HTML table that uses various settings
+// A "themed table" is an HTML table that uses various values
 // from the current $theme for some of its presentational aspects.
 
 // ThemedTable is a class for handling the formulaic parts of a themed table.
 
-include_once($relPath.'theme.inc');
-
 class ThemedTable
 {
-    function ThemedTable( $n_cols, $title, $options=array() )
-    {
+    private $column_widths;
+    private $column_alignments;
+    private $class = array('center');
+    private $style = array('border' => '1px solid #111111');
+
+    function ThemedTable( $n_cols, $title, $options=array() ) {
         $this->n_cols = $n_cols;
 
         $this->rollover_highlight = FALSE;
-        $border = 1;
         $width = null;
         $subtitle = null;
-        foreach ( $options as $option_name => $option_value )
-        {
-            switch ( $option_name )
-            {
+        foreach ( $options as $option_name => $option_value ) {
+            switch ( $option_name ) {
                 case 'rollover_highlight':
                     $this->rollover_highlight = $option_value;
                     break;
                 case 'border':
-                    $border = $option_value;
+                    $this->style['border'] =  $option_value;
                     break;
                 case 'width':
-                    $width = $option_value;
+                    $this->style["width"] = $option_value;
                     break;
                 case 'subtitle':
                     $subtitle = $option_value;
+                    break;
+                case 'class':
+                    $this->class = $option_value;
+                    break;
+                case 'style':
+                    $this->style[$option_name] = $option_value;
                     break;
                 default:
                     die( "ThemedTable created with invalid option: '$option_name'" );
@@ -39,33 +44,26 @@ class ThemedTable
         }
 
         echo "\n";
-        echo "<table rules='none' border='$border' bordercolor='#111111' cellspacing='0' cellpadding='1' style='border-collapse: collapse' width='$width%'>";
+        $sstyle = implode("; ", $this->style);
+        $sclass = count($this->class) == 0 ? "" : "class='" . implode(' ', $this->class) . "'";
+        echo "<table style='$sstyle' $sclass>";
 
-        {
-            $possible_subtitle =
-                is_null($subtitle)
-                ? ''
-                : "<br><font size='1'>$subtitle</font>";
+        $possible_subtitle =
+            is_null($subtitle)
+            ? ''
+            : "<br><font size='1'>$subtitle</font>";
 
-            global $theme;
-            $bgcolor    = $theme['color_headerbar_bg'];
-            $font_face  = $theme['font_headerbar'];
-            $font_color = $theme['color_headerbar_font'];
+            // $bgcolor    = $theme['color_headerbar_bg'];
+            // $font_face  = $theme['font_headerbar'];
+            // $font_color = $theme['color_headerbar_font'];
 
-            echo "\n";
-            echo "<tr>";
-            echo   "<td colspan='$this->n_cols' bgcolor='$bgcolor'>";
-            echo     "<center>";
-            echo       "<font face='$font_face' color='$font_color' size='2'>";
-            echo         "<b>";
-            echo           $title;
-            echo         "</b>";
-            echo         $possible_subtitle;
-            echo       "</font>";
-            echo     "</center>";
-            echo   "</td>";
-            echo "</tr>";
-        }
+        echo "
+            <tr>
+            <td colspan='$this->n_cols' class='headerbar center bold'>
+                $title
+                $possible_subtitle
+            </td>
+            </tr>\n";
     }
 
     function set_column_widths()
@@ -111,90 +109,48 @@ class ThemedTable
         // There should be an arg (cell content) for each column.
         assert( count($cell_texts) == $this->n_cols );
 
-        global $theme;
-        $bgcolor         = $theme['color_navbar_bg'];
-        $highlight_color = $theme['color_mainbody_bg'];
-        $font_face       = $theme['font_navbar'];
-        $font_color      = $theme['color_navbar_font'];
+//        $bgcolor         = $theme['color_navbar_bg'];
+//        $highlight_color = $theme['color_mainbody_bg'];
+//        $font_face       = $theme['font_navbar'];
+//        $font_color      = $theme['color_navbar_font'];
 
-        echo "\n";
         // (We don't put the rollover highlight on a header row,
         // though there's no particular reason we couldn't.)
-        if ($this->rollover_highlight && !$is_header)
-        {
-            echo "<tr"
-                . " bgcolor='$bgcolor'"
-                . " onmouseover='javascript:style.background=\"$highlight_color\"'"
-                .  " onmouseout='javascript:style.background=\"$bgcolor\"'"
-                . ">";
-            ;
-        }
-        else
-        {
-            echo "<tr bgcolor='$bgcolor'>";
-        }
+        echo "<tr class='navbar'>";
 
-        for ( $c = 0; $c < $this->n_cols; $c++ )
-        {
-            if ( isset($this->column_widths) )
-            {
-                $width = $this->column_widths[$c];
-                $width_attr = "width='$width%'";
-            }
-            else
-            {
-                $width_attr = '';
-            }
-
-            if ( isset($this->column_alignments) )
-            {
-                $alignment = $this->column_alignments[$c];
-                if (empty($alignment))
-                {
-                    $align_attr = '';
+        for ( $c = 0; $c < $this->n_cols; $c++ ) {
+            $class = array();
+            if ( isset($this->column_alignments) ) {
+                switch($this->column_alignments[$c]) {
+                    case 'left':
+                        $class[] = 'lfloat';
+                        break;
+                    case 'right':
+                        $class[] = 'rfloat';
+                        break;
+                    case 'center':
+                        $class[] = 'center';
+                        break;
                 }
-                else
-                {
-                    $align_attr = "align='$alignment'";
-                }
-            }
-            else
-            {
-                $align_attr = '';
             }
 
             $cell_content = $cell_texts[$c];
+            $sclass = count($class) == 0 ? "" : "class='" . implode("; ", $class) . "'";
 
-            if ($is_header)
-            {
-                $cell_content = "<b><u><i>$cell_content</i></u></b>";
-                $cell_content = "<font face='$font_face' color='$font_color' size='2'>$cell_content</font>";
+            if ($is_header) {
+                echo "<th $sclass > $cell_content</th>";
             }
-
-            echo "<td $width_attr $align_attr>$cell_content</td>";
+            else {
+                echo "<td $sclass >$cell_content</td>";
+            }
         }
 
-        echo "</tr>";
+        echo "</tr>\n";
     }
 
-    function hr( $width )
-    {
-        global $theme;
-        $bgcolor = $theme['color_navbar_bg'];
-
-        echo "\n";
-        echo "<tr bgcolor='$bgcolor'>";
-        echo   "<td colspan='$this->n_cols'>";
-        echo     "<hr width='$width%'>";
-        echo   "</td>";
-        echo "</tr>";
-    }
-
-    function end()
-    {
-        echo "</table><p>";
+    function end() {
+        echo "</table>\n";
     }
 }
 
 // vim: sw=4 ts=4 expandtab
-?>

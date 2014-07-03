@@ -1,5 +1,6 @@
 <?PHP
 
+global $relPath;
 include_once($relPath.'misc.inc');
 include_once($relPath.'Stage.inc');
 
@@ -30,7 +31,7 @@ class Pool extends Stage
         $foo_field_name,
             // Don't ask.
 
-        $blather
+        $echo_array
             // An array of strings to echo on the pool's home page.
     )
     {
@@ -49,7 +50,7 @@ class Pool extends Stage
         $this->project_available_state  = $project_available_state;
         $this->foo_Header               = $foo_Header;
         $this->foo_field_name           = $foo_field_name;
-        $this->blather                  = $blather;
+        $this->echo_array               = $echo_array;
 
         global $Pool_for_id_;
         $Pool_for_id_[$this->id] =& $this;

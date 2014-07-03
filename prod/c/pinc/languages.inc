@@ -149,8 +149,7 @@ function phpbb_lang($langcode=FALSE) {
 	return $phpbblangs[$langcode];
 }
 
-function lang_html_header($langcode=FALSE)
-{
+function lang_html_header($langcode=FALSE) {
 	return " lang='".short_lang_code($langcode).(lang_direction($langcode)?"'":"' dir='RTL'");
 }
 

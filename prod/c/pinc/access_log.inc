@@ -1,35 +1,23 @@
 <?
-include_once($relPath."connect.inc");
-include_once($relPath."dpsql.inc");
 
-
-function log_access_change( $subject_username, $modifier_username, $activity_id, $action_type )
-{
-  $result = dpsql_query(
+function log_access_change( $username, $modifier, $activity_id, $action_type ) {
+    global $dpdb;
+    $dpdb->SqlExecute(
     "INSERT INTO access_log
        SET
-         timestamp = '" . time() . "',
-         subject_username = '$subject_username',
-         modifier_username = '$modifier_username',
+         timestamp = CURRENT_TIMESTAMP(),
+         subject_username = '$username',
+         modifier_username = '$modifier',
          action = '$action_type',
          activity = '$activity_id'");
-
-  return $result;
 }
 
-function get_first_granted_date($username, $stage)
-{
-  $result = dpsql_query(
-             "SELECT timestamp
-              FROM access_log
-              WHERE subject_username = '$username'
-              AND activity = '$stage'
-              AND action = 'grant'
-              ORDER BY timestamp ASC
-              LIMIT 1");
-
-  $date = @mysql_result($result,0,"timestamp");
-
-  return $date;
+function get_first_granted_date($username, $activity) {
+    global $dpdb;
+    return $dpdb->SqlOneValue("
+             SELECT MIN(timestamp) FROM access_log
+             WHERE subject_username = '$username'
+                AND activity = '$activity'
+                AND action = 'grant'");
 }
 ?>

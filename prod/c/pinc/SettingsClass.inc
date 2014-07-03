@@ -56,9 +56,8 @@ Example setting: posted_notice, value "projectID3dfe7f4b3c2ca"
 */
         
 
-function ExecSQL($sql)
-{
-    $result = mysql_query($sql);
+function ExecSQL($sql) {
+    mysql_query($sql);
     if(mysql_errno())
         echo mysql_error();
 }
@@ -70,10 +69,8 @@ class Settings
     // username of subject user.
     var $username;
 
-    function Settings($name)
-    {
-        if($name == '')
-        {
+    function __construct($name) {
+        if($name == '') {
             // Return a Settings object with an empty $settings_array.
             return;
         }
@@ -87,18 +84,16 @@ class Settings
                         u.postprocessor,
                         us.*
             FROM users AS u
-            LEFT OUTER JOIN usersettings AS us ON u.username = us.username
+            LEFT JOIN usersettings us ON u.username = us.username
             WHERE u.username = '$this->username'";
 
         $result = mysql_query($sql);
         // To know whether we've populated fields from 'users' table yet:
         $isUserVals = false;
-        while ($row = mysql_fetch_assoc($result))
-        {
+        while ($row = mysql_fetch_assoc($result)) {
             // get the onesies from the first row
             // yes, this is more efficient than two separate queries.
-            if(!$isUserVals)
-            {
+            if(!$isUserVals) {
                 $isUserVals = true;
                 if ($row['sitemanager'] == 'yes')
                     $this->settings_array['sitemanager'] = 'yes';
@@ -117,10 +112,8 @@ class Settings
     }
 
     // check if this is an updateable setting in this context.
-    function _isSettable($settingCode)
-    {
-        switch($settingCode)
-        {
+    function _isSettable($settingCode) {
+        switch($settingCode) {
             default:
                 return true;
             case 'sitemanager':
@@ -131,35 +124,30 @@ class Settings
     }
 
     // whom do I describe?
-    function UserName()
-    {
+    function UserName() {
         return $this->username ? $this->username : "[none]";
     }
 
     // -------------------------------------------------------------------------
 
     // Setting to True
-    function set_true($settingCode)
-    {
+    function set_true($settingCode) {
         $this->set_boolean($settingCode,TRUE);
     }
 
     // Setting to False
-    function set_false($settingCode)
-    {
+    function set_false($settingCode) {
         $this->set_boolean($settingCode,FALSE);
     }
 
-    function set_boolean($settingCode, $boolval)
     // A wrapper around set_value() for boolean values.
-    {
+    function set_boolean($settingCode, $boolval) {
         $this->set_value($settingCode, ($boolval ? 'yes' : NULL) );
     }
 
     // Return True iff the setting exists and its value is 'yes'.
     // Otherwise, return False.
-    function get_boolean($settingCode)
-    {
+    function get_boolean($settingCode) {
         return ( $this->get_value($settingCode) === 'yes' );
     }
 
@@ -167,23 +155,19 @@ class Settings
 
     // If $value is NULL, remove the setting.
     // Otherwise, set Value to $value.
-    function set_value($settingCode, $value)
-    {
-        if(!$this->_isSettable($settingCode))
-        {
+    function set_value($settingCode, $value) {
+        if(!$this->_isSettable($settingCode)) {
             die("Error: cannot set '$settingCode'");
         }
 
-        if(is_null($value))
-        {
+        if(is_null($value)) {
             $sql = "DELETE FROM usersettings 
                     WHERE username = '$this->username'
                     AND setting = '$settingCode'" ;
             ExecSQL($sql);
             unset($this->settings_array[$settingCode]);
         }
-        else
-        {
+        else {
             if (array_key_exists($settingCode, $this->settings_array)) {
                 $sql = "UPDATE usersettings
                         SET value = '$value'
@@ -203,16 +187,15 @@ class Settings
     // If no record exists, return $default.
     // Otherwise return what's in the Value column.
     // Note: if setting is really boolean, this will NOT return True, but 'yes' (a string).
-    function get_value($settingCode, $default = Null)
-    {
-        if (!array_key_exists($settingCode, $this->settings_array)) return $default;
+    function get_value($settingCode, $default = Null) {
+        if (!array_key_exists($settingCode, $this->settings_array))
+            return $default;
         return $this->settings_array[$settingCode];
     }
 
     // -------------------------------------------------------------------------
 
-    function settings_count()
-    {
+    function settings_count() {
         return count($this->settings_array);
     }
 
@@ -231,17 +214,14 @@ class Settings
     //     $settings =& Settings::get_settings($username);
     // to ensure that changes in settings are visible everywhere they should be.
     //
-    function & get_Settings($username)
-    {
+    function get_Settings($username) {
         static $Settings_for_ = array();
-        if (array_key_exists($username, $Settings_for_))
-        {
+        if (array_key_exists($username, $Settings_for_)) {
             return $Settings_for_[$username];
         }
-        else
-        {
-            $settings =& new Settings($username);
-            $Settings_for_[$username] =& $settings;
+        else {
+            $settings = new Settings($username);
+            $Settings_for_[$username] = $settings;
             return $settings;
         }
     }

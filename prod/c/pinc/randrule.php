@@ -1,24 +1,19 @@
 <?
-include($relPath.'site_vars.php');
-
-/* dpRandomRule - Select and format a random rule from the database
- *
- * Note:  Must already be connected to database (e.g., already include
- *        connect.php)
- */
+global $relPath;
+include_once($relPath.'dpinit.php');
 
 function dpRandomRule () {
 	global $code_url;
+    global $dpdb;
 
-    $query = "SELECT count(*) AS numrules FROM rules";
-    $result = mysql_query($query);
-    $num_rules = mysql_result($result,0,"numrules");
+    $num_rules = $dpdb->SqlOneValue("
+        SELECT count(*) AS numrules FROM rules");
 
-    $randid  = rand(0,$num_rules); 
+    $randid  = rand(0, $num_rules); 
 
-    $query = "SELECT subject,rule,doc FROM rules WHERE id=$randid";
-    $result = mysql_query($query);
-    $rule = mysql_fetch_assoc($result);
+    $rule = $dpdb->SqlOneRow("
+        SELECT subject, rule, doc FROM rules 
+        WHERE id = $randid");
 
     return <<<EOT
 

@@ -1,6 +1,5 @@
 <?
 $relPath="../../pinc/";
-include_once($relPath.'site_vars.php');
 include_once($relPath.'project_states.inc');
 include_once($relPath.'list_projects.inc');
 
@@ -10,10 +9,12 @@ function showtexts($etext_limit, $type, $orderby, $field_name, $search_char, $sh
 	if ($type == "bronze") {
 		$state = SQL_CONDITION_BRONZE;
 		$text = " "._("Now Proofreading")."</font>  "._("These books are currently being processed through our site; sign in and start helping!!!!")."<br>";
-	} elseif ($type == "silver") {
+	} 
+    else if($type == "silver") {
 		$state = SQL_CONDITION_SILVER;
 		$text = " "._("In Progress")."</font>  "._("These books have been processed through our site but have not yet posted to the Project Gutenberg Canada archive (currently going through their final proofreading/assembly).")."<br>";
-	} elseif ($type == "gold") {
+	} 
+    else if($type == "gold") {
 		$state = SQL_CONDITION_GOLD;
 		$text = " "._("Complete")."</font>  "._("These books have been processed through our site and posted to the Project Gutenberg Canada archive.");
 		$text .= "
@@ -22,7 +23,8 @@ function showtexts($etext_limit, $type, $orderby, $field_name, $search_char, $sh
 			<a href='$code_url/feeds/backend.php?content=posted&type=rss'>
 				<img src='$code_url/graphics/rss.gif' border='0' width='36' height='14' style='vertical-align:middle'></a>
 			<br>";
-	} else {
+	} 
+    else {
 		$state = "1";
 		$text = " "._("All")."</font>";
 	}
