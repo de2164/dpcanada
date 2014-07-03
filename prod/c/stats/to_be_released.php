@@ -1,8 +1,10 @@
 <?
 $relPath="../pinc/";
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'project_states.inc');
 include_once($relPath.'theme.inc');
+
+$order = Arg("order", "default");
 
 $title = _("Books To Be Released");
 theme($title,'header');
@@ -14,13 +16,13 @@ if ($order == 'default') {
 }
 
 //get projects that have been checked out
-$result = mysql_query("SELECT nameofwork, username, modifieddate, language, genre
-                     FROM projects
-                     WHERE state = '".PROJ_P1_WAITING_FOR_RELEASE."'
-                     ORDER BY '$order' ASC");
+$rows = $dpdb->SqlRows("
+                SELECT nameofwork, username, modifieddate, language, genre
+                 FROM projects
+                 WHERE state = '".PROJ_P1_WAITING_FOR_RELEASE."'
+                 ORDER BY $order ASC");
 
-$numrows = mysql_numrows($result);
-$rownum = 0;
+$numrows = count($rows);
 
 echo "<table border='1' bordercolor='#111111' cellspacing='0' cellpadding='0' style='border-collapse: collapse' width='99%'>\n";
 
@@ -36,13 +38,13 @@ echo "<th>"._("Index")."</th>
       <th>"._("Genre")."</b></th>
       </tr>";
 
-$index = 0;
-while ($rownum < $numrows) {
-    $nameofwork = mysql_result($result, $rownum, "nameofwork");
-    $username = mysql_result($result, $rownum, "username");
-    $modifieddate = mysql_result($result, $rownum, "modifieddate");
-    $language = mysql_result($result, $rownum, "language");
-    $genre = mysql_result($result, $rownum, "genre");
+$rownum = 0;
+foreach($rows as $row) {
+    $nameofwork = $row["nameofwork"];
+    $username = $row["username"];
+    $modifieddate = $row["modifieddate"];
+    $language = $row["language"];
+    $genre = $row["genre"];
 
     $today = getdate($modifieddate);
     $month = $today['month'];

@@ -1,11 +1,9 @@
 <?
-$relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
+$relPath = "./../../pinc/";
+require_once $relPath . "dpinit.php";
 include_once($jpgraph_dir.'/src/jpgraph.php');
 include_once($jpgraph_dir.'/src/jpgraph_bar.php');
-include_once($relPath.'connect.inc');
 include_once($relPath.'page_tally.inc');
-new dbConnect();
 
 
 ///////////////////////////////////////////////////////////////////
@@ -22,48 +20,41 @@ $t_7_days_ago  = $now - ( 7 * $seconds_per_day);
 
 
 // how many bars in the graph?
-$result0 = mysql_query("
-	SELECT max($user_ELR_page_tally_column) as maxpages FROM users $joined_with_user_ELR_page_tallies 
-");
-$maxpages = mysql_result($result0, 0,"maxpages");
+$maxpages = $dpdb->SqlOneValue("
+	SELECT max($user_ELR_page_tally_column) as maxpages 
+    FROM users $joined_with_user_ELR_page_tallies");
 
 
 
 //query db and put results into arrays
-$result = mysql_query("
-	SELECT
-		$user_ELR_page_tally_column        AS pagescompleted,
-		COUNT(*)                         AS n_all,
-		SUM(last_login > $t_90_days_ago) AS n_90d,
-		SUM(last_login > $t_28_days_ago) AS n_28d,
-		SUM(last_login > $t_7_days_ago)  AS n_7d
-	FROM users $joined_with_user_ELR_page_tallies
-	GROUP BY pagescompleted
-	ORDER BY pagescompleted ASC
-");
+$rows = $dpdb->SqlObjects("
+	    SELECT $user_ELR_page_tally_column   AS pagescompleted,
+            COUNT(*)                         AS n_all,
+            SUM(last_login > $t_90_days_ago) AS n_90d,
+            SUM(last_login > $t_28_days_ago) AS n_28d,
+            SUM(last_login > $t_7_days_ago)  AS n_7d
+        FROM users $joined_with_user_ELR_page_tallies
+	    GROUP BY pagescompleted
+	    ORDER BY pagescompleted ASC");
 
 
 // Initialize the data arrays for all 'possible' values of pagescompleted
 // (many of which won't be the current value for any particular user).
 //
-for ($pagescompleted_i = 0; $pagescompleted_i <= $maxpages; $pagescompleted_i++ )
-{
-    $datax[$pagescompleted_i] = $pagescompleted_i;
-
-    $datayAll[$pagescompleted_i] = 0;
-    $datay90[ $pagescompleted_i] = 0;
-    $datay28[ $pagescompleted_i] = 0;
-    $datay7[  $pagescompleted_i] = 0;
+for ($i = 0; $i <= $maxpages; $i++ ) {
+    $datax[$i] = $i;
+    $datayAll[$i] = 0;
+    $datay90[ $i] = 0;
+    $datay28[ $i] = 0;
+    $datay7[  $i] = 0;
 }
 
 
 // For each pagescompleted value in the result-set,
 // add the corresponding n_* values to the arrays of Y-axis data.
 //
-while ($row = mysql_fetch_object($result))
-{
-    if ($row->pagescompleted >= 0)
-    {
+foreach($rows as $row) {
+    if ($row->pagescompleted >= 0) {
         $datayAll[$row->pagescompleted] = $row->n_all;
         $datay90[ $row->pagescompleted] = $row->n_90d;
         $datay28[ $row->pagescompleted] = $row->n_28d;
@@ -76,7 +67,7 @@ while ($row = mysql_fetch_object($result))
 
 // Create the graph. These two calls are always required
 //Last value controls how long the graph is cached for in minutes
-$graph = new Graph(640,400,"auto",1440);
+$graph = new Graph(640, 400, "auto", 1440);
 $graph->SetScale("textint");
 
 //set X axis
@@ -98,7 +89,7 @@ $graph->SetShadow();
 
 // Adjust the margin a bit to make more room for titles
 //left, right , top, bottom
-$graph->img->SetMargin(70,30,20,100);
+$graph->img->SetMargin(70, 30, 20, 100);
 
 
 // Create the bar pots
@@ -122,7 +113,7 @@ $bplot7->SetLegend(_("Logged on in last 7 days"));
 
 
 // Create the grouped bar plot
-$gbplot = new GroupBarPlot (array($bplotAll ,$bplot90,$bplot28 ,$bplot7 ));
+$gbplot = new GroupBarPlot (array($bplotAll , $bplot90, $bplot28, $bplot7 ));
 
 // ...and add it to the graPH
 $graph->Add( $gbplot);
@@ -138,9 +129,9 @@ $graph->subtitle->Set(
 
 
 
-$graph->title->SetFont($jpgraph_FF,$jpgraph_FS);
-$graph->yaxis->title->SetFont($jpgraph_FF,$jpgraph_FS);
-$graph->xaxis->title->SetFont($jpgraph_FF,$jpgraph_FS);
+$graph->title->SetFont($jpgraph_FF, $jpgraph_FS);
+$graph->yaxis->title->SetFont($jpgraph_FF, $jpgraph_FS);
+$graph->xaxis->title->SetFont($jpgraph_FF, $jpgraph_FS);
 
 // Display the graph
 $graph->Stroke();

@@ -2,8 +2,6 @@
 
 // Various utilities for the scripts in this directory.
 
-include_once($relPath.'misc.inc');
-include_once($relPath.'site_vars.php');
 include_once($relPath.'theme.inc');
 include_once($jpgraph_dir.'/src/jpgraph.php');
 include_once($jpgraph_dir.'/src/jpgraph_line.php');
@@ -12,8 +10,7 @@ include_once($jpgraph_dir.'/src/jpgraph_canvas.php');
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function get_number_of_days_in_current_month()
-{
+function get_number_of_days_in_current_month() {
     $current = getdate();
     // The last day of this month is the "zeroth" day of next month.
     $last_day_timestamp =
@@ -24,15 +21,12 @@ function get_number_of_days_in_current_month()
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function array_subtract_first_from_each( $arr )
 // Return the array defined by:
 //     $result[$i] = $arr[$i] - $arr[0]
-{
+function array_subtract_first_from_each( $arr ) {
     $result = array();
-    foreach ( $arr as $key => $value )
-    {
-        if ( count($result) == 0 )
-        {
+    foreach ( $arr as $key => $value ) {
+        if ( count($result) == 0 ) {
             $first_value = $value;
         }
         $result[$key] = $value - $first_value;
@@ -40,15 +34,12 @@ function array_subtract_first_from_each( $arr )
     return $result;
 }
 
-function array_successive_differences( $arr )
 // Return the array defined by:
 //     $result[$i] = $arr[$i+1] - $arr[$i]
-{
+function array_successive_differences( $arr ) {
     $result = array();
-    foreach ( $arr as $key => $value )
-    {
-        if ( isset($prev_key) )
-        {
+    foreach ( $arr as $key => $value ) {
+        if ( isset($prev_key) ) {
             $result[$prev_key] = $value - $prev_value;
         }
         $prev_key = $key;
@@ -57,14 +48,12 @@ function array_successive_differences( $arr )
     return $result;
 }
 
-function array_accumulate( $arr )
 // Return the array defined by:
 //     $result[$i] = sum( $arr[$j] for $j up to and including $i )
-{
+function array_accumulate( $arr ) {
     $result = array();
     $sum = 0;
-    foreach ( $arr as $key => $value )
-    {
+    foreach ( $arr as $key => $value ) {
         $sum += $value;
         $result[$key] = $sum;
     }
@@ -73,19 +62,10 @@ function array_accumulate( $arr )
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function draw_pages_graph(
-    $x_dates,
-    $y_actual_n_pages,
-    $y_page_goal,
-    $x_frequency,
-    $cumulative_or_increments,
-    $title,
-    $cache_timeout
-)
-// Draw various kinds of 'pages completed vs. time' graphs.
-{
-    if ( array_get( $_GET, 'echo_graph_data', FALSE ) )
-    {
+    // Draw various kinds of 'pages completed vs. time' graphs.
+function draw_pages_graph( $x_dates, $y_actual_n_pages, $y_page_goal,
+    $x_frequency, $cumulative_or_increments, $title, $cache_timeout) {
+    if ( array_get( $_GET, 'echo_graph_data', FALSE ) ) {
         echo "$title\n\n";
         echo_graph_data( $x_dates, $y_actual_n_pages, $y_page_goal );
         return;
@@ -98,36 +78,40 @@ function draw_pages_graph(
     // assert( count(x_dates$) == $n_datapoints );
     // assert( is_null($y_page_goal) || count($y_page_goal) == $n_datapoints );
 
-    assert( $cumulative_or_increments == 'cumulative' || $cumulative_or_increments == 'increments' );
+    assert( $cumulative_or_increments == 'cumulative' 
+            || $cumulative_or_increments == 'increments' );
 
     // Calculate tick interval based on number of datapoints
     // Once we have more than about 30 labels, the axis is getting too crowded
-    if ($x_frequency == 'daily')
-    {
+    if ($x_frequency == 'daily') {
         if ($n_datapoints <= 31 ) {
                 $x_text_tick_interval = 1;            // one label per day
-        } else if ($n_datapoints < (30 * 7)) {
+        } 
+        else if ($n_datapoints < (30 * 7)) {
                 $x_text_tick_interval = 7;            // one label per week
-        } else if ($n_datapoints < (30 * 7 * 4)) {
+        } 
+        else if ($n_datapoints < (30 * 7 * 4)) {
                 $x_text_tick_interval = 7 * 4;        // one label per 4 weeks (pseudo-month)
-        } else if ($n_datapoints < (30 * 7 * 13)) {
+        } 
+        else if ($n_datapoints < (30 * 7 * 13)) {
                 $x_text_tick_interval = 7 * 13;       // one label per quarter
-        } else {
+        } 
+        else {
                 $x_text_tick_interval = 7  * 52;       // one label per year
         }
     }
-    else if ($x_frequency == 'monthly')
-    {
+    else if ($x_frequency == 'monthly') {
         if ($n_datapoints < 30 ) {
                 $x_text_tick_interval = 1;            // one label per month
-        } else if ($n_datapoints < (30 * 3)) {
+        } 
+        else if ($n_datapoints < (30 * 3)) {
                 $x_text_tick_interval = 3;            // one label per quarter
-        } else {
+        } 
+        else {
                 $x_text_tick_interval = 12;           // one label per year
         }
     }
-    else
-    {
+    else {
         assert( FALSE );
     }
 
@@ -163,13 +147,11 @@ function draw_pages_graph(
     $graph->yaxis->SetTitleMargin(45);
 
     // Create the plot for actual pages
-    if ( $cumulative_or_increments == 'increments' )
-    {
+    if ( $cumulative_or_increments == 'increments' ) {
         $pages_plot = new BarPlot($y_actual_n_pages);
         $pages_plot->SetColor("blue");
     }
-    else if ( $cumulative_or_increments == 'cumulative' )
-    {
+    else if ( $cumulative_or_increments == 'cumulative' ) {
         $pages_plot = new LinePlot($y_actual_n_pages);
         $pages_plot->SetColor("blue");
         $pages_plot->SetWeight(1);
@@ -177,14 +159,12 @@ function draw_pages_graph(
 
         $graph->img->SetAntiAliasing(); 
     }
-    else
-    {
+    else {
         assert( FALSE );
     }
     $graph->Add($pages_plot);
 
-    if (!is_null($y_page_goal))
-    {
+    if (!is_null($y_page_goal)) {
         // Create the plot for the page goals.
         $goal_plot = new LinePlot($y_page_goal);
         $goal_plot->SetColor("lime");
@@ -205,18 +185,10 @@ function draw_pages_graph(
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function draw_projects_graph(
-    $x_dates,
-    $y_num_projects,
-    $cumulative_or_increments,
-    $color,
-    $title,
-    $cache_timeout
-)
 // Draw various kinds of 'number of projects vs. time' graphs.
-{
-    if ( array_get( $_GET, 'echo_graph_data', FALSE ) )
-    {
+function draw_projects_graph( $x_dates, $y_num_projects, $cumulative_or_increments,
+    $color, $title, $cache_timeout) {
+    if ( array_get( $_GET, 'echo_graph_data', FALSE ) ) {
         echo "$title\n\n";
         echo_graph_data( $x_dates, $y_num_projects );
         return;
@@ -233,23 +205,26 @@ function draw_projects_graph(
     }
     */
 
-    assert( $cumulative_or_increments == 'cumulative' || $cumulative_or_increments == 'increments' );
+    assert( $cumulative_or_increments == 'cumulative' 
+        || $cumulative_or_increments == 'increments' );
 
     // Calculate tick interval based on number of datapoints
     // Once we have more than about 30 labels, the axis is getting too crowded
     // $x_frequency == 'daily'
-    {
-        if ($n_datapoints <= 31 ) {
-                $x_text_tick_interval = 1;            // one label per day
-        } else if ($n_datapoints < (30 * 7)) {
-                $x_text_tick_interval = 7;            // one label per week
-        } else if ($n_datapoints < (30 * 7 * 4)) {
-                $x_text_tick_interval = 7 * 4;        // one label per 4 weeks (pseudo-month)
-        } else if ($n_datapoints < (30 * 7 * 13)) {
-                $x_text_tick_interval = 7 * 13;       // one label per quarter
-        } else {
-                $x_text_tick_interval = 7  * 52;       // one label per year
-        }
+    if ($n_datapoints <= 31 ) {
+            $x_text_tick_interval = 1;            // one label per day
+    }
+    else if ($n_datapoints < (30 * 7)) {
+            $x_text_tick_interval = 7;            // one label per week
+    }
+    else if ($n_datapoints < (30 * 7 * 4)) {
+            $x_text_tick_interval = 7 * 4;        // one label per 4 weeks (pseudo-month)
+    }
+    else if ($n_datapoints < (30 * 7 * 13)) {
+            $x_text_tick_interval = 7 * 13;       // one label per quarter
+    }
+    else {
+            $x_text_tick_interval = 7  * 52;       // one label per year
     }
 
     // Create the graph. These two calls are always required
@@ -284,14 +259,12 @@ function draw_projects_graph(
     $graph->yaxis->SetTitleMargin(45);
 
     // Create the plot
-    if ( $cumulative_or_increments == 'increments' )
-    {
+    if ( $cumulative_or_increments == 'increments' ) {
         //Create the bar plot
         $plot = new BarPlot($y_num_projects);
         $plot->SetFillColor($color);
     }
-    else if ( $cumulative_or_increments == 'cumulative' )
-    {
+    else if ( $cumulative_or_increments == 'cumulative' ) {
         //Create the line plot
         $plot = new LinePlot($y_num_projects);
         $plot->SetColor($color);
@@ -308,10 +281,8 @@ function draw_projects_graph(
         // as if the last y-value were an explicit zero.
         // So instead...
 
-        for ( $i = count($y_num_projects)-1; $i >= 0; $i-- )
-        {
-            if ( $y_num_projects[$i] !== '' )
-            {
+        for ( $i = count($y_num_projects)-1; $i >= 0; $i-- ) {
+            if ( $y_num_projects[$i] !== '' ) {
                 break;
             }
         }
@@ -319,8 +290,7 @@ function draw_projects_graph(
 
         $graph->img->SetAntiAliasing(); 
     }
-    else
-    {
+    else {
         assert( FALSE );
     }
     $graph->Add($plot);
@@ -331,18 +301,9 @@ function draw_projects_graph(
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function draw_simple_bar_graph(
-    $datax,
-    $datay,
-    $x_label_interval,
-    $title,
-    $y_title,
-    $width, $height,
-    $cache_timeout
-)
-{
-    if ( array_get( $_GET, 'echo_graph_data', FALSE ) )
-    {
+function draw_simple_bar_graph( $datax, $datay, $x_label_interval, $title,
+                        $y_title, $width, $height, $cache_timeout) {
+    if ( array_get( $_GET, 'echo_graph_data', FALSE ) ) {
         echo "$title\n\n";
         echo_graph_data( $datax, $datay );
         return;
@@ -383,8 +344,7 @@ function draw_simple_bar_graph(
 
     // Create a bar plot
     $plot = new BarPlot($datay);
-    if ( count($datax) > 60 )
-    {
+    if ( count($datax) > 60 ) {
         // The bar outlines will overwhelm the bar interiors
         // turning the graph black. So turn off the bar outlines:
         $plot->SetColor("lightblue");
@@ -397,23 +357,19 @@ function draw_simple_bar_graph(
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function echo_graph_data()
-{
+function echo_graph_data() {
     $args = func_get_args();
     $args = array_filter($args);
     assert( count($args) >= 2 );
 
     $max_length = 0;
-    foreach ( $args as $column )
-    {
+    foreach ( $args as $column ) {
         $max_length = max( $max_length, count($column) );
     }
 
-    for ( $i = 0; $i < $max_length; $i++ )
-    {
+    for ( $i = 0; $i < $max_length; $i++ ) {
         echo "($i)\t";
-        foreach ( $args as $column )
-        {
+        foreach ( $args as $column ) {
             echo ( isset($column[$i]) ? $column[$i] : 'unset' ), "\t";
         }
         echo "\n";
@@ -422,8 +378,7 @@ function echo_graph_data()
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function dpgraph_error($error, $width = 300, $height =150)
-{
+function dpgraph_error($error, $width = 300, $height =150) {
     global $jpgraph_FF, $jpgraph_FS, $theme;
     $graph = new CanvasGraph ($width,$height,'auto');
     $graph->SetMargin(12,22,12,22);

@@ -1,12 +1,60 @@
 <?php
-include_once($relPath.'site_vars.php');
-include_once($relPath.'project_states.inc');
-include_once($code_dir.'/stats/statestats.inc');
-include_once($relPath.'gettext_setup.inc');
+global $code_dir;
+global $relPath;
+require_once ($relPath.'dpinit.php');
+require_once ($relPath.'project_states.inc');
+require_once ($code_dir.'stats/statestats.inc');
+require_once ($relPath.'gettext_setup.inc');
 
-echo "<center>";
+$sql = "
+    SELECT EXTRACT(YEAR_MONTH FROM FROM_UNIXTIME(TIMESTAMP)) emonth,
+           SUM(CASE WHEN event_type = 'creation' THEN 1 ELSE 0 END) AS createcount,
+           SUM(CASE WHEN event_type = 'transition' 
+                AND details1 = 'F2.proj_done' THEN 1 ELSE 0 END) AS proofcount,
+           SUM(CASE WHEN event_type = 'transition' 
+                AND details2 = 'proj_post_complete' THEN 1 ELSE 0 END) AS ppcount,
+           SUM(CASE WHEN event_type = 'transition' 
+                AND details2 = 'proj_submit_pgposted' THEN 1 ELSE 0 END) AS pgcount
+     FROM project_events
+    WHERE EXTRACT(YEAR_MONTH FROM FROM_UNIXTIME(TIMESTAMP)) 
+        = EXTRACT(YEAR_MONTH FROM CURRENT_DATE())";
+
+$row = $dpdb->SqlOneRow($sql);
+
+echo "
+<div style='width: 100%; text-align: center'>
+	<table width='75%' border='4' rules='all' align=center>
+	  <tbody>
+	  <tr class='navbar'>
+	      <th class='navbar' colspan='4'>"
+	._("Projects this month").
+		"</th>
+	  <tr>\n";
 
 
+cell("created", $row["createcount"]);
+cell("proofread", $row["proofcount"]);
+cell("ppd", $row["ppcount"]);
+cell("posted", $row["pgcount"]);
+
+echo "
+	  </tr>
+	  </tbody>
+	</table>
+<br><hr width='75%'></div><br>";
+exit;
+
+function cell($which, $n) {
+    global $theme;
+    global $code_url;
+	$graphs_url = "$code_url/stats/projects_Xed_graphs.php?which=$which";
+
+	echo "<td align=center bgcolor='".$theme['color_mainbody_bg']."'>";
+	echo "<a href='$graphs_url'>$which</a>: <b>$n</b>";
+	echo "</td>";
+}
+
+/*
 // display project count progress - here for the moment, can be moved to stats bar later
 $cday = date('d'); $cmonth = date('m'); $cyear = date('Y');
 $today = date('Y-m-d');
@@ -24,38 +72,5 @@ if ($cday != 1) {
  	$start_date = $temp."-12-01";
     }
 }
+*/
 
-
-
-
-echo "
-	<table width='75%' border='4' rules='all' align=center>
-	  <tbody>
-	  <tr bgcolor='".$theme['color_navbar_bg']."'>
-	      <th colspan=04><font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."'>"
-	._("Projects this month").
-		"</font></th>
-	  <tr>
-";
-
-foreach ( array('created','proofed','PPd','posted') as $which )
-{
-	$graphs_url = "$code_url/stats/projects_Xed_graphs.php?which=$which";
-
-	$psd = get_project_status_descriptor($which);
-	$n = state_change_since($psd->state_selector, $start_date);
-
-	echo "<td align=center bgcolor='".$theme['color_mainbody_bg']."'>";
-	echo "<a href='$graphs_url'>$psd->Xed_title</a>: <b>$n</b>";
-	echo "</td>";
-}
-
-echo "
-	  </tr>
-	  </tbody>
-	</table>
-";
-
-echo "<br><hr width='75%'></center><br>";
-
-?>

@@ -1,36 +1,27 @@
 <?
 // DP includes
 $relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'project_states.inc');
-include_once($relPath.'topic.inc'); // topic_create
+include_once($relPath.'dpinit.php');
 
 // Which team?
 $team_id = $_GET['team'];
+$team = new DpTeam($team_id);
 
 // Get info about team
 
-$team_result = mysql_query("SELECT teamname,team_info, webpage, createdby, owner, topic_id FROM user_teams WHERE id=$team_id");
-
-$row = mysql_fetch_array($team_result);
-
-$topic_id = $row['topic_id'];
-
 //Determine if there is an existing topic or not; if not, create one
-if(($topic_id == "") || ($topic_id == 0))
-{
-
-        $tname = $row['teamname'];
-        $towner_name = $row['createdby'];
-        $towner_id = $row['owner'];
-        $tinfo = $row['team_info'];
+if(! $team->TopicId()) {
+        $tname          = $team->TeamName();
+        $towner_name    = $team->OwnerName();
+        $towner_id      = $team->OwnerId();
+        $tinfo          = $team->Info();
 
         $message = "
 Team Name: $tname
 Created By: $towner_name
 Info: $tinfo
-Team Page: [url]".$code_url."/stats/teams/tdetail.php?tid=".$team_id."[/url]
+Team Page: [url]" . url_for_team_stats($team->Id()) . "[/url]
+
 Use this area to have a discussion with your fellow teammates! :-D
 
 ";
@@ -41,16 +32,16 @@ Use this area to have a discussion with your fellow teammates! :-D
 
         $post_subject = $tname;
 
-        $topic_id = topic_create(
+        $topic_id = create_topic(
                 $forum_id,
                 $post_subject,
                 $message,
                 $towner_name,
-		TRUE,
+		        TRUE,
                 FALSE );
 
         //Update user_teams with topic_id so it won't be created again
-        $update_team = mysql_query("UPDATE user_teams SET topic_id=$topic_id WHERE id=$team_id");
+        $dpdb->SqlExecute("UPDATE user_teams SET topic_id = $topic_id WHERE id = $team_id");
 
 }
 
@@ -58,4 +49,3 @@ Use this area to have a discussion with your fellow teammates! :-D
 
 $redirect_url = "$forums_url/viewtopic.php?t=$topic_id";
 header("Location: $redirect_url");
-?>

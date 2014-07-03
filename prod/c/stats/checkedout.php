@@ -1,168 +1,68 @@
 <?
 $relPath="../pinc/";
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'project_states.inc');
-include_once($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
 
-$state = ( isset($_GET['state']) ? $_GET['state'] : PROJ_POST_FIRST_CHECKED_OUT );
-if ( $state == PROJ_POST_FIRST_CHECKED_OUT )
-{
+$phase = Arg("phase", "PP");
+if ( $phase == "PP" ) {
 	$activity = _('Post Processing');
-      $order = (isset($_GET['order']) ? $_GET['order'] : 'checkedoutby' );
 }
-elseif ( $state == PROJ_POST_SECOND_CHECKED_OUT )
-{
+else if ( $phase == "PPV" ) {
 	$activity = _('Post Processing Verification');
-       $inPPV = 1;
-      $order = (isset($_GET['order']) ? $_GET['order'] : 'postproofer' );
 }
-else
-{
-	echo "checkedout.php: bad value for state: '$state'";
-	exit;
+else {
+    die("invalid phase");
 }
-
-$order = (isset($_GET['order']) ? $_GET['order'] : 'checkedoutby' );
-
-if ( $order == 'nameofwork' )
-{
-	$orderclause = 'nameofwork ASC';
-}
-elseif ( $order == 'checkedoutby' )
-{
-	$orderclause = 'checkedoutby ASC, modifieddate ASC';
-}
-elseif ( $order == 'postproofer' )
-{
-	$orderclause = 'postproofer ASC, modifieddate ASC';
-}
-elseif ( $order == 'modifieddate' )
-{
-	$orderclause = 'modifieddate ASC';
-}
-elseif ( $order == 'holder_t_last_activity' )
-{
-	$orderclause = 'holder_t_last_activity ASC';
-}
-else
-{
-	echo "checkedout.php: bad order value: '$order'";
-	exit;
-}
-
-// ------------------
 
 $title = _("Books Checked Out for ") . $activity;
 theme($title,'header');
 
-echo "<br><h2>$title</h2>\n";
+echo "<h2>$title</h2>\n";
 
 // ------------------
 
 // Header row
 
-if (isset($inPPV)) {
-    $colspecs = array(
-	'#'                  => 'bogus',
-	'Name of Work'       => 'nameofwork',
-       'PPer'              => 'postproofer',
-	'Checked Out To'     => 'checkedoutby',
-	'Date Last Modified' => 'modifieddate',
-	'User Last on Site'  => 'holder_t_last_activity'
-   );
-
-   $numcols = 6;
-
-} else {
-
-$colspecs = array(
-	'#'                  => 'bogus',
-	'Name of Work'       => 'nameofwork',
-	'Checked Out To'     => 'checkedoutby',
-	'Date Last Modified' => 'modifieddate',
-	'User Last on Site'  => 'holder_t_last_activity'
-);
-
-   $numcols = 5;
-
-}
+$where = ($phase == "PP")
+    ? "WHERE p.phase = 'PP' AND LENGTH(p.postproofer) > 0"
+    : "WHERE p.phase = 'PPV' AND LENGTH(p.ppverifier) > 0";
 
 
+$rows = $dpdb->SqlRows("
+	SELECT p.projectid,
+           p.nameofwork,
+           p.username,
+           IFNULL(p.postproofer, '') postproofer,
+           IFNULL(p.ppverifier, '') ppverifier,
+		   DATE(FROM_UNIXTIME(p.modifieddate)) moddate,
+		   DATE(FROM_UNIXTIME(upp.t_last_activity)) upp_last_time,
+		   DATE(FROM_UNIXTIME(uppv.t_last_activity)) uppv_last_time
+	FROM projects p
+    LEFT JOIN users upp ON p.postproofer = upp.username
+    LEFT JOIN users uppv ON p.ppverifier = uppv.username
+	$where
+	ORDER BY p.postproofer");
 
-echo "<table border='1' bordercolor='#111111' cellspacing='0' cellpadding='2' style='border-collapse: collapse' width='99%'>\n";
-echo "<tr><td colspan='$numcols' bgcolor='".$theme['color_headerbar_bg']."'><center><font color='".$theme['color_headerbar_font']."'><b>$title</b></font></center></td></tr>";
-
-echo "<tr bgcolor='".$theme['color_navbar_bg']."'>";
-foreach ( $colspecs as $col_header => $col_order )
-{
-	$s = $col_header;
-	// Make each column-header a link that will sort on that column,
-	// except for the header of the column that we're already sorting on.
-	if ( $col_order != $order && $col_order != 'bogus' )
-	{
-		$s = "<a href='checkedout.php?state=$state&order=$col_order'>$s</a>";
-	}
-	$s = "<th><center>".$s ."</font></th>";
-	echo "$s\n";
-}
-echo "</tr>\n";
-
-// ------------------
-
-// Body
-
-$result = mysql_query("
-	SELECT
-		nameofwork,
-             postproofer,
-		checkedoutby,
-		modifieddate,
-		users.t_last_activity AS holder_t_last_activity
-	FROM projects
-		LEFT OUTER JOIN users
-		ON projects.checkedoutby = users.username
-	WHERE state = '$state'
-	ORDER BY $orderclause
-");
-
-$rownum = 0;
-while ( $project = mysql_fetch_object( $result ) )
-{
-	$rownum++;
-
-	//calc last modified date for project
-	$today = getdate($project->modifieddate);
-	$month = $today['month'];
-	$mday = $today['mday'];
-	$year = $today['year'];
-	$datestamp = "$month $mday, $year";
-
-	//calc date of user's latest site-activity
-	$today = getdate($project->holder_t_last_activity);
-	$month = $today['month'];
-	$mday = $today['mday'];
-	$year = $today['year'];
-	$holder_t_last_activity_date = "$month $mday, $year";
-
-	echo "
-		<tr bgcolor='".$theme['color_navbar_bg']."'>
-		<td>$rownum</td>
-		<td width='200'>$project->nameofwork</td>
-      ";
-     
-      if (isset($inPPV)) { 
-
-            echo "	<td>$project->postproofer</td>";
-      }
-      echo "       
-		<td>$project->checkedoutby</td>
-		<td>$datestamp</td>
-		<td>$holder_t_last_activity_date</td>
-		</tr>
-	";
-}
+$tbl = new DpTable();
+$tbl->AddColumn("<Title", "nameofwork", "etitle");
+$tbl->AddColumn("<PM", "username", "epm");
+$tbl->AddColumn("<PPer", "postproofer", "epm");
+$tbl->AddColumn("<Last on site", "upp_last_time");
+$tbl->AddColumn("<PPVer", "ppverifier", "epm");
+$tbl->AddColumn("<Last on site", "uppv_last_time");
+$tbl->AddColumn("<Project modified", "moddate");
+$tbl->SetRows($rows);
+$tbl->EchoTable();
 
 echo "</table>";
 theme("","footer");
+exit;
+
+function etitle($title, $row) {
+    return link_to_project($row["projectid"], $title);
+}
+
+function epm($user) {
+    return link_to_pm($user);
+}
 ?>
 

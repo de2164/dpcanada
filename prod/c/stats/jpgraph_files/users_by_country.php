@@ -1,10 +1,8 @@
 <?
 $relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
+include_once($relPath.'dpinit.php');
 include_once($jpgraph_dir.'/src/jpgraph.php');
 include_once($jpgraph_dir.'/src/jpgraph_pie.php');
-include_once($relPath.'connect.inc');
-new dbConnect();
 include_once($relPath.'gettext_setup.inc');
 include_once($relPath.'iso_3166_list.inc');
 

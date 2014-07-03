@@ -1,103 +1,115 @@
 <?
-$relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
-include_once($relPath.'privacy.inc');
-include_once($relPath.'connect.inc');
-include_once($relPath.'theme.inc');
-include_once($relPath.'metarefresh.inc');
-include_once('../includes/team.inc');
-include_once('../includes/member.inc');
-$db_Connection=new dbConnect();
+ini_set("display_errors", true);
+error_reporting(E_ALL);
 
-if (empty($_GET['order'])) {
-	$order = "u_id";
-	$direction = "asc";
-} else {
-	$order = $_GET['order'];
-	$direction = $_GET['direction'];
-}
+$relPath = "./../../pinc/";
+require_once($relPath.'dpinit.php');
+require_once($relPath.'privacy.inc');
+require_once('../members/member.inc');
 
-if (!empty($_GET['mstart'])) { $mstart = $_GET['mstart']; } else { $mstart = 0; }
+$username       = Arg("username");
 
-if (!empty($_REQUEST['uname'])) {
-	$mResult = mysql_query("
-		SELECT u_id, username, date_created, u_privacy
-		FROM users
-		WHERE username LIKE '%".$_REQUEST['uname']."%'
-		ORDER BY $order $direction
-		LIMIT $mstart,20
-	");
-	$mRows = mysql_num_rows($mResult);
-	if ($mRows == 1) { metarefresh(0,"mdetail.php?id=".mysql_result($mResult,0,"u_id")."",'',''); exit; }
-	$uname = "uname=".$_REQUEST['uname']."&";
-} else {
-	$mResult=mysql_query("
-		SELECT u_id, username, date_created, u_privacy
-		FROM users
-		ORDER BY $order $direction
-		LIMIT $mstart,20
-	");
-	$mRows = mysql_num_rows($mResult);
-	$uname = "";
+if($username != "") {
+    $rows = $dpdb->SqlRows("
+        SELECT username, date_created, u_privacy
+        FROM users
+        WHERE username LIKE '%{$username}%'");
+
+    if(count($rows) == 1) {
+        $row = $rows[0];
+        $rowuser = $row['username'];
+        divert( "$code_url/stats/members/member_stats.php?username=$rowuser");
+            exit;
+    }
+} 
+else {
+    $rows = $dpdb->SqlRows("
+        SELECT username, date_created, u_privacy
+        FROM users");
 }
 
 $title = _("Member List");
 theme($title, "header");
-echo "<center><br>";
 
-//Display of user teams
-echo "<table border='1' bordercolor='#111111' cellspacing='0' cellpadding='4' style='border-collapse: collapse' width='95%'>";
-echo "<tr bgcolor='".$theme['color_headerbar_bg']."'><td colspan='6' align='center'><b><font color='".$theme['color_headerbar_font']."'>"._("Distributed Proofreader Members")."</font></b></td></tr>";
-echo "<tr bgcolor='".$theme['color_navbar_bg']."'>";
-	if ($order == "u_id" && $direction == "asc") { $newdirection = "desc"; } else { $newdirection = "asc"; }
-		echo "<td width='5%' align='center'><b><a href='mbr_list.php?".$uname."mstart=$mstart&order=u_id&direction=$newdirection'>"._("ID")."</a></b></td>";
-	if ($order == "username" && $direction == "asc") { $newdirection = "desc"; } else { $newdirection = "asc"; }
-		echo "<td width='23%' align='center'><b><a href='mbr_list.php?".$uname."mstart=$mstart&order=username&direction=$newdirection'>"._("Username")."</a></b></td>";
-	if ($order == "date_created" && $direction == "asc") { $newdirection = "desc"; } else { $newdirection = "asc"; }
-		echo "<td width='23%' align='center'><b><a href='mbr_list.php?".$uname."mstart=$mstart&order=date_created&direction=$newdirection'>"._("Date Joined DP")."</a></b></td>";
-	echo "<td width='23%' align='center'><b>"._("Options")."</b></td>";
-echo "</tr>";
-if (!empty($mRows)) {
-	$i = 0;
-	while ($row = mysql_fetch_assoc($mResult)) {
-        	$phpbbID = mysql_query("SELECT user_id FROM phpbb_users WHERE username = '".$row['username']."' LIMIT 1");
-        	if (($i % 2) == 0) { echo "<tr bgcolor='".$theme['color_mainbody_bg']."'>"; } else { echo "<tr bgcolor='".$theme['color_navbar_bg']."'>"; }
+echo "
+    <div class='center'>
+      <table style='margin: 2em 2.5%; width: 95%;' class='b111'>
+        <tr class='headerbar center'>
+        <td colspan='4'>" 
+        ._("Distributed Proofreader Members") ."
+        </td></tr>
 
-		if ( can_reveal_details_about($row['username'], $row['u_privacy']) ) {
+        <tr class='navbar'>
+        <td class='left'>
+            <a href='mbr_list.php?sort=username'>"
+            ._("Username")."</a>
+        </td>
 
-			echo "<td width='5%' align='center'><b>".$row['u_id']."</b></td>";
-			echo "<td width='25%'>".$row['username']."</td>";
-			echo "<td width='22%' align='center'>".date("m/d/Y", $row['date_created'])."</td>";
-			echo "<td width='23%' align='center'><b><a href='mdetail.php?id=".$row['u_id']."'>"._("Statistics")."</a>&nbsp;|&nbsp;<a href='$forums_url/privmsg.php?mode=post&u=".mysql_result($phpbbID, 0, "user_id")."'>"._("PM")."</a></b></td>";
+        <td class='center'>
+          <a href='mbr_list.php?sort=date_created'>"
+            ._("Date Joined DP")
+        ."</a></td>
 
-		} else {
-			// Print Anonymous Info
+        <td class='center'>"._("Options")."</td>
+        </tr>\n";
 
-			echo "<td width='5%' align='center'><b>---</b></td>";
-			echo "<td width='25%'>Anonymous</td>";
-			echo "<td width='22%' align='center'>---</td>";
-			echo "<td width='23%' align='center'>None</td>";
+if(count($rows) == 0) {
+    echo "<tr bgcolor='".$theme['color_mainbody_bg']."'>
+          <td colspan='6' class='center'>"._("No more members available.")."
+          </td></tr>\n";
+}
+else {
+    $i = 0;
+    foreach($rows as $row) {
+        if (($i % 2) == 0) {
+            echo "<tr bgcolor='".$theme['color_mainbody_bg']."'>"; 
+        }
+        else {
+            echo "<tr bgcolor='".$theme['color_navbar_bg']."'>"; 
+        }
 
-		}
+        if ( can_reveal_details_about($username, $row['u_privacy']) ) {
+
+    echo "<td>".$row['username']."</td>
+          <td>".date("m/d/Y", $row['date_created'])."</td>
+          <td class='center'>
+            <a href='$code_url/stats/members/member_stats.php"
+                . "?username=$username'>"
+                . _("Statistics")
+                ."/"
+                . link_to_pm($username, "PM")
+                . "</td>\n";
+
+        } else {
+            // Print Anonymous Info
+
+    echo "<td>Anonymous</td>
+          <td class='center'>---</td>
+          <td class='center'>None</td>\n";
+        }
 
 
-		echo "</tr>";
-		$i++;
-	}
-} else {
-	echo "<tr bgcolor='".$theme['color_mainbody_bg']."'><td colspan='6' align='center'><b>"._("No more members available.")."</b></td></tr>";
+        echo "</tr>\n";
+        $i++;
+    }
 }
 
-echo "<tr bgcolor='".$theme['color_mainbody_bg']."'><td colspan='3' align='left'>";
-if (!empty($mstart)) {
-	echo "<b><a href='mbr_list.php?".$uname."order=$order&direction=$direction&mstart=".($mstart-20)."'>"._("Previous")."</a></b>";
-}
-echo "&nbsp;</td><td colspan='3' align='right'>&nbsp;";
-if ($mRows == 20) {
-	echo "<b><a href='mbr_list.php?".$uname."order=$order&direction=$direction&mstart=".($mstart+20)."'>"._("Next")."</a></b>";
-}
-echo "</td></tr>";
-echo "<tr bgcolor='".$theme['color_headerbar_bg']."'><td colspan='6' align='center'><b><a href='$code_url/accounts/addproofer.php'><font color='".$theme['color_headerbar_font']."'>"._("Create a New Account")."</font></a></b></td></tr>";
+echo "<tr bgcolor='".$theme['color_mainbody_bg']."'><td colspan='3' class='left'>\n";
+
+echo "&nbsp;</td>
+    <td colspan='3' class='right'>&nbsp;";
+
+echo "</td></tr>
+      <tr class='headerbar'>
+        <td colspan='6' class='center'>\n";
+// 
+// <a href='$code_url/accounts/addproofer.php'>
+// <font color='".$theme['color_headerbar_font']."'>"._("Create a New Account")."
+// </font>
+// </a>
+// 
+echo "
+</td></tr>";
 echo "</table><p>";
 theme("", "footer");
 ?>

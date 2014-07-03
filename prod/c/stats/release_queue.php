@@ -1,8 +1,7 @@
 <?
 $relPath='../pinc/';
-include_once($relPath.'misc.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'project_states.inc');
-include_once($relPath.'dp_main.inc');
 include_once($relPath.'dpsql.inc');
 include_once($relPath.'stages.inc');
 include_once($relPath.'user_is.inc');

@@ -1,11 +1,9 @@
 <?php
 $relPath='./../pinc/';
-include($relPath.'site_vars.php');
+require_once $relPath . "dpinit.php";
 include_once($relPath.'project_states.inc');
-include($relPath.'connect.inc');
 include('statestats.inc');
 include_once($relPath.'gettext_setup.inc');
-$db_Connection=new dbConnect();
 
 
 // Not translating this file since it is not used by end-users

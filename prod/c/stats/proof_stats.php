@@ -1,65 +1,44 @@
 <?
 $relPath='../pinc/';
-include_once($relPath.'prefs_options.inc'); // PRIVACY_*
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'theme.inc');
-include_once($relPath.'dpsql.inc');
-include_once($relPath.'user_is.inc');
-include_once($relPath.'page_tally.inc');
+include_once $relPath . 'dpinit.php';
 
-$taly_name = @$_GET['tally_name'];
-if (empty($tally_name))
-{
-	die("parameter 'tally_name' is unset/empty");
-}
+$roundid = Arg("roundid");
+
+$roundid
+	or die("parameter 'roundid' is unset/empty");
 
 
-$title = sprintf( _('Top 100 Proofreaders for Round %s'), $tally_name );
+$title = _("Top 100 Proofreaders for Round $roundid");
+$subtitle = _("Users with the Highest Number of Pages Saved-as-Done in $roundid");
 
 theme($title, 'header');
 
-echo "<br><h2>$title</h2>\n";
+echo "
+    <h2 class='center'>$title</h2>
+    <h3 class='center'>$subtitle</h3>\n";
 
-echo "<br>\n";
-echo "<br>\n";
-
-if (isset($GLOBALS['pguser'])) 
-// if user logged on
-{
-
-	// hide names of users who don't want even logged on people to see their names
-	$proofreader_expr = "IF(u_privacy = ".PRIVACY_ANONYMOUS.",'Anonymous', username)";
-} 
-else
-{
-
-	// hide names of users who don't want unlogged on people to see their names
-	$proofreader_expr = "IF(u_privacy != ".PRIVACY_PUBLIC.",'Anonymous', username)";
+if(lower($roundid) == "all") {
+    $where = "";
 }
-
-{
-	$subtitle = sprintf( _('Users with the Highest Number of Pages Saved-as-Done in Round %s'), $tally_name );
-
-	echo "<h3>$subtitle</h3>\n";
-
-	$users_tallyboard = new TallyBoard( $tally_name, 'U' );
-
-	list($joined_with_user_page_tallies,$user_page_tally_column) =
-		$users_tallyboard->get_sql_joinery_for_current_tallies('users.u_id');
-
-	dpsql_dump_themed_ranked_query("
-		SELECT
-			$proofreader_expr AS 'Proofreader',
-			$user_page_tally_column AS '$tally_name Pages Completed'
-		FROM users $joined_with_user_page_tallies
-		WHERE $user_page_tally_column > 0
-		ORDER BY 2 DESC, 1 ASC
-		LIMIT 100
-	");
-
-	echo "<br>\n";
-	echo "<br>\n";
+else {
+    $where = "WHERE round_id = '$roundid'\n";
 }
+$rows = $dpdb->SqlRows("
+      SELECT IF(u.u_privacy != 0, 'Anonymous', p.username) username,
+             SUM(p.page_count) page_count
+      FROM user_round_pages p
+      JOIN users u ON u.username = p.username
+      $where
+      GROUP BY p.username
+      ORDER BY page_count DESC, p.username
+      LIMIT 100");
 
-theme("","footer");
+$tbl = new DpTable("tbltop100", "dptable center sortable w50");
+$tbl->AddColumn("<Proofer", "username"); 
+$tbl->AddColumn(">Pages", "page_count"); 
+$tbl->SetRows($rows);
+$tbl->EchoTableNumbered();
+
+
+theme("", "footer");
 ?>

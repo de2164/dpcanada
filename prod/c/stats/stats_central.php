@@ -1,211 +1,224 @@
 <?
-$relPath='./../pinc/';
-include($relPath.'site_vars.php');
-include($relPath.'project_states.inc');
-include($relPath.'connect.inc');
-include($relPath.'theme.inc');
-include_once($relPath.'ThemedTable.inc');
-include_once($relPath.'site_news.inc');
-new dbConnect();
+ini_set("display_errors", true);
+error_reporting(E_ALL);
+
+$relPath = './../pinc/';
+include_once $relPath . 'dpinit.php';
+include_once $relPath . 'site_news.inc';
+include_once $relPath . "month_chart.php";
+
+$js = array("https://www.google.com/jsapi", "/c/js/chart.js");
 
 $title = _("Statistics Central");
-theme($title,'header');
 
-echo "<br><h2>" . _("Statistics Central") . "</h2>";
+theme($title, "header");
+
+echo "<br><h2 class='center'>" . _("Statistics Central") . "</h2>";
 
 show_news_for_page("STATS");
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //Member/team stats searches and listings
 
-echo "<table border='0' align='center' width='95%' cellspacing='2' cellpadding='2'>\n";
-echo "<tr><td align='left'><form action='$code_url/stats/members/mbr_list.php' method='post'>";
-echo "<font color='".$theme['color_headerbar_font']."'><input type='text' name='uname' size='20'>&nbsp;<input type='submit' value='"._("Member Search")."'></font></form></td>\n";
-echo "<td align='right'><form action='$code_url/stats/teams/tlist.php' method='post'>";
-echo "<font color='".$theme['color_headerbar_font']."'><input type='text' name='tname' size='20'>&nbsp;<input type='submit' value='"._("Team Search")."'></font></form></td>\n";
-echo "</tr><tr><td align='center'><a href='$code_url/stats/members/mbr_list.php'>"._("Member List")."</a></td><td align='center'><a href='$code_url/stats/teams/tlist.php'>"._("Team List")."</a></td></tr></table>\n<br>\n";
+
+echo "
+<div class='w90'>
+      <div class='lfloat'>
+      <form action='$code_url/stats/members/mbr_list.php' method='POST'>
+      <a href='$code_url/stats/members/mbr_list.php'>"._("Member List")."</a>
+          <input type='text' name='username' size='20'>&nbsp;
+          <input type='submit' value='"._("Member Search")."'>
+      </form>
+      </div>
+
+      <div class='rfloat'>
+      <form action='$code_url/stats/teams/teamlist.php' method='POST'>
+      <a href='$code_url/stats/teams/teamlist.php'>"._("Team List")."</a>
+          <input type='text' name='tname' size='20'>&nbsp;
+          <input type='submit' value='"._("Team Search")."'>
+      </form>
+      </div>
+  </div>
+</div>
+<br>\n";
+
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-//General site stats with links to view the queue's
+//General site stats with links to view the queues
 
-echo "<center>";
-$table = new ThemedTable(
-    3,
-    _('General Site Statistics')
-);
 
-$table->set_column_alignments( 'left', 'right', 'left' );
+    $data = array();
+    $totalusers = $dpdb->SqlOneValue("
+        SELECT COUNT(1) FROM users
+        WHERE t_last_activity >
+            UNIX_TIMESTAMP(DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY))");
 
-   //get total users active in the last 7 days
-    $begin_time = time() - 604800; // in seconds
-    $users = mysql_query("SELECT count(*) AS numusers FROM users
-                          WHERE t_last_activity > $begin_time");
-    $totalusers = (mysql_result($users,0,"numusers"));
-
-    $table->row(
-        _("Proofreaders active in the last 7 days:"),
-        $totalusers,
-	""
-    );
+    $data[] = array( "statistic" => _("Proofreaders active in the last 7 days:"), "value" => $totalusers, "link" => "");
 
   //get total books posted  in the last 7 days
+    $totalbooks = $dpdb->SqlOneValue("
+        SELECT COUNT(1) FROM projects
+        WHERE phase_change_date >
+            UNIX_TIMESTAMP(DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY))
+            AND phase = 'POSTED'");
 
-    $books = mysql_query("SELECT count(*) AS numbooks FROM projects
-                          WHERE modifieddate >= $begin_time AND state = '".PROJ_SUBMIT_PG_POSTED."'");
-    $totalbooks = (mysql_result($books,0,"numbooks"));
+    $data[] = array( "statistic" => _("Books posted in the last 30 days:"), "value" => $totalbooks, "link" => "");
 
-    $table->row(
-        _("Books posted in the last 7 days:"),
-        $totalbooks,
-	""
-    );
+    $stats = $dpdb->SqlOneRow("
+        SELECT SUM(CASE WHEN p.phase = 'P1'
+                   AND phq1.id IS NULL
+               THEN 1 ELSE 0 END) AS p1_avail,
+               SUM(CASE WHEN p.phase = 'P1'
+                   AND phq1.id IS NOT NULL
+                THEN 1 ELSE 0 END) AS p1_queued,
+                SUM(CASE WHEN p.phase = 'P1'
+                    AND phq1.id IS NOT NULL
+                    AND p.language = 'English'
+                THEN 1 ELSE 0 END) AS p1_english,
+                SUM(CASE WHEN p.PHASE = 'PP'
+                    AND IFNULL(postproofer, '') = ''
+                THEN 1 ELSE 0 END) AS pp_available,
+                SUM(CASE WHEN p.PHASE = 'PP'
+                    AND LENGTH(postproofer) > 0
+                THEN 1 ELSE 0 END) AS pp_checked_out,
+                SUM(CASE WHEN p.PHASE = 'PPV'
+                    AND IFNULL(ppverifier, '') = ''
+                THEN 1 ELSE 0 END) AS ppv_available,
+                SUM(CASE WHEN p.PHASE = 'PPV'
+                    AND LENGTH(ppverifier) > 0
+                THEN 1 ELSE 0 END) AS ppv_checked_out
+         FROM projects p
+         LEFT JOIN project_holds phq1
+         ON p.projectid = phq1.projectid
+            AND hold_code = 'queue'
+            AND phq1.phase = 'P1'
+         WHERE p.phase != 'DELETED'");
 
+    $data[] = array( "statistic" => _("Non-English Books waiting to be released for first round:"),
+                     "value" => $stats['p1_english'], "link" => "");
+    $data[] = array( "statistic" => _("Books waiting for post processing:"), "value" => $stats['pp_available'], "link" => "");
+    $data[] = array( "statistic" => _("Books being post processed:"), "value" => $stats['pp_checked_out'],
+                    "link" => "<a href ='checkedout.php?phase=PP'>view_books</a>");
+    $data[] = array( "statistic" => _("Books waiting to be verified:"), "value" => $stats['ppv_available'], "link" => "");
+    $data[] = array( "statistic" => _("Books being verified:"), "value" => $stats['ppv_checked_out'],
+                    "link" => "<a href ='checkedout.php?phase=PPV'>view_books</a>");
+    $tbl = new DpTable("tbl01", "dptable minitab");
+    $tbl->NoColumnHeadings();
+    $tbl->AddColumn("<", "statistic");
+    $tbl->AddColumn(">", "value");
+    $tbl->AddColumn("<", "link");
+    $tbl->SetRows($data);
+    $tbl->SetTitle("General Site Statistics");
 
-
-    $view_books=_("(View)");
-  //get total first round books waiting to be released
-    $firstwaitingbooks = mysql_query("SELECT count(*) AS numbooks FROM projects WHERE state = '".PROJ_P1_WAITING_FOR_RELEASE."'");
-    $totalfirstwaiting = (mysql_result($firstwaitingbooks,0,"numbooks"));
-
-    $table->row(
-        _("Books waiting to be released for first round:"),
-        $totalfirstwaiting,
-	"&nbsp;<a href ='to_be_released.php?order=default'>$view_books</a>"
-    );
-
-  //get total non-English books waiting to be released
-    $nonwaitingbooks = mysql_query("SELECT count(*) AS numbooks FROM projects
-                                    WHERE state = '".PROJ_P1_WAITING_FOR_RELEASE."' AND language != 'English'");
-    $totalnonwaiting = (mysql_result($nonwaitingbooks,0,"numbooks"));
-
-    $table->row(
-        _("Non-English Books waiting to be released for first round:"),
-        $totalnonwaiting,
-	""
-    );
-
-  //get total books waiting to be post processed
-    $waitingpost = mysql_query("SELECT count(*) AS numbooks FROM projects
-                                WHERE state = '".PROJ_POST_FIRST_AVAILABLE."'");
-    $totalwaitingpost = (mysql_result($waitingpost,0,"numbooks"));
-
-    $table->row(
-        _("Books waiting for post processing:"),
-        $totalwaitingpost,
-	""
-    );
-
-  //get total books being post processed
-    $inpost = mysql_query("SELECT count(*) AS numbooks FROM projects
-                           WHERE state = '".PROJ_POST_FIRST_CHECKED_OUT."'");
-    $totalinpost = (mysql_result($inpost,0,"numbooks"));
-
-    $table->row(
-        _("Books being post processed:"),
-        $totalinpost,
-	"&nbsp;<a href ='checkedout.php?state=".PROJ_POST_FIRST_CHECKED_OUT."'>$view_books</a>"
-    );
-
-  //get total books in verify
-    $verifybooks = mysql_query("SELECT count(*) AS numbooks FROM projects
-                                WHERE state = '".PROJ_POST_SECOND_AVAILABLE."'");
-    $totalverify = (mysql_result($verifybooks,0,"numbooks"));
-
-    $table->row(
-        _("Books waiting to be verified:"),
-        $totalverify,
-	"&nbsp;<a href ='PPV_avail.php'>$view_books</a>"
-    );
-
-  //get total books in verifying
-    $verifyingbooks = mysql_query("SELECT count(*) AS numbooks FROM projects
-                                   WHERE state = '".PROJ_POST_SECOND_CHECKED_OUT."'");
-    $totalverifying = (mysql_result($verifyingbooks,0,"numbooks"));
-
-    $table->row(
-        _("Books being verified:"),
-        $totalverifying,
-	"&nbsp;<a href ='checkedout.php?state=".PROJ_POST_SECOND_CHECKED_OUT."'>$view_books</a>"
-    );
-
-$table->end();
-echo "</center>";
+    echo "<div id='genstats' class='center w95' style='margin: auto'>\n";
+    $tbl->EchoTable();
+    echo "</div>";
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Miscellaneous Statistics
 
-$table = new ThemedTable(
-    2,
-    _("Miscellaneous Statistics"),
-    array( 'width' => 99 )
-);
+    $tbl = new DpTable("tbl02", "dptable minitab", _("Miscellaneous Statistics"));
+    $tbl->NoColumnHeadings();
+    $rows = array();
+    $rows[] = array("col01" => "<a href='release_queue.php'>"
+                               .  _("See All Waiting Queues"). "</a>",
+                    "col02" => "<a href='requested_books.php'>"
+                                . _("Most Requested Books") . "</a>");
 
-$table->row(
-    "<a href='release_queue.php'>" . _("See All Waiting Queues") . "</a>",
-    "<a href='requested_books.php'>" . _("Most Requested Books") . "</a>"
-);
+    $rows[] = array(
+        "col01" => "<a href='user_logon_stats.php'>" . _("User Logon Stats") . "</a>",
+        "col02" => "<a href='pm_stats.php'>" . _("Project Management Stats") . "</a>");
 
-$table->row(
-    "<a href='user_logon_stats.php'>" . _("User Logon Statistics") . "</a>",
-    "<a href='pm_stats.php'>" . _("Project Management Statistics") . "</a>"
-);
+    $rows[] = array(
+        "col01" => "<a href='pp_stats.php'>" . _("Post-Processing Stats") . "</a>",
+        "col02" => "<a href='ppv_stats.php'>" . _("Post-Processing Verification Stats") . "</a>");
 
-$table->row(
-    "<a href='pp_stats.php'>" . _("Post-Processing Statistics") . "</a>",
-    "<a href='ppv_stats.php'>" . _("Post-Processing Verification Statistics") . "</a>"
-);
-
-$table->end();
+    $tbl->AddColumn("<", "col01");
+    $tbl->AddColumn("<", "col02");
+    $tbl->SetRows($rows);
+    echo "<div id='miscstats' class='center w95' style='margin: auto'>\n";
+    $tbl->EchoTable();
+echo "</div>";
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Pages in Rounds
 
-$table = new ThemedTable(
-    4,
-    _("Pages in Rounds"),
-    array( 'width' => 99 )
-);
+    $tbl = new DpTable("tbl03", "dptable minitab", _("Pages in Rounds"));
+    $tbl->NoColumnHeadings();
 
-foreach ( $page_tally_names as $tally_name => $tally_title )
-{
-    $qs = "tally_name=$tally_name";
-    $table->row(
-        $tally_name,
-        "<a href='pages_proofed_graphs.php?$qs'>" . _("Pages Proofread Graphs") . "</a>",
-        "<a href='misc_stats1.php?$qs'>" . _("Top Proofreading Days and Months, etc") . "</a>",
-        "<a href='proof_stats.php?$qs'>" . _("Top Proofreaders") . "</a>"
-    );
-}
+    $rows = array();
+    $rows[] = array("col01" => _("P1"),
+                    "col02" => link_to_round_charts("P1",_("Pages Proofread Charts")),
+                    "col03" => link_to_misc_stats("P1", _("Monthly Page Counts.")),
+                    "col04" => link_to_round_stats("P1", _("Top Proofreaders")));
+    $rows[] = array("col01" => _("P2"),
+                    "col02" => link_to_round_charts("P2",_("Pages Proofread Charts")),
+                    "col03" => link_to_misc_stats("P2", _("Monthly Page Counts.")),
+                    "col04" => link_to_round_stats("P2", _("Top Proofreaders")));
+    $rows[] = array("col01" => _("P3"),
+                    "col02" => link_to_round_charts("P3",_("Pages Proofread Charts")),
+                    "col03" => link_to_misc_stats("P3", _("Monthly Page Counts.")),
+                    "col04" => link_to_round_stats("P3", _("Top Proofreaders")));
+    $rows[] = array("col01" => _("F1"),
+                    "col02" => link_to_round_charts("F1",_("Pages Proofread Charts")),
+                    "col03" => link_to_misc_stats("f1", _("Monthly Page Counts.")),
+                    "col04" => link_to_round_stats("F1", _("Top Proofreaders")));
+    $rows[] = array("col01" => _("F2"),
+                    "col02" => link_to_round_charts("F2",_("Pages Proofread Charts")),
+                    "col03" => link_to_misc_stats("F2", _("Monthly Page Counts.")),
+                    "col04" => link_to_round_stats("F2", _("Top Proofreaders")));
+    $rows[] = array("col01" => _("All"),
+                    "col02" => link_to_round_charts("ALL",_("Pages Proofread Charts")),
+                    "col03" => link_to_misc_stats("ALL", _("Monthly Page Counts.")),
+                    "col04" => link_to_round_stats("ALL", _("Top Proofreaders")));
 
-$table->end();
+    $tbl->AddColumn("^", "col01");
+    $tbl->AddColumn("^", "col02");
+    $tbl->AddColumn("^", "col03");
+    $tbl->AddColumn("^", "col04");
+    $tbl->SetRows($rows);
 
+    echo "<div id='roundstats' class='center w95' style='margin: auto'>\n";
+    $tbl->EchoTable();
+    echo "</div>\n";
+
+    echo "<div id='roundcounts' class='dpchart center w95' style='margin: auto'>";
+    echo "<h3>"._("Page Counts in Rounds") . "</h3>\n";
+
+    echo PhaseWeeksChart("P1");
+    echo PhaseWeeksChart("P2");
+    echo PhaseWeeksChart("P3");
+    echo PhaseWeeksChart("F1");
+    echo PhaseWeeksChart("F2");
+    echo PhaseWeeksChart("All");
+
+    echo "</div>\n";
+
+/*
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Projects by Status
 
 $table = new ThemedTable(
     3,
     _("Projects by Status"),
-    array( 'width' => 99 )
-);
+    array( 'width' => 99 ));
 
 $table->column_headers(
     '',
     _('Number So Far'),
-    _('Graphed Over Time')
-);
+    _('Graphed Over Time'));
 
-foreach ( array('created','proofed','PPd','posted') as $which )
-{
+foreach ( array('created','proofed','PPd','posted') as $which ) {
     $psd = get_project_status_descriptor( $which );
 
     $res = mysql_query("
-        SELECT SUM(num_projects)
-        FROM project_state_stats
-        WHERE $psd->state_selector
-        GROUP BY date
-        ORDER BY date DESC
-        LIMIT 1
-    ");
+        SELECT state, COUNT(1) FROM projects
+        GROUP BY state");
+        // SELECT SUM(num_projects) FROM project_state_stats
+        // WHERE $psd->state_selector
+        // GROUP BY date
+        // ORDER BY date DESC
+        // LIMIT 1");
     $num_so_far = mysql_result($res,0);
 
     $table->row(
@@ -216,10 +229,12 @@ foreach ( array('created','proofed','PPd','posted') as $which )
 }
 
 $table->end();
+*/
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Total Projects Created, Proofread, Post-Processed and Posted
 
+/*
 $table = new ThemedTable(
     1, 
     _("Total Projects Created, Proofread, Post-Processed and Posted"),
@@ -238,6 +253,7 @@ $table->row(
 );
 
 $table->end();
+*/
 
 theme('','footer');
 

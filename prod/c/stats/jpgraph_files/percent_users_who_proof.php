@@ -1,9 +1,8 @@
 <?
 $relPath="./../../pinc/";
-include_once($relPath.'connect.inc');
+require_once $relPath . "dpinit.php";
 include_once($relPath.'page_tally.inc');
 include_once('common.inc');
-new dbConnect();
 
 
 ///////////////////////////////////////////////////

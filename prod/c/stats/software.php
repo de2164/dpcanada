@@ -1,29 +1,29 @@
 <?php
-$relPath="./../pinc/";
-include_once($relPath.'site_vars.php');
+$relPath = "./../pinc/";
+include_once($relPath.'dpinit.php');
 
 // This include setup is highly unusual but neccesary because of mixing of
 // phpBB2's and DP's database setup
 
-function get_phpbb2_ver()
+function get_phpbb_ver()
 {
 global $forums_dir;
 
 define('IN_PHPBB', true);
-$phpbb_root_path=$forums_dir."/";
-$phpEx="php";
+$phpbb_root_path = $forums_dir."/";
+$phpEx = "php";
 include_once($forums_dir."/common.php");
 
 return "2".$board_config['version'];
 }
 
-$phpbb2_ver=get_phpbb2_ver();
+$phpbb_ver = get_phpbb_ver();
 
 include_once($relPath.'theme.inc');
 include_once($relPath.'languages.inc');
 include('faq_data.inc');
 
-theme(_("Software information"),"header");
+theme(_("Software information"), "header");
 
 echo "<h2>"._("Software information")."</h2>\n";
 
@@ -41,7 +41,7 @@ echo "<tr><td>";
 echo "<a href='http://www.mysql.com'>MySQL</a>";
 echo "</td><td>";
 
-$a=mysql_fetch_row(mysql_query("SELECT version()"));
+$a = mysql_fetch_row(mysql_query("SELECT version()"));
 echo $a[0];
 
 echo "</td></tr>\n";
@@ -49,8 +49,8 @@ echo "<tr><td>";
 echo "<a href='http://aspell.sourceforge.net'>Aspell</a>";
 echo "</td><td>";
 
-$a=`$aspell_executable -v`;
-preg_match("/(?<=aspell)[\sa-z0-9.-]+/i",$a,$b);
+$a = `$aspell_executable -v`;
+preg_match("/(?<=aspell)[\sa-z0-9.-]+/i", $a, $b);
 echo $b[0];
 
 echo "</td></tr>\n";
@@ -58,8 +58,8 @@ echo "<tr><td>";
 echo "<a href='http://www.gnu.org/software/gettext/'>gettext</a>";
 echo "</td><td>";
 
-$a=`gettext --version`;
-preg_match("/[\sa-z0-9.-]+$/im",$a,$b);
+$a = `gettext --version`;
+preg_match("/[\sa-z0-9.-]+$/im", $a, $b);
 echo $b[0];
 //gettext (GNU gettext) 0.10.40
 //gettext (GNU gettext-runtime) 0.14.1
@@ -69,7 +69,7 @@ echo "<tr><td>";
 echo "<a href='http://www.phpbb.com'>phpBB</a>";
 echo "</td><td>";
 
-echo $phpbb2_ver;
+echo $phpbb_ver;
 
 echo "</td></tr>\n";
 echo "</table>";
@@ -82,9 +82,9 @@ echo "<table border='1'>\n";
 
 echo "<tr valign='bottom'><th>"._("Language")."</th><th>"._("Local name")."</th><th>"._("Translation")."</th><th>"._("Documentation")."</th><th>"._("Forum interface")."</th><th>"._("Forums")."</th></tr>\n";
 
-$dirname="language";
+$dirname = "language";
 
-$phpbb_root_path=$forums_dir."/";
+$phpbb_root_path = $forums_dir."/";
 
 // Following code is copied from phpBB's
 // includes/functions_selects.php:
@@ -103,75 +103,78 @@ while ( $file = readdir($dir) )
 }
 // End of copied code
 
-$lang=array_flip($lang);
+$lang = array_flip($lang);
 
-$faqs=array(""=>array());
+$faqs = array(""=>array());
 foreach($faq_data as $v) {
-        if($v{2}=="/") {
-                $l=substr($v,0,2);
-                if(!isset($faqs[$l])) $faqs[$l]=array();
-                array_push($faqs[$l],substr($v,3));
+        if($v{2} == "/") {
+                $l = substr($v, 0, 2);
+                if(!isset($faqs[$l])) $faqs[$l] = array();
+                array_push($faqs[$l], substr($v, 3));
         } else {
-                array_push($faqs[""],$v);
+                array_push($faqs[""], $v);
         }
 }
 
 ksort($faqs);
 
-define('YES_MARK',"Y");
-define('NO_MARK',"");
-define('NA_MARK',"n/a");
+define('YES_MARK', "Y");
+define('NO_MARK', "");
+define('NA_MARK', "n/a");
 
-$a=installed_langs();
-foreach($a as $k=>$v) {
-        echo "<tr><td>";
-        echo eng_name($v);
-        echo "</td><td>";
-        echo lang_name($v);
+$a = installed_langs();
+foreach($a as $k => $v) {
+    echo "<tr><td>";
+    echo eng_name($v);
+    echo "</td><td>";
+    echo lang_name($v);
 	echo "</td><td>";
 	echo YES_MARK;
 	echo "</td><td>";
-	echo ($faqs[short_lang_code($v)]||short_lang_code($v)=="en")?YES_MARK:NO_MARK;
+	echo ($faqs[short_lang_code($v)] || short_lang_code($v) == "en") 
+        ? YES_MARK 
+        : NO_MARK;
         echo "</td><td>";
-	echo phpbb_lang($v)?($lang[phpbb_lang($v)]?YES_MARK:NO_MARK):NA_MARK;
+	echo phpbb_lang($v)
+        ? ($lang[phpbb_lang($v)]
+            ? YES_MARK
+            :NO_MARK)
+        :NA_MARK;
         echo "</td><td>";
-	echo lang_forum($v)?YES_MARK:NO_MARK;
-        echo "</td></tr>\n";
+	echo lang_forum($v)
+        ? YES_MARK
+        : NO_MARK;
+    echo "</td></tr>\n";
 }
 
 echo "</table>\n";
-
 echo "<br>\n";
-
 echo "<h3>"._("Documentation statistics")."</h3>\n";
-
 echo "<table border='1'>\n";
-
 echo "<tr valign='bottom'><th>"._("Language")."</th><th>"._("Documents")."</th></tr>\n";
 
 foreach($faqs as $k=>$v) {
-	echo "<tr><td rowspan='".(count($v)+1)."' valign='top'><b>".
-		bilingual_name(lang_code($k?$k:"en")).
-		":</b></td></tr>\n";
+	echo "<tr><td rowspan='".(count($v)+1)."' valign='top'><b>"
+        . bilingual_name(lang_code($k?$k:"en"))
+        . ":</b></td></tr>\n";
 	foreach($v as $v1) {
 		echo "<tr><td><a href='$code_url/faq/$k".($k?"/":"")."$v1'>$v1</a></td></tr>\n";
 	}
 }
 
 echo "</table>";
-
 echo "<br>\n";
-
 echo "<h3>"._("Spell checking dictionaries")."</h3>\n";
-
 echo "<table border='1'>\n";
 
 chdir(rtrim(`$aspell_executable config -e dict-dir`));
 $dicts=glob("??.multi");
 
-foreach($dicts as $k=>$v)
-	echo "<tr><td>".bilingual_name(substr($v,0,2))."</td></tr>\n";
-
+foreach($dicts as $k=>$v) {
+	echo "<tr><td>"
+            . bilingual_name(substr($v, 0, 2))
+            . "</td></tr>\n";
+}
 echo "</table>\n<br>\n";
 
 theme("","footer");

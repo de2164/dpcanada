@@ -1,6 +1,6 @@
 <?
 $relPath='../pinc/';
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'dpsql.inc');
 include_once($relPath.'theme.inc');
 
