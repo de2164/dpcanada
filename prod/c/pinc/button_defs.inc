@@ -17,36 +17,29 @@ define('SPELL_CHECK',                 'L');
 define('PROJECT_COMMENTS',            'M');
 define('REFRESH_IMAGE',               'N');
 define('REVERT_TO_LAST_SAVE_DISABLED','O');
-define('SHOW_ALL_TEXT',               'P');
+define('PREVIEW_TEXT',                'P');
 define('CONVERT_UTF8',                'R');
 
-function echo_button( $button_id, $which_interface )
-{
+function echo_button( $button_id, $which_interface ) {
 	global $userP;
 	$CRLF = '\r\n';
-	if ($which_interface == 's')
-	{
+	if ($which_interface == 's') {
 		$label = 'value';
 	}
-	else if ($which_interface == 'a')
-	{
+	else if ($which_interface == 'a') {
 		$label = 'alt';
 	}
-	else
-	{
+	else {
 		die("echo_button: bad which_interface arg: '$which_interface'");
 	}
 
-	switch ($button_id)
-	{
+	switch ($button_id) {
 		case CHANGE_LAYOUT:
-			if ( $userP['i_layout']==1)
-			{
+			if ( $userP['i_layout'] == 1) {
 				$horvert = _("Horizontal");
 				$n = "5";
 			}
-			else
-			{
+			else {
 				$horvert = _("Vertical");
 				$n = "4";
 			}
@@ -54,8 +47,8 @@ function echo_button( $button_id, $which_interface )
 				'accesskey' => "6",
 				'name'      => "button4",
 				$label      => _("Switch to")." $horvert",
-				'title'     => _("Save and Switch to")." $horvert "._("Layout"),
-				'onclick'   => "return(confirm('"._("Are you sure you want to")."{$CRLF}"._("Change Layout")."{$CRLF}&{$CRLF}"._("Save the Current Document?")."'));",
+				'title'     => _("Save and switch to")." $horvert "._("layout"),
+				// 'onclick'   => "return(confirm('"._("Are you sure you want to")."{$CRLF}"._("Change Layout")."{$CRLF}and{$CRLF}"._("Save the Current Document?")."'));",
 				'src'       => "gfx/bt$n.png",
 			);
 			break;
@@ -85,9 +78,10 @@ function echo_button( $button_id, $which_interface )
 			$attrs = array(
 				'accesskey' => "3",
 				'name'      => "button7",
+                "id"        => "button7",
 				$label      => _("Return Page to Round"),
 				'title'     => _("Return Page to Round"),
-				'onclick'   => "return(confirm('"._("Are you sure you want to")."{$CRLF}"._("return this page to the current round?")."'));",
+				// 'onclick'   => "return(confirm('"._("Are you sure you want to")."{$CRLF}"._("return this page to the current round?")."'));",
 				'src'       => "gfx/bt15.png",
 			);
 			break;
@@ -105,8 +99,8 @@ function echo_button( $button_id, $which_interface )
 		case REVERT_TO_ORIGINAL:
 			$attrs = array(
 				'name'      => "button8",
-				$label      => _("Revert to Original Document"),
-				'title'     => _("Revert to Original Document"),
+				$label      => _("Revert to Original for this Round"),
+				'title'     => _("Revert to Original for this Round"),
 				'onclick'   => "return(confirm('"._("Are you sure you want to")."{$CRLF}"._("revert to the original text for this round?")."'));",
 				'src'       => "gfx/bt8.png",
 			);
@@ -126,10 +120,9 @@ function echo_button( $button_id, $which_interface )
 			$attrs = array(
 				'accesskey' => "8",
 				'name'      => "button2",
-				$label      => _("Save as 'Done' & Proofread Next Page"),
-				'title'     => _("Save as 'Done' & Proofread Next Page"),
-				'src'       => "gfx/bt2.png",
-			);
+				$label      => _("Save as 'Done' and Proofread Next Page"),
+				'title'     => _("Save as 'Done' and Proofread Next Page"),
+				'src'       => "gfx/bt2.png",);
 			break;
 
 		case SAVE_AS_DONE_AND_QUIT:
@@ -138,8 +131,7 @@ function echo_button( $button_id, $which_interface )
 				'name'      => "button5",
 				$label      => _("Save as 'Done'"),
 				'title'     => _("Save as 'Done'"),
-				'src'       => "gfx/bt13.png",
-			);
+				'src'       => "gfx/bt13.png",);
 			break;
 
 		case SAVE_AS_IN_PROGRESS:
@@ -148,8 +140,7 @@ function echo_button( $button_id, $which_interface )
 				'name'      => "button1",
 				$label      => _("Save as 'In Progress'"),
 				'title'     => _("Save as 'In Progress'"),
-				'src'       => "gfx/bt3.png",
-			);
+				'src'       => "gfx/bt3.png",);
 			break;
 
 		case SET_IMAGE_ZOOM:
@@ -158,8 +149,7 @@ function echo_button( $button_id, $which_interface )
 				$label      => _("Set Image Zoom Percent"),
 				'title'     => _("Set Image Zoom Percent"),
 				'src'       => "gfx/bt10.png",
-				'onclick'   => "return(showIZ());",
-			);
+				'onclick'   => "return showIZ();",);
 			break;
 
 		case SET_IMAGE_ACTUAL:
@@ -168,53 +158,48 @@ function echo_button( $button_id, $which_interface )
 				$label      => _("Zoom to Actual Size"),
 				'title'     => _("Zoom to Actual Size"),
 				'src'       => "gfx/bt18.png",
-				'onclick'   => "return(showActual());",
-			);
+				'onclick'   => "return(showActual());",);
 			break;
 
 		case SPELL_CHECK:
 			$attrs = array(
 				'name'      => "button10",
 				$label      => _("Spell Check"),
-				'title'     => _("Run Spelling Check"),
-				'src'       => "gfx/bt16.png",
-			);
+				'title'     => _("Spell Check"),
+				'src'       => "gfx/bt16.png",);
 			break;
 		case CONVERT_UTF8:
 			$attrs = array(
 				'name'=>"button12",
 				$label=>"Convert",
 				'title'=>"Convert text codes to UTF-8",
-				'src'=>"gfx/bt19.png",
-			);
+				'src'=>"gfx/bt19.png",);
 			break;
-		case SHOW_ALL_TEXT:
+		case PREVIEW_TEXT:
 			$attrs = array(
 				'name'=>"button13",
-				$label=>"Show All Text",
-				'title'=>"Show All Text",
+				$label=>"Preview formatted text",
+				'title'=>"Preview formatted text",
 				'onclick'=>"top.showNW(); return false;",
-				'src'=>"gfx/bt9.png",
-			);
+				'src'=>"gfx/bt9.png",);
 			break;
+        default:
+            $attrs = array();
 	}
-	if ($which_interface == 's')
-	{
+	if ($which_interface == 's') {
 		unset($attrs['src']);
 		$attrs['type'] = 'submit';
 		$attrs['id'] = $attrs['name'];
 	}
-	else if ($which_interface == 'a')
-	{
+	else if ($which_interface == 'a') {
 		$attrs['type' ] = 'image';
 		$attrs['align'] = 'top';
 		$attrs['size' ] = '26';
 		$attrs['id'   ] = $attrs['name'];
 	}
 
-	echo "<INPUT\n";
-	foreach ($attrs as $at_name => $at_value)
-	{
+	echo "<input\n";
+	foreach ($attrs as $at_name => $at_value) {
 		echo "$at_name=\"$at_value\"\n";
 	}
 	echo ">";
@@ -224,38 +209,33 @@ function echo_button( $button_id, $which_interface )
 
 function echo_img( $id )
 {
-	switch ($id)
-	{
+	switch ($id) {
 		case PROJECT_COMMENTS:
 			$attrs = array(
 				'src'       => "gfx/bt12.png",
 				'alt'       => _("Project Comments"),
-				'title'     => _("Project Comments"),
-			);
+				'title'     => _("Project Comments"),);
 			break;
 
 		case REFRESH_IMAGE:
 			$attrs = array(
 				'src'       => "gfx/bt6.png",
 				'alt'       => _("Refresh Image"),
-				'title'     => _("Refresh Image"),
-			);
+				'title'     => _("Refresh Image"),);
 			break;
 
 		case REVERT_TO_LAST_SAVE_DISABLED:
 			$attrs = array(
 				'src'       => "gfx/bt7_n.png",
 				'alt'       => _("Revert to Last Save Disabled"),
-				'title'     => _("Revert to Last Save Disabled"),
-			);
+				'title'     => _("Revert to Last Save Disabled"),);
 			break;
 
-		case SHOW_ALL_TEXT:
+		case PREVIEW_TEXT:
 			$attrs = array(
 				'src'       => "gfx/bt9.png",
-				'alt'       => _("Show All Text"),
-				'title'     => _("Show All Text"),
-			);
+				'alt'       => _("Preview formatted text"),
+				'title'     => _("Preview formatted text"),);
 			break;
 	}
 	$attrs['align' ] = 'top';
@@ -264,9 +244,8 @@ function echo_img( $id )
 	$attrs['border'] = "0";
 
 	echo "<img\n";
-	foreach( $attrs as $at_name => $at_value )
-	{
-		print "$at_name=\"$at_value\"\n";
+	foreach( $attrs as $at_name => $at_value ) {
+		print "$at_name='$at_value'\n";
 	}
 	echo ">";
 }

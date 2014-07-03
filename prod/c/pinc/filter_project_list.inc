@@ -1,132 +1,106 @@
 <?
 // set $label, $filtertype_stem  and $state_sql before inclusion
-
-include_once('select_list.inc');
+global $User;
+$username = $User->Username();
 
 // by default, filters are shown for Language, Genre, PM and Special Day, 
 // and hidden for PPers;
-// these defaults can be overridden by setting appropriate values for 
+// these defaults can be overridden by assigning appropriate values for 
 // the associated variables, below, in the enclosing file
 
-if (!isset($showLangF)) {$showLangF = TRUE;}
-if (!isset($showGenreF)) {$showGenreF = TRUE;}
-if (!isset($showPMsF)) {$showPMsF = TRUE;}
-if (!isset($showDiffF)) {$showDiffF = TRUE;}
-if (!isset($showSpecialF)) {$showSpecialF = TRUE;}
+if (!isset($showLangF)) {
+    $showLangF = TRUE;
+}
+if (!isset($showGenreF)) {
+    $showGenreF = TRUE;
+}
+if (!isset($showPMsF)) {
+    $showPMsF = TRUE;
+}
+if (!isset($showDiffF)) {
+    $showDiffF = TRUE;
+}
+if (!isset($showSpecialF)) {
+    $showSpecialF = TRUE;
+}
 
-if (!isset($showPPersF)) {$showPPersF = FALSE;}
+if (!isset($showPPersF)) {
+    $showPPersF = FALSE;
+}
 
 
 // if no filters enabled, don't show any
 
-if ($showLangF OR $showGenreF OR $showPMsF OR $showDiffF OR $showSpecialF OR $showPPersF) {
+if ($showLangF || $showGenreF 
+  || $showPMsF || $showDiffF 
+  || $showSpecialF || $showPPersF) {
 
+    // arrays to hold legal filter values (determined from database)
+    // as some protection against "injection of SQL in URL" attacks
 
-// arrays to hold legal filter values (determined from database)
-// as some protection against "injection of SQL in URL" attacks
-
-$array_of_langs = array();
-$array_of_genres = array();
-$array_of_PMs = array();
-$array_of_diffs = array();
-$array_of_specials = array();
-$array_of_PPers = array();
-
+    $array_of_langs = array();
+    $array_of_genres = array();
+    $array_of_PMs = array();
+    $array_of_diffs = array();
+    $array_of_PPers = array();
 
 // get legal languages
 
 if ($showLangF) {
-    $query = "
-    	    SELECT distinct language FROM projects	WHERE $state_sql ORDER BY language
-	    ";
-    $result = mysql_query($query);
+    $langs = $dpdb->SqlValues("
+    	    SELECT DISTINCT language FROM projects	
+            WHERE $state_sql ORDER BY language");
+    
     $i = 0;
-    while ($a_res = @mysql_fetch_row($result))
-    {
-        $val = $a_res[0];	
-        $array_of_langs[$i] = $val;
-        $i++;
+    foreach($langs as $lang) {
+        $array_of_langs[$i++] = $lang;
     }
 }
 
 // get legal genres
 
 if ($showGenreF) {
-    $query = "
-	    SELECT distinct genre FROM projects	WHERE $state_sql ORDER BY genre
-    	    ";
-    $result = mysql_query($query);
+    $genres = $dpdb->SqlValues("
+	    SELECT DISTINCT genre FROM projects	
+        WHERE $state_sql ORDER BY genre");
     $i = 0;
-    while ($a_res = @mysql_fetch_row($result))
-    {
-        $val = $a_res[0];	
-        $array_of_genres[$i] = $val;
-        $i++;
+    foreach($genres as $val) {
+        $array_of_genres[$i++] = $val;
     }
 }
 
 
 // get legal PMs
 if ($showPMsF) {
-    $query = "
-	    SELECT distinct username FROM projects	WHERE $state_sql ORDER BY username
-	    ";
-    $result = mysql_query($query);
+    $vals = $dpdb->SqlValues("
+	    SELECT DISTINCT username FROM projects	
+        WHERE $state_sql ORDER BY username");
     $i = 0;
-    while ($a_res = @mysql_fetch_row($result))
-    {
-        $val = $a_res[0];	
-        $array_of_PMs[$i] = $val;
-        $i++;
+    foreach($vals as $val) {
+        $array_of_PMs[$i++] = $val;
     }
 }
 
 // get legal PPers
 
 if ($showPPersF) {
-    $query = "
-	    SELECT distinct checkedoutby FROM projects	WHERE $state_sql ORDER BY checkedoutby
-   	    ";
-    $result = mysql_query($query);
+    $vals = $dpdb->SqlValues("
+	    SELECT DISTINCT postproofer FROM projects	
+        WHERE $state_sql ORDER BY postproofer");
     $i = 0;
-    while ($a_res = @mysql_fetch_row($result))
-    {
-        $val = $a_res[0];	
-        $array_of_PPers[$i] = $val;
-        $i++;
+    foreach($vals as $val) {
+        $array_of_PPers[$i++] = $val;
     }
 }
 
 
-// get legal Special day codes
-
-// slightly different array structure, as we want to display one value and filter on another
-
-// note this query does not include Birthday or Otherday Specials
-if ($showSpecialF) {
-    $query = "
-            SELECT  DISTINCT special_code, display_name
-            FROM projects, special_days
-            WHERE projects.special_code = special_days.spec_code AND $state_sql ORDER BY display_name
-   	    ";
-    $result = mysql_query($query);
-    while ($a_res = @mysql_fetch_row($result))
-    {
-        $spec_code = $a_res[0];	
-        $val = $a_res[1];	
-        $array_of_specials[$spec_code] = $val;
-    }
-}
-
-// legal difficulties 
-
-// TO DO: take into account visibility of beginner?
 if ($showDiffF) {
     $array_of_diffs = array('beginner','easy','average','hard');
 }
 
 // build and show the filter selection section
 
+global $label;
 echo "<center>";
 echo _("Filter available ").$label._(" books by").":";
 echo "</center>\n";    
@@ -170,8 +144,7 @@ if ($showLangF) {
           <td>"._("Language")."</td></tr><tr>
         <td>
         <select name='language1[]' size=5 multiple>
-	    <option value=''>"._("All languages")."</option>
-    ";
+	    <option value=''>"._("All languages")."</option>\n";
 
     echo build_selectlist( $state_sql, "language", $array_of_langs);
 
@@ -191,8 +164,7 @@ if ($showGenreF) {
           <td>"._("Genre")."</td></tr><tr>
         <td>
         <select name='genre1[]' size=5  multiple>
-	    <option value=''>"._("All genres")."</option>
-    ";
+	    <option value=''>"._("All genres")."</option>\n";
 
     echo build_selectlist( $state_sql, "genre", $array_of_genres);
     echo "
@@ -234,7 +206,7 @@ if ($showPPersF) {
 	    <option value=''>"._("All PPers")."</option>
     ";
 
-    echo build_selectlist( $state_sql, "checkedoutby", $array_of_PPers);
+    echo build_selectlist( $state_sql, "postproofer", $array_of_PPers);
     echo "
         </select>
         </td>
@@ -244,27 +216,6 @@ if ($showPPersF) {
 }
 
 
-
-// SPECIAL Days filter
-
-if ($showSpecialF) {
-    echo "\r\n<table style='float: left;' border=1>\n<tr>
-          <td>"._("Special Days")."</td></tr><tr>
-        <td>
-        <select name='special1[]' size=5  multiple>
-	    <option value=''>"._("All Special Days")."</option>
-    ";
-
-    foreach ($array_of_specials as $key => $display) {
-        echo "<option value='$key'>$display</option>\n";
-    }
-    echo "
-        </select>
-        </td>
-      </tr>
-     </table>
-   ";
-}
 
 // Stop the buttons floating next to the table:
 echo "<br style='clear: both;' /><br />";
@@ -288,7 +239,7 @@ echo "</form><br>";
 echo "<center>";
 echo _("If desired, you should be able to select multiple values for each (e.g., by holding down Ctrl).");
 echo "<br><br>";
-echo _("Resetting the filter does not apply it. To see all projects again, Reset then Apply Filter.");
+echo _("Changing the filter does not apply it. To see all projects again, Reset then Apply Filter.");
 echo "</center><br><br>\n";    
 
 // $filtertype_stem (which must be initialised in enclosing file) 
@@ -301,14 +252,15 @@ $FT_dis = $filtertype_stem . "_display";
 
 // read saved filters (actual and display) from user_filters table 
 
-$result = mysql_query("SELECT value FROM user_filters WHERE username = '$pguser' AND filtertype = '$FT_int'");
-if (mysql_num_rows($result) >= 1) {
-	$RFilter = mysql_result($result, 0, "value");
-}
-$result = mysql_query("SELECT value FROM user_filters WHERE username = '$pguser' AND filtertype = '$FT_dis'");
-if (mysql_num_rows($result) >= 1) {
-	$display_filter = mysql_result($result, 0, "value");
-}
+$RFilter = $dpdb->SqlOneValue("
+        SELECT value FROM user_filters 
+        WHERE username = '$username' 
+            AND filtertype = '$FT_int'");
+
+$display_filter = $dpdb->SqlOneValue("
+        SELECT value FROM user_filters 
+        WHERE username = '$username' 
+            AND filtertype = '$FT_dis'");
 
 
 // get new filters from passed arguments (if any) in HTTP request
@@ -316,7 +268,8 @@ if (mysql_num_rows($result) >= 1) {
 // validate each set value against the arrays of legal values
 // as some protection against the "injection of SQL into URL" attack
 
-if ( isset($_POST["filter_$filtertype_stem"]) and ($_POST["filter_$filtertype_stem"] == 'filter_on')) {
+if ( isset($_POST["filter_$filtertype_stem"]) 
+     && ($_POST["filter_$filtertype_stem"] == 'filter_on')) {
 
 	$RFilter = " ";
 	$display_filter = "";
@@ -326,124 +279,85 @@ if ( isset($_POST["filter_$filtertype_stem"]) and ($_POST["filter_$filtertype_st
 	// construct language clause of new filter
 
 	$condition1 = '1';
-	if ( isset($_POST['language1']) && count($_POST['language1']) > 0 )
-	{
+	if ( isset($_POST['language1']) && count($_POST['language1']) > 0 ) {
 	    $condition1 .= " AND (0";
 	    $display_filter .= "<br>Languages=";
-	    foreach( $_POST['language1'] as $lang )
-	    {
+        foreach( $_POST['language1'] as $lang ) {
 
-		if ( $lang == '' )
-		{
-		    $condition1 .= " OR 1";
-		}
-		else
-		{
-		    if (!in_array( $lang, $array_of_langs )) { echo "UHOH" & exit(); }
-		    $condition1 .= " OR language='$lang'";
-                    $display_filter .= $lang." ";
-		    $show_df = TRUE;
-		}
-	    }
+            if ( $lang == '' ) {
+                $condition1 .= " OR 1";
+            }
+            else {
+                if (!in_array( $lang, $array_of_langs )) { echo "UHOH" & exit(); }
+                $condition1 .= " OR language='$lang'";
+                $display_filter .= $lang." ";
+                $show_df = TRUE;
+            }
+        }
 	    $condition1 .= ")";
 	}
 
 	// construct genre clause of new filter
 
-	if ( isset($_POST['genre1']) && count($_POST['genre1']) > 0 )
-	{
+	if ( isset($_POST['genre1']) && count($_POST['genre1']) > 0 ) {
 	    $condition1 .= " AND (0";
 	    $display_filter .= "<br>Genres=";
-	    foreach( $_POST['genre1'] as $genre )
-	    {
-		if ( $genre == '' )
-		{
-		    $condition1 .= " OR 1";
-		}
-		else
-		{
-		    if (!in_array($genre, $array_of_genres )) { echo "UHOH" &  exit(); }
-		    $condition1 .= " OR genre='$genre'";
-                    $display_filter .= $genre." ";
-		    $show_df = TRUE;
-		}
+	    foreach( $_POST['genre1'] as $genre ) {
+            if ( $genre == '' ) {
+                $condition1 .= " OR 1";
+            }
+            else {
+                if (!in_array($genre, $array_of_genres )) { echo "UHOH" &  exit(); }
+                $condition1 .= " OR genre='$genre'";
+                $display_filter .= $genre." ";
+                $show_df = TRUE;
+            }
 	    }
 	    $condition1 .= ")";
 	}
 
 	// construct PM clause of new filter
 
-	if ( isset($_POST['PM1']) && count($_POST['PM1']) > 0 )
-	{
+	if ( isset($_POST['PM1']) && count($_POST['PM1']) > 0 ) {
 	    $condition1 .= " AND (0";
 	    $display_filter .= "<br>PMs=";
-	    foreach( $_POST['PM1'] as $PM )
-	    {
-		if ( $PM == '' )
-		{
-		    $condition1 .= " OR 1";
-		}
-		else
-		{
-		    if (!in_array($PM, $array_of_PMs )) { echo "UHOH" & exit(); }
-		    $condition1 .= " OR projects.username='$PM'";
-                    $display_filter .= $PM." ";
-		    $show_df = TRUE;
-		}
-	    }
+        foreach( $_POST['PM1'] as $PM ) {
+            if ( $PM == '' ) {
+                $condition1 .= " OR 1";
+            }
+            else {
+                if (!in_array($PM, $array_of_PMs )) {
+                    echo "UHOH" & exit(); 
+                }
+                $condition1 .= " OR projects.username='$PM'";
+                $display_filter .= $PM." ";
+                $show_df = TRUE;
+            }
+        }
 	    $condition1 .= ")";
 	}
 
 
 	// construct PP clause of new filter
 
-	if ( isset($_POST['PP1']) && count($_POST['PP1']) > 0 )
-	{
+	if ( isset($_POST['PP1']) && count($_POST['PP1']) > 0 ) {
 	    $condition1 .= " AND (0";
 	    $display_filter .= "<br>PPs=";
-	    foreach( $_POST['PP1'] as $PP )
-	    {
-		if ( $PP == '' )
-		{
-		    $condition1 .= " OR 1";
-		}
-		else
-		{
-		    if (!in_array($PP, $array_of_PPers )) { echo "UHOH" & exit(); }
-		    $condition1 .= " OR checkedoutby='$PP'";
-                    $display_filter .= $PP." ";
-		    $show_df = TRUE;
-		}
+	    foreach( $_POST['PP1'] as $PP ) {
+            if ( $PP == '' ) {
+                $condition1 .= " OR 1";
+            }
+            else {
+                if (!in_array($PP, $array_of_PPers )) { 
+                    echo "UHOH" & exit(); 
+                }
+                $condition1 .= " OR postproofer='$PP'";
+                $display_filter .= $PP." ";
+                $show_df = TRUE;
+            }
 	    }
 	    $condition1 .= ")";
 	}
-
-
-	// construct Special day clause of new filter
-        // note that for specials we use key for matching but display value
-
-	if ( isset($_POST['special1']) && count($_POST['special1']) > 0 )
-	{
-	    $condition1 .= " AND (0";
-	    $display_filter .= "<br>Special Days=";
-	    foreach( $_POST['special1'] as $special )
-	    {
-		if ( $special == '' )
-		{
-		    $condition1 .= " OR 1";
-		}
-		else
-		{
-		    if (!array_key_exists($special, $array_of_specials )) { echo "UHOH" & exit(); }
-		    $condition1 .= " OR special_code='$special'";
-                    $display_filter .= $array_of_specials[$special]." ";
-		    $show_df = TRUE;
-		}
-	    }
-	    $condition1 .= ")";
-	}
-
-
 
 	// construct difficulty clause of new filter
 
@@ -470,37 +384,25 @@ if ( isset($_POST["filter_$filtertype_stem"]) and ($_POST["filter_$filtertype_st
 
 	$RFilter = " AND ".$condition1;
 
-	// save or update filter to usersettings table (since they've potentially changed)
+	$dpdb->SqlExecute("
+		DELETE FROM user_filters 
+        WHERE username = '$username' AND filtertype = '$FT_int'");
 
-	//Note:  When using UPDATE, MySQL will not update columns where the new value is the same as the old value. 
-	//This creates the possiblity that mysql_affected_rows() may not actually equal the number of rows matched, 
-	//only the number of rows that were literally affected by the query.
-	//To avoid the risk of creatign multiple rows per user for each of these two settings,
-	//we delete and insert rather than UPDATE and "if no rows affected", INSERT, since the
-	//no rows affected isn't reliable
+	$dpdb->SqlExecute("
+		DELETE FROM user_filters 
+        WHERE username = '$username' AND filtertype = '$FT_dis'");
 
-	// _internal filter is database-readable SQL for WHERE clause in queries
-	// _display filter is human readable summary for reporting current filter to user
+	$dpdb->SqlExecute("
+        INSERT INTO user_filters 
+            (username, filtertype, value) 
+        VALUES 
+            ('$username', '$FT_int', '".addslashes($RFilter)."')");
 
-
-	// remove old filter values (if any) from table and add news ones
-
-	$query = "
-		DELETE FROM user_filters WHERE username = '$pguser' AND filtertype = '$FT_int'
-		";
-	$result = mysql_query($query);
-	$query = "
-		DELETE FROM user_filters WHERE username = '$pguser' AND filtertype = '$FT_dis'
-		";
-	$result = mysql_query($query);
-
-	$query = "INSERT INTO user_filters (username, filtertype, value) VALUES ('$pguser', '$FT_int', '".addslashes($RFilter)."')";
-	$result = mysql_query($query);
-
-	$query = "
-		INSERT INTO user_filters (username, filtertype, value) VALUES ('$pguser', '$FT_dis', '".addslashes($display_filter)."')
-		";
-	$result = mysql_query($query);
+	$dpdb->SqlExecute("
+		INSERT INTO user_filters 
+            (username, filtertype, value) 
+        VALUES 
+            ('$username', '$FT_dis', '".addslashes($display_filter)."')");
 
 }
 
@@ -518,5 +420,16 @@ if ((isset($show_df) && $show_df) || (isset($display_filter) && $display_filter)
 
 
 } // end if any filters enabled
+function build_selectlist( $states, $field) {
+    global $dpdb;
+    $to_echo = "";
+    $values = $dpdb->SqlValues("
+		SELECT distinct $field FROM projects
+        WHERE $states
+        ORDER BY $field");
 
-?>
+    foreach($values as $val) {
+        $to_echo .= "<option value='$val'>$val</option\n";
+    }
+    return $to_echo;
+}

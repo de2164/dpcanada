@@ -1,8 +1,7 @@
 <?PHP
-include_once($relPath.'site_vars.php');
-include_once($relPath.'page_tally.inc');
+global $relPath;
+//include_once($relPath.'page_tally.inc');
 include_once($relPath.'theme.inc');
-include_once($relPath.'dp_main.inc');
 
 // This file deals with the gradual revelation of site features,
 // based on the number of pages proofed by the user.
@@ -10,38 +9,24 @@ include_once($relPath.'dp_main.inc');
 // Maybe it should include unshared stuff too, for completeness.)
 
 
-function get_pages_proofed_maybe_simulated()
 // Retrieve the number of pages proofed by the current user.
 // For demo purposes, allow the user (via the URL parameter 'numofpages')
 // to pretend to have a different number of pages,
 // as long as it's less than their actual number.
-{
-    global $pguser, $userP;
-
-    $pagesproofed = user_get_ELR_page_tally( $pguser );
-    if ( TRUE )
-    {
-        $ru_tallyboard = new TallyBoard('R*', 'U');
-        $pagesproofed += $ru_tallyboard->get_current_tally( $userP['u_id'] );
-    }
-
-    if (isset($_GET['numofpages']))
-    {
-        if ($_GET['numofpages'] < $pagesproofed)
-        {
-            $pagesproofed =  $_GET['numofpages'];
-        }
-    }
-
-    return $pagesproofed;
+function get_pages_proofed_maybe_simulated() {
+    global $User;
+    return $User->PageCount();
+//    global $pguser;
+//
+//    $pagesproofed = user_get_ELR_page_tally( $pguser );
+//
+//    return $pagesproofed;
 }
 
-function welcome_see_beginner_forum( $pagesproofed )
-{
+function welcome_see_beginner_forum( $pagesproofed ) {
     global $theme, $beginners_site_forum_url;
 
-    if ($pagesproofed <= 100)
-    {
+    if ($pagesproofed <= 100) {
         echo "<hr width='75%'>\n";
 
         echo '<font face="'. $theme['font_mainbody'] .'" color = "blue" size=+3><br><b>';
@@ -57,12 +42,10 @@ function welcome_see_beginner_forum( $pagesproofed )
 }
 
 //MS
-function welcome_see_beginner_forum_newuser( $pagesproofed )
-{
+function welcome_see_beginner_forum_newuser( $pagesproofed ) {
     global $theme, $beginners_site_forum_url;
 
-    if ($pagesproofed <= 100)
-    {  
+    if ($pagesproofed <= 100) {  
 		echo "<hr width='75%'>\n";
         echo '<font face="'. $theme['font_mainbody'] .'" color = "blue" size=+3><br><b>';
         echo _("Welcome!  To start read the 10 steps and pick a BEGIN project at the page bottom");
@@ -77,8 +60,8 @@ function welcome_see_beginner_forum_newuser( $pagesproofed )
     }
 }
 
-function thoughts_re_mentor_feedback( $pagesproofed )
-{
+/*
+function thoughts_re_mentor_feedback( $pagesproofed ) {
     global $forums_url;
 
     if ($pagesproofed >= 15 && $pagesproofed < 200)
@@ -91,6 +74,6 @@ function thoughts_re_mentor_feedback( $pagesproofed )
         echo "</a><br><br>";
     }
 }
+*/
 
 // vim: sw=4 ts=4 expandtab
-?>

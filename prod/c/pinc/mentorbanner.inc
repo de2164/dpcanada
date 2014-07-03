@@ -1,50 +1,36 @@
 <?
-function mentor_banner($round)
-{
-    global $wiki_url;
-    $r_avail_state = $round->project_available_state;
-    $round_id = $round->id;
+function mentor_banner() {
+    global $dpdb;
 
-    $result = (mysql_query("
-        SELECT max(round((unix_timestamp() - modifieddate)/(24 * 60 * 60)))
-            FROM projects
-            WHERE
-                difficulty = 'beginner'
-                AND state = '$r_avail_state'
-                AND language = 'English'
-        "));
-
-    $oldest = mysql_result($result, 0);
-
-    if(is_null($oldest))
-        return;
+    $oldest = $dpdb->SqlOneValue("
+        SELECT
+            MAX(DATEDIFF(CURRENT_DATE(), FROM_UNIXTIME(modifieddate))) days_ago
+        FROM projects
+        WHERE difficulty = 'beginner'
+            AND LANGUAGE = 'English'
+            AND state = 'P2.proj_avail'");
 
     switch ($oldest) {
         case 0:
+            return;
         case 1:
         case 2:
-            $font_boost = 1;
+            $font_boost = "1.1em";
             $font_col = '#339933';
             break;
         case 3:
         case 4:
-            $font_boost = 2;
+            $font_boost = "1.2em";
             $font_col = "#FF6600";
         break;
         default:
-            $font_boost = 3;
+            $font_boost = "1.3em";
             $font_col = "#FF0000";
             break;
     }
 
-    echo "<br><center>";
-    echo "<b><font size=+$font_boost color=$font_col>";
-    printf(_("Oldest English %sMENTORS ONLY%s book in %s is %d days old."),
-         "<a href='$wiki_url/Mentoring'>",
-         "</a>",
-         $round_id,
-         $oldest);
-    echo "</font></b>";
-    echo "</center><br>";
+    echo "<br><div class='center bold' style='color: $font_col; font_size: $font_boost'>"
+    . _("Oldest English MENTORS ONLY book in P2 is $oldest days old.")
+    . "</div>
+    <br/>\n";
 }
-?>

@@ -1,7 +1,7 @@
 <?PHP
 
 // $Id: RoundDescriptor.inc,v 1.58 2006/07/31 06:25:55 jmdyck Exp $
-
+global $relPath;
 include_once($relPath.'misc.inc');
 include_once($relPath.'Stage.inc');
 
@@ -47,8 +47,7 @@ class Round extends Stage
             // -- The string is the honorific for someone who has achieved that
             //    threshold, but not the next higher.
             // (Needn't be in a particular order.)
-    )
-    {
+    ) {
         $this->Stage(
             $round_id,
             $round_name,
@@ -102,15 +101,12 @@ class Round extends Stage
         //   r3: if r2_user != '' then r2_text else if r1_user != '' then r1_text else master_text
         //   etc.
         //
-        if ( $this->round_number == 1 )
-        {
+        if ( $this->round_number == 1 ) {
             $this->prevtext_column_name = "master_text";
         }
-        else
-        {
+        else {
             $sql = "CASE";
-            for ( $rn = $this->round_number-1; $rn > 0; $rn-- )
-            {
+            for ( $rn = $this->round_number-1; $rn > 0; $rn-- ) {
                 $sql .= " WHEN LENGTH(round{$rn}_user) THEN round{$rn}_text";
             }
             $sql .= " ELSE master_text";
@@ -150,16 +146,17 @@ class Round extends Stage
         $PAGE_STATES_IN_ORDER[] = $this->page_bad_state;
     }
 
-    function is_a_mentee_round() { return !is_null($this->mentor_round); }
-    function is_a_mentor_round() { return !is_null($this->mentee_round); }
+    public function is_a_mentee_round() { return !is_null($this->mentor_round); }
+    public function is_a_mentor_round() { return !is_null($this->mentee_round); }
 
-    function get_honorific_for_page_tally( $page_tally )
-    {
+    function get_honorific_for_page_count( $page_count ) {
+        return $this->get_honorific_for_page_tally( $page_count );
+    }
+
+    function get_honorific_for_page_tally( $page_tally ) {
         // Note that krsort($this->honorifics) put it in descending order.
-        foreach ( $this->honorifics as $threshold => $honorific )
-        {
-            if ( $page_tally >= $threshold )
-            {
+        foreach ( $this->honorifics as $threshold => $honorific ) {
+            if ( $page_tally >= $threshold ) {
                 return $honorific;
             }
         }
@@ -167,7 +164,7 @@ class Round extends Stage
         // Unusual, since the least threshold is usually zero,
         // but it can happen.
         // Give them the lowest honorific.
-        return $honorific;
+        return $this->honorifics[0];
     }
 }
 
@@ -246,4 +243,3 @@ function declare_mentoring_pair( $mentee_round_id, $mentor_round_id )
 }
 
 // vim: sw=4 ts=4 expandtab
-?>

@@ -1,19 +1,20 @@
 <?PHP
 
-// Wrappers around some phpBB2 functionality.
+// Wrappers around some phpBB functionality.
 
 // Generally, for functions defined here,
 // parameters are in the order Where, What, Who:
 //     Where: $forum_id and/or $topic_id
-//     What:  $post_subject, $post_text
-//     Who:   $poster_name, $poster_is_real
+//     What:  $subject, $post_text
+//     Who:   $name, $is_real
 
 // WARNING:
-// This file includes phpBB2 files, which set and use global variables,
+// This file includes phpBB files, which set and use global variables,
 // some of which have the same names as global variables that the DP code
 // sets and uses. (e.g., $theme, $lang, $starttime).  Because of the
 // potential for collisions, you should avoid mixing this file with DP code.
 
+/*
 $this_is_top_level_cli_invocation = (
     php_sapi_name() == 'cli' &&
     count(get_included_files()) == 1 );
@@ -27,9 +28,11 @@ if ( $this_is_top_level_cli_invocation )
     $relPath = './';
     include_once($relPath.'site_vars.php'); // $forums_dir
 }
+*/
 
 // PHPBB includes (from the standard installation)
 define('IN_PHPBB', true);
+global $forums_dir;
 $phpbb_root_path = $forums_dir.'/';
 
 include_once($phpbb_root_path . 'extension.inc');
@@ -42,38 +45,21 @@ include_once($relPath . 'functions_insert_post.'.$phpEx);
 
 // -----------------------------------------------------------------------------
 
-function phpbb2_create_topic(
-    $forum_id,
-    $post_subject,
-    $post_text,
-    $poster_name,
-    $poster_is_real,
-    $make_poster_watch_topic
-)
-{
-    $post_result = _insert_post(
-        $forum_id,
-        NULL, // causes a new topic to be created
-        $post_subject,
-        $post_text,
-        $poster_name,
-        $poster_is_real
-    );
+function phpbb2_create_topic( $forum_id, $subject, $post_text, $name, $is_real, $is_watch) {
+
+    $post_result = _insert_post( $forum_id, NULL, $subject, $post_text, $name, $is_real);
 
     $topic_id = $post_result['topic_id'];
 
     // if the poster wanted to be signed up for notifications, do so
-    if ($make_poster_watch_topic)
-    {
-        assert($poster_is_real);
+    if ($is_watch) {
+        assert($is_real);
         $poster_id = $post_result['poster_id'];
          mysql_query("
              INSERT INTO phpbb_topics_watch
-             SET
-                 user_id = $poster_id,
+             SET user_id = $poster_id,
                  topic_id = $topic_id,
-                 notify_status = 0
-         ") or die_nz(mysql_error());
+                 notify_status = 0");
     }
 
     return $topic_id;
@@ -81,63 +67,34 @@ function phpbb2_create_topic(
 
 // -----------------------------------------------------------------------------
 
-function phpbb2_add_post(
-    $topic_id,
-    $post_subject,
-    $post_text,
-    $poster_name,
-    $poster_is_real
-)
-{
+function phpbb2_add_post( $topic_id, $subject, $post_text, $name, $is_real) {
     // Which forum is the topic in?
     $res = mysql_query("
-        SELECT forum_id
-        FROM phpbb_topics
-        WHERE topic_id = $topic_id
-    ") or die_nz(mysql_error());
-    if ( mysql_num_rows($res) == 0 )
-    {
+        SELECT forum_id FROM phpbb_topics
+        WHERE topic_id = $topic_id");
+    if ( mysql_num_rows($res) == 0 ) {
         die_nz("no such topic: '$topic_id'\n");
     }
     list($forum_id) = mysql_fetch_row($res);
 
-    _insert_post(
-        $forum_id,
-        $topic_id,
-        $post_subject,
-        $post_text,
-        $poster_name,
-        $poster_is_real
-    );
+    _insert_post( $forum_id, $topic_id, $subject, $post_text, $name, $is_real);
 }
 
 // -----------------------------------------------------------------------------
 
-function _insert_post(
-    $forum_id,
-    $topic_id,
-    $post_subject,
-    $post_text,
-    $poster_name,
-    $poster_is_real
-)
 // Same as insert_post() in functions_insert_post.php, except:
-// -- if $poster_is_real, deduce $poster_id from $poster_name; otherwise use -1.
+// -- if $is_real, deduce $poster_id from $name; otherwise use -1.
 // -- attachsig is deduced from poster's preferences;
 // -- we override $user_ip;
 // -- we omit some of insert_post()'s parameters, and rearrange the rest
-{
-    if ( $poster_is_real )
-    {
+function _insert_post( $forum_id, $topic_id, $subject, $post_text, $name, $is_real) {
+    if ( $is_real ) {
         // determine user_id and signature preference of poster
         $id_result = mysql_query("
-            SELECT user_id, user_attachsig
-            FROM phpbb_users
-            WHERE username = '$poster_name'
-        ") or die_nz(mysql_error());
-        if ( mysql_num_rows($id_result) == 0 )
-        {
-            die_nz("no user named '$poster_name'");
+            SELECT user_id, user_attachsig FROM phpbb_users
+            WHERE username = '$name'");
+        if ( mysql_num_rows($id_result) == 0 ) {
+            die_nz("no user named '$name'");
         }
         list($poster_id,$poster_attachsig) = mysql_fetch_row($id_result);
 
@@ -151,10 +108,9 @@ function _insert_post(
         if ( is_null($poster_attachsig) ) {$poster_attachsig = 1;}
         // (It seems to me that 0 or '0' would make more sense than 1.)
     }
-    else
-    {
+    else {
         // poster is fake
-        // (i.e., $poster_name is not the username of an actual user)
+        // (i.e., $name is not the username of an actual user)
         $poster_id = -1;
         $poster_attachsig = '0';
     }
@@ -164,17 +120,8 @@ function _insert_post(
     global $user_ip;
     $user_ip = '7f000001'; //127.0.0.1
 
-    $post_result = insert_post(
-        $post_text,
-        $post_subject,
-        $forum_id,
-        $poster_id,
-        $poster_name,
-        $poster_attachsig,
-        $topic_id,
-        POST_NORMAL,
-        TRUE
-    );
+    $post_result = insert_post( $post_text, $subject, $forum_id, $poster_id, $name,
+                            $poster_attachsig, $topic_id, POST_NORMAL, TRUE);
 
     $post_result['poster_id'] = $poster_id;
 
@@ -210,4 +157,3 @@ if ( $this_is_top_level_cli_invocation )
 }
 
 // vim: sw=4 ts=4 expandtab
-?>

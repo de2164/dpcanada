@@ -1,12 +1,12 @@
 <?PHP
 include_once($relPath.'prefs_options.inc'); // PRIVACY_*
 
-function can_reveal_details_about( $username, $user_privacy_setting )
+function can_reveal_details_about( $username, $user_privacy)
 // Can we reveal (to the requestor) details about the given user?
 {
     global $pguser; // the "requestor"
 
-    switch ($user_privacy_setting)
+    switch ($user_privacy)
     {
         case PRIVACY_PUBLIC:
             // Details are visible to all.
@@ -22,7 +22,7 @@ function can_reveal_details_about( $username, $user_privacy_setting )
 
         default:
             // Shouldn't happen.
-            die( "can_reveal_details_about(): bad privacy setting: '$user_privacy_setting'" );
+            die( "can_reveal_details_about(): bad privacy : '$user_privacy'" );
     }
 }
 

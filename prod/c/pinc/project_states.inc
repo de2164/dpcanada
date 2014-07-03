@@ -1,6 +1,6 @@
 <?PHP
-include_once($relPath.'misc.inc'); // array_get
-include_once($relPath.'site_vars.php');
+global $relPath;
+include_once($relPath.'dpinit.php');
 
 /*
   States:
@@ -35,14 +35,8 @@ $project_states_for_star_metal_ = array(
     'GOLD'   => array(),
 );
 
-function declare_project_state(
-    $constant_name,
-    $constant_value,
-    $label,
-    $forum,
-    $phase,
-    $star_metal )
-{
+function declare_project_state( $constant_name, $constant_value, $label,
+                                                        $forum, $phase, $star_metal ) {
     global $PROJECT_STATES_IN_ORDER;
     global $project_state_label_;
     global $project_state_forum_;
@@ -54,31 +48,28 @@ function declare_project_state(
     $project_state_label_[$constant_value] = $label;
     $project_state_forum_[$constant_value] = $forum;
     $project_state_phase_[$constant_value] = $phase;
-    if ($star_metal) $project_states_for_star_metal_[$star_metal][] = $constant_value;
+    if ($star_metal)
+        $project_states_for_star_metal_[$star_metal][] = $constant_value;
 }
 
-function project_states_text($state)
-{
+function project_states_text($state) {
     global $project_state_label_;
     return array_get( $project_state_label_, $state, '' );
 }
 
-function get_forum_id_for_project_state($state)
-{
+function get_forum_id_for_project_state($state) {
     global $project_state_forum_;
     return array_get( $project_state_forum_, $state, -1 );
 }
 
-function get_phase_containing_project_state($state)
-{
+function get_phase_containing_project_state($state) {
     global $project_state_phase_;
     return array_get( $project_state_phase_, $state, 'NONE' );
 }
 
 // -----------------------------------------------
 
-function declare_project_states_for_round( $round_id, $round_name )
-{
+function declare_project_states_for_round( $round_id, $round_name ) {
     global $projects_forum_idx;
     global $waiting_projects_forum_idx;
 
@@ -87,41 +78,33 @@ function declare_project_states_for_round( $round_id, $round_name )
         "$round_id.proj_bad",
         "$round_name: " . _("Bad Project"),
         $projects_forum_idx,
-        'PAGE_EDITING',
-        ''
-    );
+        'PAGE_EDITING', '');
     declare_project_state(
         "PROJ_{$round_id}_UNAVAILABLE",
         "$round_id.proj_unavail",
         "$round_name: " . _("Unavailable"),
         ($round_id == 'P1' ? $waiting_projects_forum_idx : $projects_forum_idx ),
-        'PAGE_EDITING',
-        ''
-    );
+        'PAGE_EDITING', '');
     declare_project_state(
         "PROJ_{$round_id}_WAITING_FOR_RELEASE",
         "$round_id.proj_waiting",
         "$round_name: " . _("Waiting for Release"),
         ($round_id == 'P1' ? $waiting_projects_forum_idx : $projects_forum_idx ),
-        'PAGE_EDITING',
-        ''
-    );
+        'PAGE_EDITING', '');
     declare_project_state(
         "PROJ_{$round_id}_AVAILABLE",
         "$round_id.proj_avail",
         "$round_name: " . _("Available"),
         $projects_forum_idx,
         'PAGE_EDITING',
-        'BRONZE'
-    );
+        'BRONZE');
     declare_project_state(
         "PROJ_{$round_id}_COMPLETE",
         "$round_id.proj_done",
         "$round_name: " . _("Completed"),
         $projects_forum_idx,
         'PAGE_EDITING',
-        ''
-    );
+        '');
 }
 
 // -----------------------------------------------
@@ -141,67 +124,58 @@ declare_project_state(
      _("New Project"),
     $waiting_projects_forum_idx,
     'NEW',
-    ''
-);
+    '');
 
-if ($site_supports_metadata)
-{
+if ($site_supports_metadata) {
 	declare_project_state(
 	    "PROJ_NEW_WAITING_APPROVAL",
 	    "project_new_waiting_app",
 	     _("Awaiting Approval"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 	declare_project_state(
 	    "PROJ_NEW_UNAPPROVED",
 	    "project_new_unapp",
 	    _("Unapproved Project"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 	declare_project_state(
 	    "PROJ_NEW_APPROVED",
 	    "project_new_app",
 	    _("Approved Project"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 	declare_project_state(
 	    "PROJ_NEW_FILE_UPLOADED",
 	    "project_new_uploaded",
 	    _("Files Uploaded"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 	declare_project_state(
 	    "PROJ_NEW_METADATA_FIRST",
 	    "project_md_first",
 	    _("Metadata First Round"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 	declare_project_state(
 	    "PROJ_NEW_METADATA_BAD",
 	    "project_md_bad",
 	    _("Bad Metadata"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 	declare_project_state(
 	    "PROJ_NEW_METADATA_SECOND",
 	    "project_md_second",
 	    _("Metadata Second Round"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 	declare_project_state(
 	    "PROJ_NEW_PREPROCESSING",
 	    "project_new_preprocess",
@@ -216,8 +190,7 @@ if ($site_supports_metadata)
 	    _("Pending Project Manager"),
 	    $waiting_projects_forum_idx,
 	    'NONE',
-	    ''
-	);
+	    '');
 }
 
 
@@ -238,16 +211,14 @@ declare_project_state(
     _("Unavailable for Post-Processing"),
     $pp_projects_forum_idx,
     'PP',
-    'SILVER'
-);
+    'SILVER');
 declare_project_state(
     "PROJ_POST_FIRST_AVAILABLE",
     "proj_post_first_available",
     _("Available for Post-Processing"),
     $pp_projects_forum_idx,
     'PP',
-    'SILVER'
-);
+    'SILVER');
 
 declare_project_state(
     "PROJ_POST_FIRST_CHECKED_OUT",
@@ -255,8 +226,7 @@ declare_project_state(
     _("In Post-Processing"),
     $pp_projects_forum_idx,
     'PP',
-    'SILVER'
-);
+    'SILVER');
 
 declare_project_state(
     "PROJ_POST_SECOND_AVAILABLE",
@@ -264,8 +234,7 @@ declare_project_state(
     _("Available for Verifying Post-Processing"),
     $pp_projects_forum_idx,
     'PP',
-    'SILVER'
-);
+    'SILVER');
 
 declare_project_state(
     "PROJ_POST_SECOND_CHECKED_OUT",
@@ -273,16 +242,14 @@ declare_project_state(
     _("Verifying Post-Processing"),
     $pp_projects_forum_idx,
     'PP',
-    'SILVER'
-);
+    'SILVER');
 declare_project_state(
     "PROJ_POST_COMPLETE",
     "proj_post_complete",
     _("Completed Post-Processing"),
     $pp_projects_forum_idx,
     'PP',
-    'SILVER'
-);
+    'SILVER');
 
 
 
@@ -293,8 +260,7 @@ declare_project_state(
     _("Posted"),
     $posted_projects_forum_idx,
     'GB',
-    'GOLD'
-);
+    'GOLD');
 
 // CORRECT
 declare_project_state(
@@ -303,16 +269,14 @@ declare_project_state(
     _("Verify Corrections"),
     $posted_projects_forum_idx,
     'NONE',
-    'GOLD'
-);
+    'GOLD');
 declare_project_state(
     "PROJ_CORRECT_CHECKED_OUT",
     "proj_correct_checked_out",
     _("Verifying Corrections"),
     $posted_projects_forum_idx,
     'NONE',
-    'GOLD'
-);
+    'GOLD');
 
 // for complete project
 declare_project_state(
@@ -321,8 +285,7 @@ declare_project_state(
     _("Project Complete"),
     -1,
     'COMPLETE',
-    ''
-);
+    '');
 
 // for the 'deletion' of a project
 declare_project_state(
@@ -331,8 +294,7 @@ declare_project_state(
     _("Delete Project"),
     -1,
     'NONE',
-    ''
-);
+    '');
 
 // -----------------------------------------------------------------------------
 
@@ -341,17 +303,14 @@ declare_project_state(
 // SQL_CONDITION_SILVER
 // SQL_CONDITION_GOLD
 
-foreach ( $project_states_for_star_metal_ as $star_metal => $project_states )
-{
+foreach ( $project_states_for_star_metal_ as $star_metal => $project_states ) {
     $sql_constant_name = "SQL_CONDITION_$star_metal";
     $sql_condition = '(';
-    foreach ( $project_states as $project_state )
-    {
-	if ($sql_condition != '(')
-	{
-	    $sql_condition .= ' OR ';
-	}
-	$sql_condition .= "state='$project_state'";
+    foreach ( $project_states as $project_state ) {
+        if ($sql_condition != '(') {
+            $sql_condition .= ' OR ';
+        }
+        $sql_condition .= "state='$project_state'";
     }
     $sql_condition .= ')';
 
@@ -360,15 +319,13 @@ foreach ( $project_states_for_star_metal_ as $star_metal => $project_states )
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function sql_collater_for_project_state( $state_column )
 // In an SQL query, if you "ORDER BY state", it will use alphabetical order,
 // which is not very useful. Instead, ORDER BY the result of this function,
 // and it will use the canonical order-of-declaration for project states.
-{
+function sql_collater_for_project_state( $state_column ) {
     global $PROJECT_STATES_IN_ORDER;
     $s = "FIELD($state_column";
-    foreach ( $PROJECT_STATES_IN_ORDER as $project_state )
-    {
+    foreach ( $PROJECT_STATES_IN_ORDER as $project_state ) {
         $s .= ",'$project_state'";
     }
     $s .= ")";
@@ -377,7 +334,6 @@ function sql_collater_for_project_state( $state_column )
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function get_project_status_descriptor( $which )
 // $which is a word denoting a possible status of a project
 // (created, proofed, PPd, or posted).
 // Return an object whose attributes hold various constants that
@@ -387,16 +343,15 @@ function get_project_status_descriptor( $which )
 // -- plotting a graph of
 // projects having that status.
 // (Somewhat ad hoc, but useful.)
-{
+function get_project_status_descriptor( $which ) {
     $obj = new stdClass;
 
-    switch ( $which )
-    {
+    switch ( $which ) {
         case 'created':
-            $obj->state_selector = "(
-                state NOT LIKE 'project_new%' AND state != 'project_delete'
-            )";
+            $obj->state_selector = "
+                ( state NOT LIKE 'project_new%' AND state != 'project_delete')";
             $obj->color = 'green';
+
 	    $obj->Xed_title = _('Created');
             $obj->projects_Xed_title = _('Projects Created');
             $obj->graphs_title = _('Created Projects Graphs');
@@ -408,9 +363,9 @@ function get_project_status_descriptor( $which )
             $obj->state_selector = "(
                 state LIKE 'proj_submit%'
                 OR state LIKE 'proj_correct%'
-                OR state LIKE 'proj_post%'
-            )";
+                OR state LIKE 'proj_post%')";
             $obj->color = 'blue';
+
 	    $obj->Xed_title = _('Proofread');
             $obj->projects_Xed_title = _('Projects Proofread');
             $obj->graphs_title = _('Proofed Projects Graphs');
@@ -419,13 +374,12 @@ function get_project_status_descriptor( $which )
             break;
 
         case 'PPd':
-            $obj->state_selector = "(
-                state LIKE 'proj_submit%'
+            $obj->state_selector = "
+            ( state LIKE 'proj_submit%'
                 OR state LIKE 'proj_correct%'
-                OR state LIKE 'proj_post_second%'
-            )";
+                OR state LIKE 'proj_post_second%')";
             $obj->color = 'silver';
-	    $obj->Xed_title = _('Post-Processed');
+            $obj->Xed_title = _('Post-Processed');
             $obj->projects_Xed_title = _('Projects Post-Processed');
             $obj->graphs_title = _('PPd Projects Graphs');
             $obj->per_day_title = _('Projects Post-Processed Each Day');
@@ -433,12 +387,10 @@ function get_project_status_descriptor( $which )
             break;
 
         case 'posted':
-            $obj->state_selector = "(
-                state LIKE 'proj_submit%'
-                OR state LIKE 'proj_correct%'
-            )";
+            $obj->state_selector = "
+                ( state LIKE 'proj_submit%' OR state LIKE 'proj_correct%')";
             $obj->color = 'gold';
-	    $obj->Xed_title = _('Posted');
+            $obj->Xed_title = _('Posted');
             $obj->projects_Xed_title = _('Projects Posted');
             $obj->graphs_title = _('Posted Projects Graphs');
             $obj->per_day_title = _('Projects Posted Each Day');

@@ -1,41 +1,38 @@
 <?PHP
 // Miscellaneous little (non-DP-specific) functions
 
-function array_get( $arr, $key, $default )
-// Return $arr[$key], or if it's not defined, $default.
-{
-    if ( isset($arr[$key]) )
-    {
+/*
+function array_get( $arr, $key, $default ) {
+    if ( isset($arr[$key]) ) {
         return $arr[$key];
     }
-    else
-    {
+    else {
         return $default;
     }
 }
+*/
 
-function startswith( $subject, $prefix )
 // Return TRUE iff $subject starts with $prefix.
-{
-	return ( strncmp( $subject, $prefix, strlen($prefix) ) == 0 );
+function startswith( $subject, $prefix ) {
+    $n = mb_strlen($prefix);
+	return substr($subject, 0, $n) == $prefix;
 }
 
-function endswith( $subject, $suffix )
 // Return TRUE iff $subject ends with $suffix.
-{
-    return ( substr( $subject, -strlen($suffix) ) == $suffix );
+function endswith( $subject, $suffix ) {
+    $n = mb_strlen($suffix);
+    return right( $subject, $n) == $suffix;
 }
 
-function str_contains( $haystack, $needle )
-{
+/*
+function str_contains( $haystack, $needle ) {
     return ( strpos( $haystack, $needle ) !== FALSE );
 }
+*/
 
-function surround_and_join( $strings, $L, $R, $joiner )
-{
+function surround_and_join( $strings, $L, $R, $joiner ) {
     $parts = array();
-    foreach ( $strings as $string )
-    {
+    foreach ( $strings as $string ) {
         $parts[] = $L . $string . $R;
     }
     return implode($joiner,$parts);
@@ -43,40 +40,35 @@ function surround_and_join( $strings, $L, $R, $joiner )
 
 // -----------------------------------------------------------------------------
 
+/*
 // file_get_contents() is predefined in PHP 4.3.0 and on.
-if ( !function_exists('file_get_contents') )
-{
-    function file_get_contents( $filepath )
-    {
+if ( !function_exists('file_get_contents') ) {
+    function file_get_contents( $filepath ) {
         $array = file($filepath);
         return ( $array === FALSE ? FALSE : implode('', $array) );
     }
-} 
+}
+*/
 
-function mkdir_recursive( $dir, $mode )
 // Like mkdir, but recursively creates any parent directories too.
 // (PHP 5's mkdir has this capability built-in.)
-{
-    if ( file_exists($dir) )
-    {
-        if ( is_dir($dir) )
-        {
-            // Great!
-        }
-        else
-        {
+/*
+function mkdir_recursive( $dir, $mode ) {
+    if ( file_exists($dir) ) {
+        if ( ! is_dir($dir) ) {
             die( "$dir exists, but isn't a directory." );
         }
+        return;
     }
-    else
-    {
-        mkdir_recursive( dirname($dir), $mode );
-        mkdir( $dir, $mode ) or die( "Unable to create $dir" );
-    }
+    mkdir_recursive( dirname($dir), $mode );
+    mkdir( $dir, $mode )
+        or die( "Unable to create $dir" );
 }
+*/
 
 // -----------------------------------------------------------------------------
 
+/*
 function all_possible_concatenations()
 // Each arg is an array of strings (or else is a string,
 // which is treated as if it were an array of length 1).
@@ -110,10 +102,10 @@ function all_possible_concats_r( $args )
 	}
 	return $result;
 }
+*/
 
 // -----------------------------------------------------------------------------
 
-function factor_strings( $strings )
 // Given an array of N>0 strings, return an array
 //     [$left_common, $middles, $right_common]
 // where
@@ -126,17 +118,15 @@ function factor_strings( $strings )
 // That is,
 //     $strings[$i] == $left_common . $middles[$i] . $right_common
 // for all $i.
-{
+function factor_strings( $strings ) {
 	assert( count($strings) > 0 );
 
 	// Find the shortest string
     $str_with_minlen = NULL;
 	$minlen = NULL;
-	foreach ( $strings as $string )
-	{
+	foreach ( $strings as $string ) {
 		$len = strlen($string);
-		if (is_null($minlen) || $len < $minlen)
-		{
+		if (is_null($minlen) || $len < $minlen) {
 			$minlen = $len;
             $str_with_minlen = $string;
 		}
@@ -146,8 +136,7 @@ function factor_strings( $strings )
 
 	// --------------------------------------------------------------
 
-	for ( $L = 0; ; $L++ )
-	{
+	for ( $L = 0; ; $L++ ) {
 		// Invariant: all strings match in their first $L characters.
 
         if ($L == $minlen) break;
@@ -156,14 +145,11 @@ function factor_strings( $strings )
         // Examine the ($L+1)th character, i.e. the one at index $L.
 
 		$c = substr( $base, $L, 1 );
-		foreach ( $strings as $string )
-		{
-			if ( substr( $string, $L, 1 ) == $c )
-			{
+		foreach ( $strings as $string ) {
+			if ( substr( $string, $L, 1 ) == $c ) {
 				// good so far
 			}
-			else
-			{
+			else {
 				// mismatch.
 				// The invariant does not hold for $L+1.
                 // So $L is the maximum value that satisfies the invariant.
@@ -177,11 +163,11 @@ function factor_strings( $strings )
 
 	// --------------------------------------------------------------
 
-	for ( $R = 0; ; $R++ )
-	{
+	for ( $R = 0; ; $R++ ) {
 		// Invariant: all strings match in their last $R characters.
 
-        if ( $left_match_length + $R == $minlen ) break;
+        if ( $left_match_length + $R == $minlen )
+            break;
 
         // Do they match in their last $R+1 characters?
         // Examine the ($R+1)th-last character, i.e., the one at index -($R+1).
@@ -190,14 +176,8 @@ function factor_strings( $strings )
 
 		$c = substr($base,-($R+1),1);
 
-		foreach ( $strings as $string )
-		{
-			if ( substr( $string, -($R+1), 1 ) == $c )
-			{
-				// good so far
-			}
-			else
-			{
+		foreach ( $strings as $string ) {
+			if ( substr( $string, -($R+1), 1 ) != $c ) {
 				// mismatch.
 				// The invariant does not hold for $R+1.
                 // So $R is the maximum value that satisfies the invariant.
@@ -215,42 +195,35 @@ function factor_strings( $strings )
     $right_common = NULL;
 	$middles = array();
 
-	foreach ( $strings as $string )
-	{
+	foreach ( $strings as $string ) {
         assert( $left_match_length >= 0 );
         assert( $right_match_length >= 0 );
         assert( $left_match_length + $right_match_length <= strlen($string) );
 
-        if ( $left_match_length == strlen($string) )
-        {
+        if ( $left_match_length == strlen($string) ) {
             // substr() misbehaves
             $left = $string;
             $middle = '';
             $right = '';
         }
-        else
-        {
+        else {
             $left = substr( $string, 0, $left_match_length );
 
-            if ( $right_match_length == 0 )
-            {
+            if ( $right_match_length == 0 ) {
                 $middle = substr( $string, $left_match_length );
                 $right  = '';
             }
-            else
-            {
+            else {
                 $middle = substr( $string, $left_match_length, -$right_match_length );
                 $right  = substr( $string, -$right_match_length );
             }
         }
 
-        if ( is_null($left_common) )
-        {
+        if ( is_null($left_common) ) {
             $left_common  = $left;
             $right_common = $right;
         }
-        else
-        {
+        else {
             assert( $left  == $left_common );
             assert( $right == $right_common );
         }

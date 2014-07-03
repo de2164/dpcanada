@@ -1,770 +1,749 @@
 <?
-$mtime = explode(" ",microtime());
+global $relPath;
+$mtime = explode(" ", microtime());
 $starttime = $mtime[1] + $mtime[0];
-include_once($relPath.'misc.inc');
-include_once($relPath.'site_vars.php');
-include_once($relPath.'stages.inc');
-include_once($relPath.'prefs_options.inc'); // PRIVACY_*
-include_once($relPath.'pg.inc');
-include_once($relPath.'dpsession.inc');
-include_once($relPath.'project_states.inc');
-include_once($relPath.'user_is.inc');
-include_once($relPath.'page_tally.inc');
 
-$user_is_logged_in = dpsession_resume();
+$time_comment = array();
+
+
+include_once($relPath.'stages.inc');
+//include_once($relPath.'prefs_options.inc'); // PRIVACY_*
+//include_once($relPath.'pg.inc');
+//include_once($relPath.'project_states.inc');
+//include_once($relPath.'user_is.inc');
+include_once $relPath.'stats.php';
+//include_once($relPath.'RoundDescriptor.inc');
+
+$user_is_logged_in = $User->IsLoggedIn();
+$username = $User->Username();
 
 include_once($relPath.'gettext_setup.inc');
-include_once($relPath.'languages.inc');
 
-if(isset($userP['i_theme']) && $userP['i_theme'] != '' ) {
-		$theme_name = $userP['i_theme'];
-	} else {
-		$theme_name = "project_gutenberg";
-}
-include_once($relPath."templates/$theme_name/theme.tpl");
-$theme = ${$theme_name};
+// $theme_name = "project_gutenberg";
 
-function theme ($nameofpage, $location, $extra_args = array()) {
+include_once($relPath."templates/theme.tpl");
+// $theme = $project_gutenberg;
 
-	global $code_url, $theme, $theme_name;
+function theme($nameofpage, $location, $extra_args = array()) {
+    global $code_url; // $theme, $theme_name;
+    global $no_stats, $User;
 
-	if (isset($GLOBALS['pguser'])) {
-		$userP = $GLOBALS['userP'];
-		$statsbar_align = $userP['u_align'];
-		} else {
-		$statsbar_align = 0;
-		$userP = "";
-	}
+    if ($User->IsLoggedIn()) {
+        $statsbar_align = $User->Align() ? "left" : "right";
+    }
+    else {
+        $statsbar_align = "right";
+    }
 
-	if (!isset($GLOBALS['no_stats'])) {
-		if ($statsbar_align == 1) {
-			if ($location == "header") {
-				html_header($nameofpage, $extra_args);
-				html_logobar($nameofpage);
-				echo "\n<table border='0' cellpadding='0' cellspacing='0' width='100%'>\n";
-				echo "<tr>\n";
-				echo "<td align='left' valign='top' width='25%' bgcolor='".$theme['color_navbar_bg']."'>\n";
-				html_statsbar($nameofpage);
-				echo "</td>\n";
-				echo "<td align='right' valign='top' bgcolor='".$theme['color_mainbody_bg']."'><img border='0' src='$code_url/pinc/templates/".$theme_name."".$theme['image_curve_left']."' width='13' height='12' alt='Provides a round curve for a navigation bar'></td>\n";
-				echo "<td align='left' valign='top' width='75%' bgcolor='".$theme['color_mainbody_bg']."'>\n";
-			} elseif ($location == "footer") {
-				echo "</td></tr></table>\n";
-				html_footer();
-			}
-		} else {
-			if ($location == "header") {
-				html_header($nameofpage, $extra_args);
-				html_logobar($nameofpage);
-				echo "\n<table border='0' cellpadding='0' cellspacing='0' width='100%'>\n";
-				echo "<tr>\n";
-				echo "<td align='left' valign='top' width='5' bgcolor='".$theme['color_mainbody_bg']."'>&nbsp;</td>\n";
-				echo "<td align='left' valign='top' width='75%' bgcolor='".$theme['color_mainbody_bg']."'>\n";
-			} elseif ($location == "footer") {
-				echo "</td>\n";
-				echo "<td align='right' valign='top' bgcolor='" . $theme['color_mainbody_bg'] . "'><img border='0' src='$code_url/pinc/templates/".$theme_name."".$theme['image_curve_right']."' width='13' height='12' alt='Provides a round curve for a navigation bar'></td>\n";
-				echo "<td align='left' valign='top' width='25%' bgcolor='" . $theme['color_navbar_bg'] . "'>\n";
-				html_statsbar($nameofpage);
-				echo "</td></tr></table>\n";
-				html_footer();
-			}
-		}
-	} else {
-		if ($location == "header") {
-			html_header($nameofpage, $extra_args);
-			html_logobar($nameofpage);
-			echo "\n<table border='0' cellpadding='0' cellspacing='0' width='100%'>\n";
-			echo "<tr>\n";
-			echo "<td align='left' valign='top' width='5' bgcolor='".$theme['color_mainbody_bg']."'>&nbsp;</td>\n";
-			echo "<td align='left' valign='top' width='100%' bgcolor='".$theme['color_mainbody_bg']."'>\n";
-		} elseif ($location == "footer") {
-			echo "</td></tr></table>\n";
-			html_footer();
-		}
-	}
+    if (! $no_stats) {
+        // if stats bar on left
+        if ($statsbar_align == "left") {
+
+            if ($location == "header") {
+
+/*
+    -------------------------------------------------
+    header when NOT $no_stats and stats bar on left
+    -------------------------------------------------
+*/
+
+                html_header($nameofpage, $extra_args);
+                html_logobar($nameofpage);
+                echo "
+    <table id='tbl1'>
+    <tr>
+    <td class='left top navback w25'>\n";
+                html_statsbar($nameofpage);
+                echo "
+    </td>
+    <td class='right top mainbody'>
+    <img src='$code_url/graphics/r_curve.gif' style='width: 13px;
+    alt='Provides a round curve for a navigation bar'></td>
+    <td class='left top mainbody'>\n";
+            }
+
+// -------------------------------------------------
+//  footer when NOT $no_stats and stats bar on left
+// -------------------------------------------------
+
+            else if ($location == "footer") {
+                echo "</td></tr></table>\n";
+                html_footer();
+            }
+        }
+        else {
+            if ($location == "header") {
+
+// -------------------------------------------------
+//  header when NOT $no_stats and stats bar on right
+//  ********** MOST COMMON CASE ***************
+// -------------------------------------------------
+
+                html_header($nameofpage, $extra_args);
+                html_logobar($nameofpage);
+                echo "
+    <table id='tbl2' class='w100'>
+    <tr>
+    <td id='tbl2c1' class='w75 left top'>\n";
+            }
+
+// -------------------------------------------------
+//  footer when NOT $no_stats and stats bar on right
+// -------------------------------------------------
+
+            else if($location == "footer") {
+                echo "
+    </td>
+    <td id='tbl2c2' class='right top'>
+        <img src='$code_url/graphics/r_curve.gif"
+            ."' style='width: 13px; position: relative; left: 0' alt=''>
+    </td>
+    <td id='tbl2c3' class='navbar w25 left top'>\n";
+                html_statsbar($nameofpage);
+                echo "</td></tr></table>\n";
+                html_footer();
+            }
+        }
+    }
+    else {
+        // is no_stats
+        if ($location == "header") {
+
+// -----------------------------------------------------
+//  header when IS $no_stats so no stats bar to position
+// -----------------------------------------------------
+
+            html_header($nameofpage, $extra_args);
+            html_logobar($nameofpage);
+            echo "
+    <table id='tbl3' class='w100'>
+    <tr>
+    <td class='left top mainbody'>&nbsp;</td>
+    <td class='left top w100 mainbody'>\n";
+        }
+        else if($location == "footer") {
+
+// -----------------------------------------------------
+//  footer when IS $no_stats so no stats bar to position
+// -----------------------------------------------------
+
+            echo "</td></tr></table>\n";
+            html_footer();
+        }
+    }
 }
 
 function html_header($nameofpage, $extra_args = array()) {
-	global $code_url, $theme, $userP;
-	global $relPath;
-	echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n";
-	echo "<html".lang_html_header().">\n<head>\n";
-	echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset={$GLOBALS['charset']}\">\n";
-	echo "<link rel='shortcut icon' href='$code_url/favicon.ico'>\n";
-	echo "<title>DPC";
-      if (isset($nameofpage)) { echo ": $nameofpage"; }
-        echo "</title>\n";
-	// Global theme CSS
-	echo "\n<link type='text/css' rel='Stylesheet' href='";
-	echo $relPath . 'templates/' . $theme['template_unix_name'] . "/main.css'>\n";
-	// Per-page CSS
-	if (isset($extra_args['css_data']))
-      {
-	    echo "<style type='text/css'>\n" .
-	          $extra_args['css_data'] .
-	          "</style>\n";
-      }
- 
- 	// Per-page Javascript
-	if (isset($extra_args['js_data']))
-      {
-	    echo "<script type='text/javascript'>\n" .
-	          $extra_args['js_data'] .
-	          "</script>\n";
-      }
+    global $code_url;
 
-	echo "</head>\n\n";
-	echo "<body bgcolor='" . $theme['body_bgcolor'] . "' text='" . $theme['body_text'];
-	echo "' link='" . $theme['body_link'] . "' vlink='" . $theme['body_vlink'];
-	echo "' alink='" . $theme['body_alink'];
-	echo "' topmargin='0' leftmargin='0' marginheight='0' marginwidth='0'>\n\n";
-}
+    $incl = "";
+    $onload = "";
+    foreach($extra_args as $key => $val) {
+        switch($key) {
+            case "hdr_include":
+                break;
 
-function html_logobar($nameofpage) {
-	global $code_url, $theme, $theme_name;
-	global $dynstats_dir, $maintenance;
-	echo "\n<table width='100%' cellSpacing=0 cellPadding=0 border=0>\n";
-	echo "<tr>\n";
-	echo "<td width='50%' bgcolor='".$theme['color_logobar_bg']."'>\n";
-	echo "<a href='$code_url'><img src='$code_url/pinc/templates/".$theme_name."".$theme['image_logo']."' width='336' height='68' alt='Distributed Proofreaders' border='0'></a>\n";
-	echo "</td>\n";
+            case "css_file":
+                $incl .= "<link type='text/css' href='$val'>\n";
+                break;
 
-	echo "<td width='50%' bgcolor='" . $theme['color_logobar_bg'] .  "' align='center' valign='middle'>\n";
+            case "css_data":
+                $incl .= "<style type='text/css'>$val</style>\n";
+                break;
 
-	if ($maintenance) {
-		echo _("MAINTENANCE MODE");
-		echo "<br>\n";
-	}
+            case "js_text":
+            case "js_data":
+                $incl .= "<script type='text/javascript'>$val</script>\n";
+                break;
 
-	$psd = get_project_status_descriptor('posted');
+            case "js_file":
+                $incl .= "<script type='text/javascript' src='$val'></script>\n";
+                break;
 
-	if (0) {
-		// show number of projects posted to PG from DP
-		$result = mysql_query( "
-			SELECT COUNT(*)
-			FROM projects
-			WHERE $psd->state_selector
-		");
-		$numproj = mysql_result($result,0);
-		echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='3'><b>";
-		echo sprintf(
-			_('%s projects completed!'),
-			number_format($numproj));
-		echo "</b></font>\n";
-		echo "<br>";
-	}
-
-	if (1) {
-		// show number of books posted to PG from DP
-		// (takes into account that some books are processed as several projects)
-
-		$result = mysql_query( "
-			SELECT COUNT(distinct postednum)
-			FROM projects
-			WHERE $psd->state_selector
-		");
-		$numproj = mysql_result($result,0);
-		echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='3'><b>";
-		echo sprintf(
-			_('%s titles preserved for the world!'),
-			number_format((($numproj))+2));
-		echo "</b></font>\n";
-	}
-
-	echo "</td>\n";
-	echo "</tr>\n";
-	echo "</table>\n";
-
-	echo "\n<table border='0' cellpadding='0' cellspacing='0' width='100%' bgcolor='".$theme['color_headerbar_bg']."'>\n";
-	echo "<tr>\n";
-	echo "<td width='10' align='left' bgcolor='".$theme['color_headerbar_bg']."'>&nbsp;</td>\n";
-	echo "<td align='left' style='padding-bottom:1px;' valign='middle' bgcolor='".$theme['color_headerbar_bg']."'>\n";
-
-	//Create the name of the page
-
-	echo headerbar_text("DP","$code_url/default.php");
-
-	// This probably isn't useful enough to justify its presence.
-	// if (!empty($nameofpage)) { echo headerbar_text(" » ".$nameofpage,'')."\n"; }
-
-	//Code to display login form if not logged in
-	if (!isset($GLOBALS['pguser'])) {
-		echo "</td>\n";
-		// If you put the form element inside the td element (which would
-		// seem to make sense), Netscape and IE both render the cell
-		// (and thus the row and the table) twice as tall as it needs to be.
-		// (Mozilla gets it right, but that's small comfort.)
-		// So instead, put the td element within the form.
-		// (Yeah, it doesn't make sense, but the browsers don't complain.)
-		echo "<form action='$code_url/accounts/login.php' method='post'>\n";
-		echo "<td align='right' bgcolor='".$theme['color_headerbar_bg']."'>\n";
-		echo "<font face='".$theme['font_headerbar']."' size='1' color='".$theme['color_headerbar_font']."'>";
-		echo _("ID:") . "<input type='text' name='userNM' size='10' maxlength='50' style='font-family: ".$theme['font_headerbar']."; font-size: 11px;'>&nbsp;";
-		echo _("Password:") . "<input type='password' name='userPW' size='10' maxlength='50' style='font-family: ".$theme['font_headerbar']."; font-size: 11px;'>&nbsp;";
-		echo "<input type='submit' value='" . _("Sign In") ."' style='font-family: ".$theme['font_headerbar']."; font-size: 11px;'>";
-		echo headerbar_text(_("Register"), "$code_url/accounts/addproofer.php", true);
-		echo headerbar_text(_("Help"), "http://www.pgdpcanada.net/wiki/index.php/FAQ_Central", true);
-		echo "&nbsp;";
-		echo "</font>\n";
-		echo "</td>\n";
-		echo "</form>\n";
-	} else {
-		//Code to display if the user is logged in
-		$result = mysql_query("SELECT user_id FROM phpbb_users WHERE username='".$GLOBALS['pguser']."' LIMIT 1");
-		$pguser_id = mysql_result($result, 0, "user_id");
-		$result = mysql_query("SELECT COUNT(*) FROM phpbb_privmsgs WHERE privmsgs_to_userid = $pguser_id && privmsgs_type = 1 || privmsgs_to_userid = $pguser_id && privmsgs_type = 5");
-		$numofPMs = mysql_fetch_row($result);
-		$result = mysql_query("SELECT date_created FROM users WHERE username='".$GLOBALS['pguser']."' LIMIT 1");
-		$datecreated = mysql_result($result, 0, "date_created");
-		echo headerbar_text("|&nbsp;");
-		if ((time() - $datecreated) < 604800)
-			echo headerbar_text(" Start Here -->&nbsp;",'',true);
-		echo headerbar_text(_("Help"),"http://www.pgdpcanada.net/wiki/index.php/FAQ_Central",false);
-		echo headerbar_text(_("Activity Hub"),"$code_url/activity_hub.php",true);
-		echo headerbar_text(_("Project Search"),"$code_url/tools/project_manager/projectmgr.php?show=search_form",true);
-
-		echo headerbar_text(_("My Projects"),"$code_url/tools/proofers/my_projects.php",true);
-
-		echo headerbar_text(_("My Preferences"),"$code_url/userprefs.php",true);
-
-		$inbox_text = _("My Inbox");
-		if($numofPMs[0] > 0) $inbox_text .= sprintf(_(" (%s unread)"),$numofPMs[0]);
-		echo headerbar_text($inbox_text,$GLOBALS['forums_url']."/privmsg.php?folder=inbox",true);
-
-		echo headerbar_text(_("Forums"),$GLOBALS['forums_url'],true);
-		if(lang_forum())
-		{
-			echo headerbar_text(_("Your language forums"),$GLOBALS['forums_url']."/".lang_forum(),true);
-		}
-
-		if ( !empty($GLOBALS['wiki_url']) )
-		{
-			echo headerbar_text(_("Wiki"),$GLOBALS['wiki_url'],true);
-		}
-		echo headerbar_text(_("Log Out ($GLOBALS[pguser])"),"$code_url/tools/logout.php",true);
-		echo "</font></td>\n";
-		echo "<td align='right' style='vertical-align: middle;' bgcolor='".$theme['color_headerbar_bg']."'>\n";
-		show_quick_links();
-		echo "&nbsp;</td>";
-	}
-
-	echo "</tr>\n";
-	echo "</table>\n";
-}
-
-function headerbar_text($text, $link = '', $with_divider = false)
-{
-global $theme, $code_url;
-$out = "";
-
-if ($with_divider)
-    $out .= "&nbsp;&#183;&nbsp;\n";
-
-if(!empty($link))
-    $out .= "<a href='$link'>\n";
-
-$out .= "<font face='$theme[font_headerbar]' size='1' color='$theme[color_headerbar_font]'>"
-        . $text .
-		    "</font>\n";
-
-if(!empty($link))
-    $out .= "</a>\n";
-
-return $out;
-}
-
-function html_statsbar($nameofpage) {
-
-	maybe_show_language_selector();
-
-	// Show statistics that are pertinent to the particular request.
-	// (i.e., to the main content of the page).
-
-	$tally_name = @$_REQUEST['tally_name'];
-	if (empty($tally_name)) $tally_name = @$_REQUEST['round_id'];
-
-	if (empty($tally_name))
-	{
-	    if (strpos($_SERVER['PHP_SELF'],'activity_hub.php') !== false)
-	    {
-            echo "<br />\n";
-            show_dp_birthdays();
-
+            case "body_onload":
+                $onload .= " onload='$val'";
+                break;
         }
-		echo "<br>\n";
-		show_completed_projects();
-	}
-	else
-	{
-		show_tally_specific_stats( $tally_name );
-	}
+    }
 
-	global $code_url;
-	echo "<br>";
-	echo "<center>";
-	echo "<font size='2'>";
-	echo "<a href='$code_url/stats/stats_central.php'>";
-	echo _("More Statistics...");
-	echo "</a>";
-	echo "</font>";
-	echo "</center>\n";
+    echo
+"<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset='utf-8'>
+<link rel='shortcut icon' href='$code_url/favicon.ico'>
+<script type='text/javascript' src='/c/js/sorttable.js'></script>\n";
 
-	if (isset($GLOBALS['pguser']))
-	{
-		// requestor is a logged-in user.
+/*
+global $is_gchart;
+if($is_gchart) {
+    echo "
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+    <script type='text/javascript'>
+      google.load('visualization', '1', {packages:['corechart']});
+      google.setOnLoadCallback(drawChart);
+    </script>\n";
+}
+*/
+echo "
+<script type='text/javascript' src='/c/js/dp.js'></script>
+<title>DPC: ". (isset($nameofpage)
+                    ? "$nameofpage"
+                    : "Distributed Proofreaders Canada" )
+. "</title>
+<link type='text/css' rel='Stylesheet' href='/c/css/dp.css'>\n";
+    echo
+"$incl
+</head>
+<body $onload>\n";
+}
 
-		echo "<br><hr width='75%' align='center'><br>\n";
-		show_user_teams();
+function html_logobar() {
+    global $code_url, $wiki_url, $forums_url; 
+    global $dpdb;
+    global $User;
 
-		echo "<br><hr width='75%' align='center'><br>\n";
-		show_key_help_links();
-	}
+    $username = $User->Username();
+    $numproj = $dpdb->SqlOneValue("
+        SELECT COUNT(distinct postednum) FROM projects
+        WHERE phase = 'POSTED'");
+
+    echo "
+<table id='tbl_logobar' class='w100'>
+
+    <!--  LOGO BAR -->
+
+    <tr><td class='logobar w50'>
+        <a href='http://www.pgdpcanada.net/c/default.php'>
+            <img src='$code_url/graphics/logo.gif'"
+                ." width='336' height='68' alt='Distributed Proofreaders'>
+        </a>
+    </td>
+
+    <td class='w50 center middle logobar'>
+        <span class='logobar'>
+        " . sprintf( _('%s titles preserved for the world!'), number_format($numproj)) ."
+        </span>
+    </td>
+    </tr>
+
+</table>\n";
+
+// --------------------------------------------------------------------
+//    navbar
+// --------------------------------------------------------------------
+
+/*
+$navleft    = array();
+$navright   = array();
+
+$navleft[]  = link_to_site("Home");
+if($User->IsLoggedIn() ) {
+    $navleft[] = link_to_help();
+    $navleft[] = link_to_activity_hub();
+    $navleft[] = link_to_search();
+    $navleft[] = link_to_my_projects();
+    $navleft[] = link_to_preferences();
+    $navleft[] = link_to_inbox();
+    $navleft[] = link_to_forums();
+    $navleft[] = link_to_logout("Log out ($username)");
+}
+
+if($User->IsLoggedIn() ) {
+    $navright[] = 
+*/
+
+
+echo "
+
+<table id='tblnav'>
+
+    <tr>
+    <td>&nbsp;</td>
+    <td>" . headerbar_text("DP", "$code_url/default.php");
+
+    if (! $User->IsLoggedIn()) {
+        echo "
+    <form id='frmlogin' name='frmlogin' action='$code_url/accounts/login.php' method='post'>
+       <td class='right'>ID:"
+            . "<input type='text' name='userNM' size='10' tabindex='1' maxlength='50'> &nbsp;"
+            . _("Password:") . "<input type='password' name='userPW' size='10' tabindex='2'
+            maxlength='50'> &nbsp;"
+            . "<input type='submit' value='" . _("Sign In") ."' style='color: black;'>\n";
+            $register = "$forums_url/ucp.php?mode=register";
+        echo headerbar_text(_("Register"), $register, true);
+        // echo headerbar_text(_("FadedPage"), link_to_fadedpage(), true);
+        echo "&nbsp;";
+        echo "</td>\n";
+        echo "</form>\n";
+    }
+    else {
+        //Code to display if the user is logged in
+        // DAK - was msgtype 1 or 5 (new or unread) which conflicted with phpBB count
+        $numofPMs = $User->InboxCount();
+        echo headerbar_text("&nbsp;");
+
+        // echo headerbar_text(_("FadedPage"), link_to_fadedpage(), true);
+        echo headerbar_text(_("Activity Hub"), "$code_url/activity_hub.php", true);
+        echo headerbar_text(_("Project Search"), "$code_url/search.php", true);
+
+        echo headerbar_text(_("My Projects"),
+                            "$code_url/tools/proofers/my_projects.php", true);
+
+        echo headerbar_text(_("My Preferences"), "$code_url/userprefs.php", true);
+
+        $inbox_text = _("My Inbox");
+        if($numofPMs[0] > 0)
+            $inbox_text .= sprintf(_(" (%s unread)"), $numofPMs[0]);
+
+        echo headerbar_text($inbox_text, $forums_url."/ucp.php?i=pm&amp;folder=inbox", true);
+        echo headerbar_text(_("Forums"), $forums_url, true);
+
+        // if(lang_forum()) {
+            // echo headerbar_text(_("Your language forums"), $forums_url."/".lang_forum(), 1);
+        // }
+
+        echo headerbar_text(_("Wiki"), $wiki_url, true);
+        echo headerbar_text( _("Log Out ($username)"), "$code_url/tools/logout.php", true);
+        echo "</td>\n";
+
+        echo "<td class='right'>\n";
+        show_quick_links();
+        echo "&nbsp;</td>";
+    }
+
+    echo "</tr>\n";
+    echo "</table>   <!-- tblnav -->  \n";
+}
+
+function login_form() {
+    global $code_url;
+    $password   = _("Password: ");
+    $signin     = _("Sign In: ");
+    // $register   = _("Register: ");
+    return "
+        <form name='frmlogin' action='$code_url/accounts/login.php' method='POST'>
+            ID: 
+            <input type='text' name='userNM' size='10'>
+            $password 
+            <input type='text'  name='userPW' size='10'>
+            <input type='submit'  value='$signin' size='10'>\n"
+        . link_to_registration()
+        . link_to_help()
+        . "</form>\n";
+}
+
+function headerbar_text($text, $link = '', $with_divider = false) {
+    $out = "";
+
+    if ($with_divider) {
+        $out .= " Â· ";
+    }
+
+    if(!empty($link)) {
+        $out .= "<a href='$link'>$text</a>\n";
+    }
+    else {
+        $out .= $text;
+    }
+
+    return $out;
+}
+
+function html_statsbar() {
+    global $User;
+    global $code_url;
+    global $pagename;
+    // maybe_show_language_selector();
+
+    // Show statistics that are pertinent to the particular request.
+    // (i.e., to the main content of the page).
+
+    if(isset($pagename) && $pagename == "activityhub") {
+        // show_backlogs();
+    }
+    $round_id = Arg('round_id', Arg('tally_name'));
+
+    if($round_id == "") {
+        show_completed_projects();
+    }
+    else {
+        show_round_specific_stats( $round_id );
+    }
+
+    if($User->IsLoggedIn()) {
+        echo "
+        <div class='center sidebar'>
+        <a href='$code_url/stats/stats_central.php'>
+        ". _("More Statistics")."</a>
+        </div>\n";
+
+
+        echo "<hr class='w75 center'>\n";
+        show_user_teams();
+
+        echo "<hr class='w75 center'>\n";
+        show_key_help_links();
+    }
 
 
     //Display the donation icon and link to donate.
     //Should be the last thing displayed in the right hand column
-	echo "<br>";
-	show_donation_stuff();
+    // show_donation_stuff();
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function maybe_show_language_selector()
-{
-	global $code_url, $userP, $charset;
-	$instl=installed_langs();
-	$uninstl=uninstalled_langs();
-	if(!(count($instl)>1||count($uninstl)>0))
-		return;
+/*
+function maybe_show_language_selector() {
+    global $code_url, $intlang;
+    $instl=installed_langs();
+    $uninstl=uninstalled_langs();
+    if(!(count($instl)>1||count($uninstl)>0))
+        return;
 
-	if (empty($userP) || (!(empty($userP)) && !($userP['u_intlang'])))
-	{
-		?>
-		<script language="JavaScript" type="text/javascript"><!--
-			function submitLang(i) {
-				top.document.langform.submit();
-			}
-		// --></script>
-		<?
+    if (empty($userP) || (!(empty($userP)) && !($userP['u_intlang']))) {
+        ?>
+        <script language="JavaScript" type="text/javascript"><!--
+            function submitLang() {
+                top.document.getElementForId("langform").submit();
+            }
+        // --></script>
+        <?
 
-		echo "<form name=langform action='$code_url/tools/setlangcookie.php' method=POST>\n<input type=submit value='"._("Set language:")."'>\n<select name=lang onChange='submitLang(this)'>\n";
-		foreach($instl as $v)
-			echo "<option value='".$v."'".(($v==$GLOBALS['intlang'])?" selected":"").">".bilingual_name($v)."</option>\n";
-		if(count($uninstl)>0) {
-			echo "<option value='en_EN' disabled>-------------------</option>\n";
-			echo "<option value='en_EN' disabled>(To be translated:)</option>\n";
-			foreach($uninstl as $v)
-				echo "<option value='"."en_EN"."' disabled>".bilingual_name($v)."</option>\n";
-		}
-		echo "</select><input type=hidden name=returnto value='".$_SERVER['REQUEST_URI']."'>\n</form>\n";
-		echo "Languages below the line are planned to be added to the site, but currently are not; visit <a href='$code_url/faq/translate.php'>this page</a> if you can help us with translating the site into one of them.<hr>\n";
-	}
+        echo "<form name=langform action='$code_url/tools/setlangcookie.php' method=POST>\n<input type=submit value='"._("Set language:")."'>\n<select name=lang onChange='submitLang(this)'>\n";
+        foreach($instl as $v)
+            echo "<option value='".$v."'".(($v==$intlang)?" selected":"").">".bilingual_name($v)."</option>\n";
+        if(count($uninstl)>0) {
+            echo "<option value='en_EN' disabled>-------------------</option>\n";
+            echo "<option value='en_EN' disabled>(To be translated:)</option>\n";
+            foreach($uninstl as $v)
+                echo "<option value='"."en_EN"."' disabled>".bilingual_name($v)."</option>\n";
+        }
+        echo "</select><input type=hidden name=returnto value='".$_SERVER['REQUEST_URI']."'>\n</form>\n";
+        echo "Languages below the line are planned to be added to the site, but currently are not; visit <a href='$code_url/faq/translate.php'>this page</a> if you can help us with translating the site into one of them.<hr>\n";
+    }
 }
+*/
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function show_quick_links()
 // This parallels the Activity Hub.
-{
-	global $site_supports_metadata, $code_url, $theme, $Stage_for_id_, $pguser;
+function show_quick_links() {
+    global $code_url, $Stage_for_id_;
+    global $User;
 
-	if (is_null($pguser)) return;
-	// Should show links to stages that are accessible to people
-	// that aren't logged in? (i.e., SR)?
+    if (! $User->IsLoggedIn())
+        return;
+    // Should show links to stages that are accessible to people
+    // that aren't logged in? (i.e., SR)?
 
-	$links = array();
+    $links = array();
 
-	if (user_is_PM())
-	{
-		$links[] = array('tools/project_manager/projectmgr.php','PM',_('Manage Projects'));
-	}
+    if ($User->IsProjectManager()) {
+        $links[] = array('tools/project_manager/projectmgr.php', 'PM', _('Manage Projects'));
+    }
 
-	foreach ( $Stage_for_id_ as $stage )
-	{
-		$uao = $stage->user_access($pguser);
-		if ($uao->can_access)
-		{
-			$links[] = array($stage->relative_url, $stage->id, $stage->name);
-		}
-	}
+    foreach ( $Stage_for_id_ as $stage ) {
+        if($User->MayWorkInRound($stage->id)) {
+            $links[] = array($stage->relative_url, $stage->id, $stage->name);
+        }
+    }
 
-	if ( count($links) > 0 )
-	{
+    if ( count($links) > 0 ) {
+        while ( list($i, list($rel_url, $text, $title)) = each($links) ) {
+            $divider = ($i > 0)
+                    ? true
+                    : false;
 
-		while ( list($i, list($rel_url, $text, $title)) = each($links) )
-		{
-
-			$divider = ($i > 0) ? true : false;
-
-			$rel_url_pattern = '@/' . preg_quote($rel_url, '@') . '\b@';
-			if ( preg_match( $rel_url_pattern, $_SERVER['REQUEST_URI'] ) )
-			{
-				// We're at that page; no point to link to it.
-				echo headerbar_text("<span title='$title'>$text</span>",'',$divider);
-			}
-			else
-			{
-				echo headerbar_text("<span title='$title'>$text</span>","$code_url/$rel_url",$divider);
-			}
-			echo "\n";
-		}
-	}
+            $rel_url_pattern = '@/' . preg_quote($rel_url, '@') . '\b@';
+            if ( preg_match( lower($rel_url_pattern), lower($_SERVER['REQUEST_URI'] )) ) {
+                // We're at that page; no point to link to it.
+                echo headerbar_text("<span title='$title'>$text</span>", '', $divider);
+            }
+            else {
+                echo headerbar_text("<span title='$title'>$text</span>", "$code_url/$rel_url", $divider);
+            }
+            echo "\n";
+        }
+    }
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function show_tally_specific_stats( $tally_name )
-{
-	global $code_url, $theme, $userP;
+function show_round_specific_stats( $round_id ) {
+    global $code_url;
+    global $User;
 
-	// Put the whole thing in a table, just so we can put a box around it.
-	echo "<br>";
-	echo "<center>";
-	echo "<table width='96%' border='1' bordercolor='#111111' style='border-collapse: collapse'>";
-	echo "<tr>";
-	echo "<td>";
+    // Put the whole thing in a table, just so we can put a box around it.
+    echo "
+    <table id='tbl5' class='center w95 sidebar b111'>
+    <tr>
+    <td>\n";
 
-	// Show the site statistics
+    // Show the site statistics
 
-	$site_stats = get_site_page_tally_summary($tally_name);
+//    $site_stats = get_site_page_round_summary($round_id);
 
-	global $page_tally_names;
-	echo "<center><font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>\n";
-	echo "<b>" . $page_tally_names[$tally_name] . "</b><br><br>\n";
-	echo "<b>" . _("Site Statistics:") . "</b></font></center>\n";
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>\n";
+    global $dpdb;
+    echo "
+        <h5 class='center'>" . _("Pages completed in $round_id") . "</h5>
+        <h5 class='center'>" . _("Site Statistics:") . "</h5>
+        <pre>\n";
 
+    $todaygoal      = number_format(PhaseGoalToday($round_id));
+    $yesterdaygoal  = number_format(PhaseGoalYesterday($round_id));
+    $monthgoal      = number_format(PhaseGoalMonth($round_id));
+    $todaycount     = number_format(PhaseCountToday($round_id));
+    $yesterdaycount = number_format(PhaseCountYesterday($round_id));
+    $monthcount     = number_format(PhaseCountMonth($round_id));
+    $monthpct       = PhaseGoalMonth($round_id) == 0 
+                        ? 0
+                        : PhaseCountMonth($round_id) / PhaseGoalMonth($round_id) * 100;
+    $strnow         = strftime("%R");
+    $strmonthgoal   = strftime(_("%B's Goal"));
+    $strmonthcount  = strftime(_("%B's Total"));
+    $strpct         = number_format($monthpct, 1);
 
-	// Today's Numbers
-	echo "&nbsp;"._("Today's Goal:")." "
-		. number_format($site_stats->curr_day_goal)
-		. "<br>\n";
-	echo "&nbsp;"._("Today's Total:")." "
-		. number_format($site_stats->curr_day_actual)
-		. " (" . strftime("%R") . ")<br><br>\n";
+    // Today's Numbers
+    echo _("Today's Goal: $todaygoal\n")
+       . _("Today's Total: $todaycount ($strnow)\n\n")
 
-	// Yesterday's Numbers
-	echo "&nbsp;"._("Yesterday's Goal:")." "
-		. number_format($site_stats->prev_day_goal)
-		. "<br>\n";
-	echo "&nbsp;"._("Yesterday's Total:")." "
-		. number_format($site_stats->prev_day_actual)
-		. "<br><br>\n";
+       . _("Yesterday's Goal: $yesterdaygoal\n")
+       . _("Yesterday's Total: $yesterdaycount\n\n")
 
-	// Month's Numbers
-	echo "&nbsp;".strftime(_("%B's Goal:"))." "
-		. number_format($site_stats->curr_month_goal)
-		. ($site_stats->curr_month_goal
-			? (" (" . number_format(($site_stats->curr_month_actual/$site_stats->curr_month_goal)*100, 2) . "%)")
-			: ""
-		)
-		. "<br>\n";
-	echo "&nbsp;".strftime(_("%B's Total:"))." "
-		. number_format($site_stats->curr_month_actual)
-		. "<br>\n";
-	echo "<br>\n";
+       . _("$strmonthgoal: $monthgoal\n")
+       . _("$strmonthcount: $monthcount ({$strpct}%)\n")
 
-	// Number of users
-	$res = mysql_query("SELECT COUNT(*) FROM users" );
-	list($num_users) = mysql_fetch_row($res);
-	echo '&nbsp;', sprintf( _('%s users'), number_format($num_users) ), "<br>\n";
+       . "</pre>\n";
 
-	$tallyboard = new TallyBoard( $tally_name, 'U' );
-	$num_positive_users = $tallyboard->get_num_holders_with_positive_tally();
-	echo '&nbsp;',
-		sprintf(
-			_('%s users with at least one %s page'),
-			number_format($num_positive_users), $tally_name ),
-		"<br>\n";
+    // Number of users
+    $num_users = $dpdb->SqlOneValue("
+        SELECT COUNT(1) FROM users" );
 
-	echo "</font><br><hr width='75%' align='center'><br>\n";
-	// ---------------------------------------------------------------------
+    $num_pagers = $dpdb->SqlOneValue("
+        SELECT COUNT(DISTINCT username) npagers FROM user_round_pages
+        WHERE round_id = '$round_id'");
 
-	if (isset($GLOBALS['pguser']))
-	{
-		// The requestor is a logged-in user.
-		// Show the user's personal statistics
+    echo sprintf( _("<p>%s registered users</p>\n"), number_format($num_users) );
+    echo sprintf( _("<p>%s users with one page or more</p>\n"), number_format($num_pagers));
 
-		//Get the personal statistics array
-		$neighbors =
-			user_get_page_tally_neighborhood(
-				$tally_name, $GLOBALS['pguser'], $userP['u_neigh']);
-		$usern = $neighbors[0];
+    echo "
+    <hr class='w75 center'>\n";
+    // ---------------------------------------------------------------------
 
-		//get rank
-		global $testing;
-		if ($testing)
-		{
-			// Don't let people discover the honorifics by
-			// playing with inflated pagecounts at test-site.
-			$rankname = 'Valued Tester';
-		}
-		else
-		{
-			$round = get_Round_for_round_id( $tally_name );
-			if ($round)
-			{
-				$rankname = $round->get_honorific_for_page_tally(
-					$usern->get_current_page_tally() );
-			}
-			else
-			{
-				$rankname = '[unknown]';
-			}
-		}
+    if ($User->IsLoggedIn()) {
+        $rankname = honorific_for_count($round_id, $User->RoundPageCount($round_id));
 
-		// Get userid for personal stats link
-		$result = mysql_query("SELECT u_id FROM users WHERE username='".$GLOBALS['pguser']."' LIMIT 1");
-		$u_id = mysql_result($result, 0, "u_id");
+        /** @var Round $round */
+//        $round = get_Round_for_round_id( $round_id );
+//        if ($round) {
+//            $rankname = $round->get_honorific_for_page_count(
+//                            $User->RoundPageCount($round_id));
+//        }
+//        else {
+//            $rankname = '[unknown]';
+//        }
 
-		echo "<center><font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'><b>" . _("Personal Statistics:") . "</b></font></center>\n";
-		echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>&nbsp;" . _("Total Pages: ");
-		echo number_format($usern->get_current_page_tally())."<br>\n";
-		echo "&nbsp;" . _("Current Position: ");
-		echo number_format($usern->get_current_page_tally_rank())."<br>\n";
-		echo "&nbsp;" . _("Current Rank: ");
-		echo "$rankname<br></font>\n";
-		echo "<center><font size='2'><a href='$code_url/stats/members/mdetail.php?id=".$u_id."&tally_name=".$tally_name."'>" . $tally_name . " " .  _("Details...") . "</a></font></center>\n";
-		echo "<" . "!-- " . $userP['u_id'] . " -->";
+        // Get userid for personal stats link
 
-		// -------------------------------------------------------------
-		//Show the Neighbor table if the user has requested so
-		if ($userP['u_neigh']) {
-			echo "<br><hr width='75%' align='center'><br>\n";
-			echo "<center><font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'><b>Your Neighborhood:</b></font></center>\n";
-			echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>\n";
+        echo "<h5>" . _("Personal Statistics:") ."</h5>
+            <span> "
+                . _("Pages Today: "). number_format($User->RoundTodayCount($round_id))
+                ."<br> &nbsp;"
+                . _("Total Pages: "). number_format($User->RoundPageCount($round_id))
+                ."<br> &nbsp;"
+                . _("Current Position: "). number_format($User->RoundRank($round_id))
+                ."<br> &nbsp;"
+                . _("Current Rank:<br/>") . "$rankname<br>
+            </span>
+            <div class='center' style='margin-top: 1em;'>
+            <a href='$code_url/stats/members/member_stats.php"
+                    ."?username=".$User->Username()
+                    ."&amp;round_id=".$round_id."'>"
+                    . "$round_id " .  _("Details")
+                    . "</a>
+            </div>\n";
 
-			foreach ( $neighbors as $rel_posn => $neighbor )
-			{
-				echo "&nbsp;";
-				if ($rel_posn==0) echo "<b><i>";
-				echo $neighbor->get_current_page_tally_rank(), ".) ";
-				echo ( $neighbor->is_anonymized() ? _('Anonymous') : $neighbor->get_username() ), " - ";
-				echo number_format($neighbor->get_current_page_tally());
-				if ($rel_posn==0) echo "</i></b>";
-				echo "<br>\n";
-			}
-		}
-	}
+        // -------------------------------------------------------------
+        //Show the Neighbor table if the user has requested so
+        if($User->NeighborRadius()) {
+            $neighbors = $User->RoundNeighborhood($round_id, $User->NeighborRadius());
+            echo "
+            <br>
+            <hr class='w75 center'>
+            <br>
+            <h5>Your Neighborhood:</h5>\n";
 
-	echo "<br>";
-	echo "</td></tr></table>";
-	echo "</center>";
+            $ntbl = new DpTable("tblneighbors", "center padded sidebar nocaption");
+            $ntbl->AddColumn("^Rank", "rank");
+            $ntbl->AddColumn("<Name", "username", "ename");
+            $ntbl->AddColumn(">Pages", "page_count");
+            $ntbl->SetRows($neighbors);
+            $ntbl->EchoTable();
+        }
+    }
+
+    echo "<br>";
+    echo "</td></tr></table>";
+}
+
+function honorific_for_count($round_id, $count) {
+    global $Honorifics;
+    $dignity = "Novice";
+    foreach($Honorifics[$round_id] as $key => $value) {
+        $dignity =  $value;
+        if($count < $key) {
+            break;
+        }
+    }
+    return $dignity;
+//    $round_honor = $Honorifics[$round_id];
+//    $dignity = $round_honor[0];
+//    foreach($Honorifics[$round_id] as $key => $value) {
+//        if($key > $count) {
+//            return $dignity;
+//        }
+//        $dignity = $value;
+//    }
+//    return $dignity;
+}
+
+function ename($name) {
+    global $User;
+    return $name == $User->Username()
+        ? "<b>$name</b>"
+        : $name;
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 function show_user_teams()
 {
-	global $theme, $code_url, $userP;
+    global $code_url;
+    global $dpdb;
+    global $User;
 
-	echo "<center>";
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo "<b>" .  _("Your Teams:") . "</b>";
-	echo "</font>";
-	echo "</center>";
-	echo "\n";
-	$teamRes=mysql_query("
-		SELECT teamname, id
-		FROM user_teams
-		WHERE id IN ({$userP['team_1']}, {$userP['team_2']}, {$userP['team_3']})
-	");
-	while($row = mysql_fetch_assoc($teamRes))
-	{
-		echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-		echo "&nbsp;";
-		echo "<a href='$code_url/stats/teams/tdetail.php?tid=".$row['id']."'>".$row['teamname']."</a>";
-		echo "</font>";
-		echo "<br>";
-		echo "\n";
-	}
-        echo "<center>";
-	echo "<font size='2'>";
-	echo "<a href='$code_url/stats/teams/tlist.php'>"._("View all teams...")."</a>";
-	echo "</font>";
-	echo "</center>";
-	echo "\n";
-}
+    $rows = $dpdb->SqlRows("
+        SELECT teamname, id FROM user_teams
+        WHERE id IN ({$User->Team1()}, {$User->Team2()}, {$User->Team3()})");
 
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    echo "
+    <div id='divteams' class='center sidebar'>
+    <h5>" .  _("Your Teams:") . "</h5>\n";
 
-function show_dp_birthdays()
-{
-    global $theme;
+    foreach($rows as $row) {
+        echo "
+    <a href='$code_url/stats/teams/tdetail.php?tid=".$row['id']."'>".$row['teamname']."</a><br/>\n";
 
-    $result = mysql_query("
-        SELECT username,value
-        FROM usersettings
-        WHERE setting ='birthday_today'
-        ORDER BY value DESC");
-        
-    if (mysql_num_rows($result) == 0)
-       return;
-
-    echo "<center><b>" . _("Today's DP Birthdays:") . "</b></center>\n";
-
-    echo "<div style='text-align: center; font-family: $theme[font_navbar];
-          color: $theme[color_navbar_font];'>";
-
-    while ( list($username,$years) = mysql_fetch_row($result) )
-    {
-        echo "<font size='2'>$username ($years)</font><br />";
     }
+    echo "
+    <br/>
+    <a href='$code_url/stats/teams/teamlist.php'>"._("View all teams")."</a>
+    </div>\n";
+}
 
-    echo "</div><br><hr width='75%' align='center'>\n";
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+function show_completed_projects() {
+    global $dpdb;
+
+    echo _("<h5>Completed Projects:</h5>\n");
+    echo "<table id='tbl6' class='sidebar padded margined'>\n";
+    $rows = $dpdb->SqlRows("
+        SELECT COUNT(1) c, MONTH(d) m, MONTHNAME(d) mname, YEAR(d) y
+        FROM (
+            SELECT FROM_UNIXTIME(TIMESTAMP) d
+            FROM project_events pe
+            WHERE event_type = 'post'
+            AND TIMESTAMP >
+                UNIX_TIMESTAMP( DATE( DATE_FORMAT(
+                    DATE_ADD( CURRENT_DATE(), INTERVAL -1 YEAR), '%Y-%m-01')))
+        ) tbl
+        GROUP BY m, y
+        ORDER BY y, m");
+
+    foreach($rows as $row) {
+        $displaydate = "{$row['mname']} {$row['y']}";
+        echo "
+        <tr><td class='left'>&nbsp;$displaydate&nbsp;&nbsp;</td>
+            <td class='right'>&nbsp;{$row['c']}&nbsp;</td>
+        </tr>\n";
+    }
+    echo "</table>\n";
+}
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+function show_key_help_links() {
+    global $forums_url, $wiki_url;
+
+    echo "<div id='divhelp' style='padding: 0 2em' class='sidebar margined'>
+        <h5>"._("Key Help Documents:")."</h5>";
+
+    echo "<a href='{$wiki_url}/FAQ_Central'>"._("Frequently Asked Questions")."</a>";
+    echo "<br>\n";
+
+    echo "<a href='{$wiki_url}/Proofreading_Guidelines'>"._("Proofreading Guidelines")."</a>";
+    echo "<br>\n";
+
+    echo "<a href='{$wiki_url}/Formatting_Guidelines'>"._("Formatting Guidelines")."</a>";
+    echo "<br>\n";
+
+    echo "<a href='$forums_url'>"._("Tips and How-To's")."</a>";
+    echo "</div>\n";
+}
+
+function show_backlogs() {
+    echo "
+          <iframe src='backlog.php' style='width: 400px; height: 300px; 
+            overflow: hidden; border; none;>
+          </iframe>\n";
+    // include_once "../backlog.php";
+    // echo "<h5>Current Pages in Rounds</h5>
+          // <div id='divbacklog' class='w75 center'>
+          // <div id='chart_div' style='width: 900px; height: 500px;'></div>\n";
 }
 
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function show_completed_projects()
-{
-	global $theme;
-
-	echo "<center><b>" . _("Completed Projects:") . "</b></center>\n";
-	echo "<table border=0 cellspacing=0 cellpadding=0 width='100%'>\n";
-	$thismonth = date("n");
-	$thisyear = date("Y");
-	for ( $months_ago = 11; $months_ago >= 0; $months_ago-- )
-	{
-		// midnight that begins the 1st day of this month and the next:
-		$begindate = mktime(0,0,0,$thismonth-$months_ago,  1,$thisyear);
-		$enddate   = mktime(0,0,0,$thismonth-$months_ago+1,1,$thisyear);
-
-		$displaydate = strftime(_("%b %Y"), $begindate );
-
-		$result = mysql_query("
-			SELECT COUNT(projectid)
-			FROM projects
-			WHERE modifieddate >= $begindate
-				&& modifieddate <= $enddate
-				&& state = '".PROJ_SUBMIT_PG_POSTED."'
-		");
-		$totalprojects = mysql_result($result,0);
-		//echo "&nbsp;$displaydate - $totalprojects<br>\n";
-		echo "<tr>";
-		echo   "<td width='60%' align='right'>";
-		echo     "<font face='".$theme['font_navbar']."' color='".$theme['color_navbar_font']."' size='2'>";
-		echo       "&nbsp;$displaydate&nbsp;-";
-		echo     "</font>";
-		echo   "</td>";
-		echo   "<td width='40%' align='left'>";
-		echo     "<font face='".$theme['font_navbar']."' color='".$theme['color_navbar_font']."' size='2'>";
-		echo       "&nbsp;$totalprojects&nbsp;";
-		echo     "</font>";
-		echo   "</td>";
-		echo "</tr>";
-		echo "\n";
-	}
-	echo "</table>\n";
+function timer_string() {
+    global $starttime;
+    $mtime = explode(" ", microtime());
+    $endtime = $mtime[1] + $mtime[0];
+    $totaltime = ($endtime - $starttime);
+    return left($totaltime, 5);
 }
 
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-function show_key_help_links()
-{
-	global $theme, $code_url;
-
-	echo "<center>";
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo "<b>"._("Key Help Documents:")."</b>";
-	echo "</font>";
-	echo "</center>\n";
-
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo "<a href='http://www.pgdpcanada.net/wiki/index.php/FAQ_Central'>"._("Frequently Asked Questions")."</a>";
-	echo "</font>";
-	echo "<br>\n";
-
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo "<a href='http://www.pgdpcanada.net/wiki/index.php/FAQ_Proofreading_Guidelines'>"._("Proofreading Guidelines")."</a>";
-	echo " (<a href='$code_url/faq/".lang_dir()."proofing_summary.pdf'>"._("PDF Summary")."</a>)";
-   echo "</font>";
-	echo "<br>\n";
-
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo "<a href='http://www.pgdpcanada.net/wiki/index.php/FAQ_Formatting_Guidelines'>"._("Formatting Guidelines")."</a>";
-	echo " (<a href='$code_url/faq/".lang_dir()."formatting_summary.pdf'>"._("PDF Summary")."</a>)";
-	echo "</font>";
-	echo "<br>\n";
-
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo "<a href='http://www.pgdpcanada.net/phpBB2/'>"._("Tips and How-To's")."</a>";
-	echo "</font>";
-	echo "<br>\n";
-
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo "<a href='$code_url/tasks.php'>"._("Support Request")."</a>";
-	echo "</font>";
-	echo "<br>\n";
+function timer_array() {
+    global $time_comment;
+    return $time_comment;
 }
 
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-function show_donation_stuff()
-{
-	global $theme, $theme_name, $code_url;
-	global $forums_url;
-
-	$paypal_business_id = 'donate@pgdpcanada.net';
-	$info_url = $code_url.'/faq/dpf.php';
-
-	echo "<center>";
-	echo "<form action='https://www.paypal.com/cgi-bin/webscr' method='post'>\n";
-	echo "<input type='hidden' name='cmd' value='_xclick'>\n";
-	echo "<input type='hidden' name='business' value='$paypal_business_id'>\n";
-	echo "<input type='hidden' name='lc' value='CA'>\n";
-	echo "<input type='hidden' name='item_name' value='Distributed Proofreaders Foundation Canada'>\n";
-	echo "<input type='hidden' name='item_number' value='pgdpcanada.net site'>\n";
-	echo "<input type='hidden' name='currency_code' value='CAD'>\n";
-	echo "<input type='image' src='$code_url/pinc/templates/".$theme_name.$theme['image_donate']."' border='0' name='submit' alt='Donate to Distributed Proofreading'>\n";
-	echo "</form>";
-	echo "</center>\n";
-
-	echo "<center>";
-	echo "<font color='".$theme['color_navbar_font']."' face='".$theme['font_navbar']."' size='2'>";
-	echo sprintf(
-		_("Donate to the <a href='%s'>Distributed Proofreaders Foundation Canada</a>"),
-		$info_url
-	);
-	echo "</font>";
-	echo "</center>\n";
+function timer_milestone($remark) {
+    global $time_comment;
+    $time_comment[] = "$remark : " . timer_string();
 }
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 function html_footer() {
-	global $code_url, $theme;
+    global $User;
+    // $mtime = explode(" ", microtime());
+    // $endtime = $mtime[1] + $mtime[0];
+    // $totaltime = ($endtime - $GLOBALS['starttime']);
 
-	$mtime = explode(" ",microtime());
-	$endtime = $mtime[1] + $mtime[0];
-	$totaltime = ($endtime - $GLOBALS['starttime']);
+    $strtime = timer_string();
 
-    //Bottom Copyright Text
-	echo "\n<table border='0' cellpadding='0' cellspacing='0' width='100%' bgcolor='".$theme['color_copyright_bg']."'>\n";
-	echo "<tr>";
-	echo "<td width='10'>&nbsp;</td>";
-	echo "<td width='100%'>";
-	echo "<center>";
-
-	echo "<font color='".$theme['color_copyright_font']."' face='".$theme['font_copyright']."' size='1'>";
-	echo _("Copyright")." "._("Distributed Proofreaders");
-	echo " ("._("Page Build Time").": ".substr($totaltime, 0, 5).") ";
-	echo "</font>";
-
-	echo "<a href='$code_url/tasks.php'>";
-	echo "<font color='".$theme['color_copyright_font']."' face='".$theme['font_copyright']."' size='1'>";
-	echo _("Report a Bug");
-	echo "</font>";
-	echo "</a>";
-
-	echo "</center>";
-	echo "</td>";
-	echo "</tr>\n";
-	echo "</table>\n";
+    echo "<div id='divfooter' class='w100 em80 center white noserif redback'>\n";
+    echo _("Copyright")." "._("Distributed Proofreaders");
+    echo " (" . _("Page Build Time: {$strtime}");
+    echo "</div> <!-- divfooter -->\n";
+    if($User->Username() == 'dkretz') {
+        echo implode("<br>\n", timer_array());
+    }
 
     //The End
-	echo "\n</body>\n";
-	echo "</html>\n";
+    echo "\n</body>\n";
+    echo "</html>\n";
 }
-?>

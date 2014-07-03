@@ -1,5 +1,6 @@
 <?
-include_once($relPath.'site_vars.php');
+global $relPath;
+include_once($relPath.'dpinit.php');
 
 function check_email_address( $email_address )
 // Check whether $email_address is a reasonable/acceptable E-mail Address.
@@ -69,8 +70,7 @@ function check_email_address( $email_address )
     // Formerly:
     // $domain_re = "((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)";
 
-    if ( !ereg( "^$local_part_re@$domain_re$", $email_address ) )
-    {
+    if ( ! preg_match( "^$local_part_re@$domain_re$", $email_address ) ) {
 	$error = _("Your E-mail Address appears to be invalid.");
 	return $error;
     }
