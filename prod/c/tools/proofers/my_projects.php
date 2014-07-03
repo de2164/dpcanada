@@ -1,295 +1,362 @@
 <?PHP
 $relPath='../../pinc/';
-include_once($relPath.'misc.inc');
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'theme.inc');
-include_once($relPath.'dpsql.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'stages.inc');
-include_once($relPath.'project_states.inc');
 
-if ($userP['i_newwin']==1)
-{
+$pcheckout      = ArgArray("checkout");     // checkout to PP
+$puncheckout    = ArgArray("uncheckout");   // return without upload
+$pupload        = ArgArray("upload");       // complete with upload
+$psetcomplete   = ArgArray("setcomplete");  // complete without upload
+
+$error_message = "";
+
+if(count($pcheckout) > 0) {
+    foreach($pcheckout as $k => $v) {
+        $p = new DpProject($k);
+        $p->PPCheckout();
+        break;
+    }
+}
+
+if(count($puncheckout) > 0) {
+    foreach($puncheckout as $k => $v) {
+        $p = new DpProject($k);
+        $p->PPUnCheckout();
+        break;
+    }
+}
+
+if(count($pupload) > 0) {
+    $keys = array_keys($pupload);
+    $projectid = $keys[0];
+    divert(url_for_upload_pp($projectid));
+}
+
+if(count($psetcomplete) > 0) {
+    foreach($psetcomplete as $k => $v) {
+        // dump("$k $v");
+        // projectid 'PP Complete'
+        $p = new DpProject($k);
+        /** @var DpProject $p */
+        if($p->Phase() == "PP") {
+            $msgs = $p->PPSetComplete();
+        }
+        else if($p->Phase() == "PPV") {
+            $msgs = $p->PPVSetComplete();
+        }
+        else {
+            $msgs = array(
+                "Attempting to set PP or PPV complete while phase = {$p->Phase()}.");
+            break;
+        }
+        if(count($msgs) > 0) {
+            $msgs[] = "PP Completion failed";
+            $error_message = implode("<br>", $msgs);
+            die($error_message);
+        }
+    }
+}
+
+
+$theme_args = array();
+if($User->IsNewWindow()) {
     $newProofWin_js = include($relPath.'js_newwin.inc');
     $theme_args['js_data'] = $newProofWin_js;
-    $link_js = "onclick=\"newProofWin('%s'); return false;\"";
-}
-else
-{
-    $theme_args = array();
-    $link_js = '';
+    $link_js = "onclick='newProofWin(\"%s\"); return false;'";
 }
 
-$qs_username = '';
-if ( user_is_a_sitemanager() || user_is_proj_facilitator() )
-{
-    $username = array_get( $_GET, 'username', $pguser );
-    if ( $username != $pguser )
-    {
-        $qs_username = "username=" . urlencode($username) . '&amp;';
-    }
+if ( $User->IsSiteManager() || $User->IsProjectFacilitator() ) {
+    $username = Arg("username", $User->Username() );
 }
-else
-{
-    $username = $pguser;
+else {
+    $username = $User->Username();
 }
-
-if ( $username == $pguser )
-{
-    $out_title = _("My Projects");
-    $heading_proof = sprintf( _("%s, here's a list of the projects you've helped format and/or proof"), $username );
-    $heading_reserved = sprintf( _("%s, these projects are reserved for you to post-process"), $username );
-}
-else
-{
-    $out_title = $heading_proof = sprintf( _("Projects that '%s' has worked on"), $username );
-    $heading_reserved = sprintf( _("These projects are reserved for '%s' to post-process"), $username );
-}
-
-$sorting = array_get($_GET, 'sort', '');
 
 $no_stats = 1;
-theme( $out_title, 'header', $theme_args );
+theme( _("My Projects"), 'header', $theme_args );
 
-echo "<a name='proof' id='proof'></a><h2>$heading_proof</h2>";
+echo link_to_my_diffs("P1", "My diffs", true);
 
-// ---------------
 
-$colspecs = array(
-    'title' =>
-        array(
-            'label' => _('Title'),
-            'sql'   => 'projects.nameofwork',
-        ),
-    'state' =>
-        array(
-            'label' => _('Current State'),
-            'sql'   => sql_collater_for_project_state('projects.state'),
-        ),
-    'round' =>
-        array(
-            'label' => _('Round Worked In'),
-            'sql'   => sql_collater_for_round_id('page_events.round_id'),
-        ),
-    'time' =>
-        array(
-            'label' => _('Time of Last Activity'),
-            'sql'   => 'max_timestamp',
-        ),
-);
-
-// By default, order by time of last activity, descending.
-$default_order_col = $order_col = 'time';
-$default_order_dir = $order_dir = 'D';
-
-if ($sorting == 'proof')
-{
-    list( $order_col, $order_dir ) = get_sort_col_and_dir();
+if ( $username == $User->Username() ) {
+    $head_title = $heading_proof = _("My Projects");
+    $open_title = _("I have pages checked out in the following projects");
+    $heading_proof = _("Projects I've helped format and/or proof");
+    $heading_reserved =  _("Projects reserved for me to post-process");
 }
-// ------------------------
-
-function sql_order_spec( $order_col, $order_dir )
-{
-    global $colspecs;
-    return
-        $colspecs[$order_col]['sql']
-        . ' '
-        . ( $order_dir == 'A' ? 'ASC' : 'DESC' );
+else {
+    $head_title = _("Projects for User $username");
+    $open_title = _("$username has pages checked out in the following projects");
+    $heading_proof = _("Projects $username has helped format and/or proof");
+    $heading_reserved =  _("Projects reserved for $username to post-process");
 }
 
-$sql_order = sql_order_spec( $order_col, $order_dir );
+echo "<h2 class='center'>$head_title</h2>\n";
 
-if ( $order_col != $default_order_col )
-{
-    // Add the default ordering as a secondary ordering.
-    $sql_order .= ", " . sql_order_spec( $default_order_col, $default_order_dir );
+$rows = open_page_counts($username);
+if(count($rows) > 0) {
+    echo "
+    <hr>
+    <h4 class='center'>$open_title</h4>\n";
+    show_open_page_counts($rows);
 }
 
-$res = dpsql_query("
-    SELECT
-        page_events.projectid,
-        page_events.round_id,
-        MAX(page_events.timestamp) AS max_timestamp,
-        projects.nameofwork,
-        projects.state
-    FROM page_events LEFT OUTER JOIN projects USING (projectid)
-    WHERE page_events.username='$username'
-        AND page_events.event_type IN ('saveAsDone','saveAsInProgress', 'markAsBad')
-        AND projects.archived = 0
-        AND projects.state != '".PROJ_DELETE."'
-    GROUP BY page_events.projectid, page_events.round_id
-    ORDER BY $sql_order
-") or die('Aborting');
-
-echo "<table border='1'>";
-
-show_headings($colspecs, 'proof');
-
-while ( $row = mysql_fetch_object($res) )
-{
-    echo "<tr>\n";
-
-    echo "<td>";
-    $url = "$code_url/project.php?id=$row->projectid";
-    echo "<a href='$url' ".sprintf($link_js,$url).">$row->nameofwork</a>";
-    echo "</td>\n";
-
-    echo "<td nowrap>";
-    echo project_states_text( $row->state );
-    echo "</td>\n";
-
-    echo "<td align='center'>";
-    echo $row->round_id;
-    echo "</td>\n";
-
-    echo "<td nowrap>";
-    echo strftime( '%Y-%m-%d %H:%M:%S', $row->max_timestamp );
-    echo "</td>\n";
-
-    echo "</tr>\n";
+if ( $username == $User->Username() ) {
+    $head_title = $heading_proof = _("My Projects");
+}
+else {
+    $head_title = _("Projects for User $username");
 }
 
-echo "</table>\n";
-echo "<br>\n";
+echo_my_pp_projects($username);
 
-// -----------------------------------------------------------------------------
 
-unset($colspecs);
 
-$colspecs = array(
-    'title' =>
-        array(
-            'label' => _('Title'),
-            'sql'   => 'nameofwork',
-        ),
-    'manager' =>
-        array(
-            'label' => _('Project Manager'),
-            'sql'   => 'username',
-        ),
-    'state' =>
-        array(
-            'label' => _('Current State'),
-            'sql'   => 'state',
-        )
-);
+// -------------------------------------------------
+// My projects
+// -------------------------------------------------
 
-// By default, order by state, descending.
-$default_order_col = $order_col = 'state';
-$default_order_dir = $order_dir = 'D';
+$tbl = new DpTable();
 
-if ($sorting == 'reserved')
-{
-    list( $order_col, $order_dir ) = get_sort_col_and_dir();
-}
+$tbl->SetClass("dptable sortable w75");
 
-$sql_order = sql_order_spec( $order_col, $order_dir );
+$tbl->SetId("tbl_my_projects");
+$tbl->AddColumn("<Title", "nameofwork", "eTitle");
+$tbl->AddColumn("<Current state", "phase", "eephase", "sortkey=roundseq");
+$tbl->AddColumn("<Worked in", "round_id", "eRound");
+$tbl->AddColumn("<Last activity", "max_time", "eLastTime", "sortkey=strtime");
 
-if ( $order_col != $default_order_col )
-{
-    // Add the default ordering as a secondary ordering.
-    $sql_order .= ", " . sql_order_spec( $default_order_col, $default_order_dir );
-}
 
-// We're interested in projects that have been created, but haven't *finished*
-// being proofread.
-$psd = get_project_status_descriptor('created');
-$antipsd = get_project_status_descriptor('proofed');
+$sql = "
+SELECT  pe.projectid,
+            GROUP_CONCAT(DISTINCT pe.round_id) round_id,
+            pph.sequence roundseq,
+            DATE_FORMAT(MAX(FROM_UNIXTIME(pe.timestamp)), '%M %d %Y') AS max_time,
+            MAX(FROM_UNIXTIME(pe.timestamp)) AS strtime,
+            p.nameofwork,
+            p.username,
+            p.phase,
+            p.state,
+            MIN(h.id) is_hold
+    FROM page_events pe
+    JOIN projects p ON pe.projectid = p.projectid
+    JOIN phases ph ON pe.round_id = ph.phase
+    JOIN phases pph ON p.phase = pph.phase
+    LEFT JOIN project_holds h ON p.projectid = h.projectid AND p.phase = h.phase
+    WHERE pe.username='$username'
+        AND pe.event_type = 'saveAsDone'
+        AND p.archived = 0
+        AND p.phase IN ('P1', 'P2', 'P3', 'F1', 'F2', 'PP', 'PPV')
+    GROUP BY pe.projectid
+    ORDER BY strtime DESC ";
 
-$query = "
-	SELECT
-         projectid,
-         nameofwork,
-         username,
-		 state
-	FROM projects
-	WHERE checkedoutby='$username'
-		AND $psd->state_selector
-		AND NOT $antipsd->state_selector
-	ORDER BY $sql_order";
+    /*
+    SELECT  pe.projectid,
+            GROUP_CONCAT(DISTINCT pe.round_id) round_id,
+            DATE_FORMAT(MAX(FROM_UNIXTIME(pe.timestamp)), '%M %d %Y') AS max_time,
+            MAX(FROM_UNIXTIME(pe.timestamp)) AS strtime,
+            p.nameofwork,
+            p.username,
+            p.phase,
+            p.state,
+            (SELECT COUNT(1) FROM project_holds
+             WHERE projectid = p.projectid AND phase = p.phase) hold_count
+    FROM page_events pe
+    JOIN projects p ON pe.projectid = p.projectid
+    JOIN 
+    WHERE pe.username='$username'
+        AND pe.event_type = 'saveAsDone'
+        AND p.archived = 0
+        AND p.phase IN ('P1', 'P2', 'P3', 'F1', 'F2', 'PP', 'PPV')
+    GROUP BY pe.projectid
+    ORDER BY strtime DESC";
+    */
 
-$result = dpsql_query($query);
+echo "<!-- \n $sql \n -->\n";
 
-if (mysql_num_rows($result) > 0)
-{
-    echo "<a name='reserved' id='reserved'></a><h2>$heading_reserved</h2>\n";
+$rows = $dpdb->SqlRows($sql);
 
-    echo "<table border='1'>";
+$tbl->SetRows($rows);
 
-    show_headings($colspecs, 'reserved');
+echo "<hr>
+    <h4 class='center'>$heading_proof</h4>\n";
 
-    while ( $row = mysql_fetch_object($result) )
-    {
-        echo "<tr>\n";
+$tbl->EchoTable();
 
-        echo "<td>";
-        echo "<a href='$code_url/project.php?id=$row->projectid'>$row->nameofwork</a>";
-        echo "</td>\n";
-
-        echo "<td align='center'>";
-        echo $row->username;
-        echo "</td>\n";
-
-        echo "<td nowrap>";
-        echo project_states_text( $row->state );
-        echo "</td>\n";
-
-        echo "</tr>\n";
+function eephase($phase, $row) {
+    switch($phase) {
+        case "P1":
+        case "P2":
+        case "P3":
+        case "F1":
+        case "F2":
+            return "$phase " . ($row["is_hold"] > 0 ? "On Hold" : "Available");
+        default:
+            return $phase;
     }
-
-    echo "</table>\n";
-    echo "<br>\n";
 }
 
 theme( '', 'footer' );
 
-// -----------------
-function get_sort_col_and_dir()
-{
-    global $colspecs,$default_order_col, $default_order_dir;
-    $order_col = array_get( $_GET, 'order_col', $default_order_col );
-    $order_dir = array_get( $_GET, 'order_dir', $default_order_dir );
+function open_page_counts($username) {
+    global $dpdb;
+    $sql = "
+            SELECT p.nameofwork,
+                   p.phase,
+                   pe.projectid, 
+                   COUNT(1) pagecount
+            FROM page_events pe
+            JOIN projects p ON pe.projectid = p.projectid
+            LEFT JOIN page_events pe0
+                ON pe.projectid = pe0.projectid
+                    AND pe.image = pe0.image
+                    AND pe.timestamp < pe0.timestamp
+            WHERE pe.event_type IN ('checkout', 'reclaim', 'reopen', 'saveAsInProgress')
+                AND p.phase IN ('P1', 'P2', 'P3', 'F1', 'F2')
+                AND pe.username = '$username'
+                AND pe0.event_id IS NULL
+            GROUP BY pe.projectid
+            ORDER BY p.phase, p.nameofwork";
 
-    if ( !isset( $colspecs[$order_col] ) )
-    {
-        echo "Invalid order_col parameter: '$order_col'. Assuming '$default_order_col'.<br>\n";
-        $order_col = $default_order_col;
-    }
+    echo "<!-- \n $sql \n -->\n";
 
-    if ( $order_dir != 'A' && $order_dir != 'D' )
-    {
-        echo "Invalid order_dir parameter: '$order_dir'. Assuming '$default_order_dir'.<br>\n";
-        $order_dir = $default_order_dir;
-    }
-    return array($order_col,$order_dir);
+    $rows = $dpdb->SqlRows($sql);
+    return $rows;
 }
 
-function show_headings($colspecs, $sort_type)
-{
-    global $qs_username, $order_dir, $order_col;
-    echo "<tr>\n";
-    foreach ( $colspecs as $col_id => $colspec )
-    {
-        if ( $col_id == $order_col )
-        {
-            // This is the column on which the table is being sorted.
-            // If the user clicks on this column-header, the result should be
-            // the table, sorted on this column, but in the opposite direction.
-            $link_dir = ( $order_dir == 'A' ? 'D' : 'A' );
-        }
-        else
-        {
-            // This is not the column on which the table is being sorted.
-            // If the user clicks on this column-header, the result should be
-            // the table, sorted on this column, in ascending order.
-            $link_dir = 'A';
-        }
-        echo "<th>";
-        echo "<a href='?{$qs_username}order_col=$col_id&amp;order_dir=$link_dir&amp;sort=$sort_type#$sort_type'>";
-        echo $colspec['label'];
-        echo "</a>";
-        echo "</th>";
-    }
-    echo "</tr>\n";
+function show_open_page_counts($rows) {
+
+    $tbl = new DpTable();
+    $tbl->SetClass("dptable sortable w50");
+    $tbl->AddColumn("<Title", "nameofwork", "etitle");
+    $tbl->AddColumn("^Round", "phase", "ephase");
+    $tbl->AddColumn("^Pages", "pagecount");
+    $tbl->SetRows($rows);
+    $tbl->EchoTable();
 }
-// vim: sw=4 ts=4 expandtab
-?>
+
+function etitle($nameofwork, $row) {
+    $title = $nameofwork;
+    return link_to_project($row['projectid'], $title, true);
+}
+
+
+function ephase($phase) {
+    return $phase;
+}
+
+function eRound($roundid) {
+    $a = preg_split("/,\s*/", $roundid);
+    if(count($a) == 1) {
+        return $a[0];
+    }
+    $b = array();
+    foreach(array("P1", "P2", "P3", "F1", "F2") as $rid) {
+        if(array_search($rid, $a)) {
+            $b[] = $rid;
+        }
+    }
+    // dump($b);
+    return implode(", ", $b);
+}
+
+function ePM($pm) {
+    return link_to_pm($pm, $pm, true);
+}
+
+function eLastTime($ts) {
+    return $ts;
+}
+
+function echo_my_pp_projects($username) {
+    global $dpdb;
+
+    $rows = $dpdb->SqlRows("
+        SELECT
+            projectid,
+            nameofwork,
+            authorsname,
+            language,
+            genre,
+            n_pages,
+            username AS pm,
+            DATEDIFF(FROM_UNIXTIME(smoothread_deadline), CURRENT_DATE()) AS smooth_days,
+            DATEDIFF(CURRENT_DATE(), FROM_UNIXTIME(phase_change_date)) AS days_avail
+        FROM projects
+        WHERE phase = 'PP'
+            AND postproofer = '$username'
+        ORDER BY days_avail");
+
+    if(count($rows) == 0) {
+        return;
+    }
+
+    echo "
+    <div class='center w75'>
+    <h4 class='center'>
+        I have checked out the following projects to Post-Process</h4>
+    <p class='left'>Іn order to advance to PP Verification, you need to<br/>
+    1. upload a zip file with the completed project, and<br/>
+    2. click the 'PP Complete' button,<br/>
+    3. wait until the smooth-reading period is over, if there is one open.
+    <br/>
+    The 'Uploaded file' column shows the status of that file, with a button to click if
+    you want to Upload. (It still works after uploading if you want to resend.<p>
+    <p class='left'>Once you have uploaded, and any smooth-reading periods are completed,
+    and when you click the 'PP Completed' button, the project
+    will advance to PP Verification.</p>
+    </div>
+
+    <form name='myform' action='' method='POST'>\n";
+
+
+    $tbl = new DpTable();
+    $tbl->SetClass("w75 dptable sortable");
+    $tbl->AddColumn("<Title", "nameofwork", "etitle");
+    $tbl->AddColumn("<Author", "authorsname");
+    $tbl->AddColumn("<Language", "language");
+    $tbl->AddColumn("<Genre", "genre");
+    $tbl->AddColumn("^Pages", "n_pages");
+    $tbl->AddColumn("<Proj mgr", "pm", "euser");
+    $tbl->AddColumn("^Days", "days_avail", "edays");
+    $tbl->AddColumn("^Smooth<br>days", "smooth_days", "esmooth");
+    $tbl->AddColumn("^Uploaded<br>file", "projectid", "eupload");
+    $tbl->AddColumn("^Manage", "projectid", "emanage");
+    $tbl->SetRows($rows);
+
+    $tbl->EchoTable();
+    echo "</form>\n";
+}
+
+function emanage($projectid) {
+    $color =  is_pp_upload_file($projectid) ? "lightGreen" : "inherit" ;
+    $disabled = is_pp_upload_file($projectid) ? "" : " disabled";
+    return "
+        <input name='uncheckout[$projectid]' type='submit' value='Return to Avail'>
+        <br/>
+        <input name='setcomplete[$projectid]' type='submit'
+            style='background-color: $color;' value='PP Complete' $disabled>\n";
+}
+
+function is_pp_upload_file($projectid) {
+    return file_exists(ProjectPPUploadPath($projectid));
+}
+
+function esmooth($num) {
+    return $num < 0 ? "" : edays($num);
+}
+function edays($num) {
+    return number_format($num);
+}
+function euser($username) {
+    return link_to_pm($username, $username, true);
+}
+
+function eupload($projectid) {
+    $caption = is_pp_upload_file($projectid) ? "Replace" : "Upload";
+    // $color =  is_pp_upload_file($projectid) ? "inherit" : "lightGreen" ;
+    $color =  "lightGreen" ;
+    return "<input type='submit' name='upload[$projectid]' 
+        style='background-color: $color;' value='$caption'>\n";
+}
+

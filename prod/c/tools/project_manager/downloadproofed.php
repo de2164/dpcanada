@@ -1,30 +1,32 @@
 <?
 $relPath="./../../pinc/";
-include($relPath.'dp_main.inc');
-include_once($relPath.'stages.inc');
+require_once $relPath . 'dpinit.php';
+require_once $relPath . "DpPage.class.php";
 
-    $project = $_GET['project'];
-    $image = $_GET['image'];
-    $round_num = $_GET['round_num'];
+$projectid    = Arg("projectid");
+$pagename     = Arg("pagename");
+if($pagename == "") {
+	$imagefile = Arg("imagefile");
+	$pagename  = imagefile_to_pagename($imagefile);
+}
+$roundid      = Arg("roundid");
+if($roundid == "") {
+    $round_num      = Arg("round_num");
+    $roundid        = RoundIdForIndex($round_num);
+}
 
-    if ($round_num == 0) {
-        $text_column_name = 'master_text';
-    } else {
-        $round = get_Round_for_round_number($round_num);
-        if ( is_null($round) )
-        {
-            die("downloadproofed.php: unexpected parameter round_num = '$round_num'");
-        }
-        $text_column_name = $round->text_column_name;
-    }
+$page = new DpPage($projectid, $pagename);
+$text = $page->RoundText($roundid);
+$text = maybe_convert($text);
 
-    $result = mysql_query("SELECT $text_column_name FROM $project WHERE image = '$image'"); 
-    $data = mysql_result($result, 0, $text_column_name);
-
-    header("Content-type: text/plain; charset=$charset");
-    // SENDING PAGE-TEXT TO USER
-    // It's a text/plain document, so no encoding is necessary.
-    echo $data;
-
-// vim: sw=4 ts=4 expandtab
-?> 
+echo "<!doctype html>
+<head>
+<meta charset='utf-8'>
+<title>$projectid Page $pagename</title>
+</head>
+<body>
+<pre>
+$text
+</pre>
+</body>
+</html>";

@@ -1,271 +1,187 @@
-imgX=0;
-imgY=0;
-frameRef=null; // used by dp_proof.js
-imgWin=null;
-imgblock=null;
-imgWinstyle=null;
-imgstyle=null;
-imgWinX=null;
-imgWinY=null;
-imgviewX=null;
-imgviewY=null;
-imgMaxX=null;
-imgMaxY=null;
-bPX=(document.layers||window.opera)? "": "px";
-scrollTime=0;
-scrollAmount=10;
-scrollMaxX=100;
-scrollMaxY=100;
+var imgblock     = null;
+var scrollTime   = 0;
+var interface;
 
-function setMaxScrolls()
-{
-if (imgWinX && imgviewX && (imgviewX >=imgWinX))
-  {imgMaxX=(imgviewX-imgWinX)* -1;}
-else {imgMaxX=0;}
-if (imgWinY && imgviewY && (imgviewY >=imgWinY))
-  {imgMaxY=(imgviewY-imgWinY)* -1;}
-else {imgMaxY=0;}
-if (scrollMaxX > -imgMaxX) {scrollMaxX=-imgMaxX;}
-if (scrollMaxY > -imgMaxY) {scrollMaxY=-imgMaxY;}
-}
+frameRef     = null; // used by dp_proof.js
 
-function setWinWidth()
-{
-  if (imgWin.clientWidth)
-    {imgWinX=imgWin.clientWidth;}
-  else if (imgWin.offsetWidth)
-    {imgWinX=imgWin.offsetWidth;}
-  else if (imgWintyle.clip.width)
-    {imgWinX=imgWinstyle.clip.width;}
-  else {imgWinX=0;}
-}
-function setWinHeight()
-{
-  if (imgWin.offsetHeight)
-    {imgWinY=imgWin.offsetHeight;}
-  else if (imgWinstyle.clip.height)
-    {imgWinY=imgWinstyle.clip.height;}
-  else {imgWinY=0;}
-}
-
-function setViewWidth()
-{
-  if (frameRef.getElementById('scanimage').offsetWidth)
-    {imgviewX=frameRef.getElementById('scanimage').offsetWidth;}
-  else if (imgblock.clientWidth)
-    {imgviewX=imgblock.clientWidth;}
-  else if (imgblock.offsetWidth)
-    {imgviewX=imgblock.offsetWidth;}
-  else if (imgstyle.clip.width)
-    {imgviewX=imgstyle.clip.width;}
-  else {imgviewX=0;}
-}
-
-function setViewHeight()
-{
-  if (imgblock.offsetHeight)
-    {imgviewY=imgblock.offsetHeight;}
-  else if (imgstyle.clip.height)
-    {imgviewY=imgstyle.clip.height;}
-  else {imgviewY=0;}
-}
-
-function setScrollWidths()
-{
-  setViewHeight();
-  setViewWidth();
-  setMaxScrolls();
-}
-
-function getNSLayer(layroot,layname)
-{
-
-  for (i=0;i<layroot.layers.length;i++)
-  {
-    curLay=layroot.layers[i];
-    if (curLay.name==layname)
-      {return curLay;}
-    else
-    {
-      if (curLay.document.layers.length >0)
-        {curLay=getNSLayer(curLay.document,layname);
-          if (curLay !=null){return curLay;}}
-    }
-  }
-  return null;
-}
-
-function setLayer()
-{
-  if (frameRef.getElementById)
-    {
-      imgblock=frameRef.getElementById('imagedisplay');
-      imgWin=frameRef.getElementById('imageframe');
-    }
-  else if (imgblock.all)
-    {
-      imgblock=frameRef.all['imagedisplay'];
-      imgWin=frameRef.all['imageframe'];
-    }
-  else if (imgblock.layers)
-    {imgWin=getNSLayer(frameRef,'imageframe');}
-  else
-    {imgblock=null;imgWin=null;}
-  if(imgblock && imgWin)
-    {
-      imgstyle=imgblock.style?imgblock.style:imgblock;
-      imgWinstyle=imgWin.style?imgWin.style:imgWin;
-      setWinHeight();
-      setWinWidth();
-      setScrollWidths();
-      imgstyle.top=0+bPX;
-      imgstyle.left=0+bPX;
-    }
-}
 
 // ------------------------------------------------
 // The following functions are the "exported" ones.
 
-function scrollImage(sDir)
-{
-  if (imgstyle)
-  {
-    curTop=parseInt(imgstyle.top);
-    curLeft=parseInt(imgstyle.left);
-
-    if (sDir=='up')
-    {
-      newTop=curTop+scrollMaxY;
-      if (newTop<0)
-      {imgstyle.top=newTop+bPX;}
-      else {imgstyle.top=0+bPX;}
-    }
-    else if (sDir=='down')
-    {
-      newTop=curTop-scrollMaxY;
-      if (newTop>imgMaxY)
-      {imgstyle.top=newTop+bPX;}
-      else {imgstyle.top=imgMaxY+bPX;}
-    }
-    else if (sDir=='right')
-    {
-      newLeft=curLeft-scrollMaxX;
-      if (newLeft>imgMaxX)
-      {imgstyle.left=newLeft+bPX;}
-      else {imgstyle.left=imgMaxX+bPX;}
-    }
-    else if (sDir=='left')
-    {
-      newLeft=curLeft+scrollMaxX;
-      if (newLeft<0)
-      {imgstyle.left=newLeft+bPX;}
-      else {imgstyle.left=0+bPX;}
-    }
-  }
+function docRef() {
+    return top.frames[0].textframe
+            ? top.frames[0].textframe.document
+            : top.frames[0].document; 
 }
 
-
-function scrollOver(sDir)
-{
-  if (imgstyle && isLded==1)
-  {
-    curTop=parseInt(imgstyle.top);
-    curLeft=parseInt(imgstyle.left);
-    if (scrollTime) {clearTimeout(scrollTime);}
-  if (sDir=='up')
-    {
-      newTop=curTop+scrollAmount;
-      if (newTop<0)
-      {imgstyle.top=newTop+bPX;}
-      else {imgstyle.top=0+bPX;}
-    }
-    else if (sDir=='down')
-    {
-      newTop=curTop-scrollAmount;
-      if (newTop>imgMaxY)
-      {imgstyle.top=newTop+bPX;}
-      else {imgstyle.top=imgMaxY+bPX;}
-    }
-    else if (sDir=='right')
-    {
-      newLeft=curLeft-scrollAmount;
-      if (newLeft>imgMaxX)
-      {imgstyle.left=newLeft+bPX;}
-      else {imgstyle.left=imgMaxX+bPX;}
-    }
-    else if (sDir=='left')
-    {
-      newLeft=curLeft+scrollAmount;
-      if (newLeft<0)
-      {imgstyle.left=newLeft+bPX;}
-      else {imgstyle.left=0+bPX;}
-    }
-  scrollTime=setTimeout("scrollOver('"+sDir+"')",20);
-  }
+function ZoomCookieValue() {
+    return getnamevalue("zoom", 100);
 }
 
-function stopOver()
-{
-  clearTimeout(scrollTime);
-  scrollTime = 0;
+function SetZoomCookieValue(value) {
+    setnamevalue("zoom", value);
 }
 
-function reSize(newsize)
-{
-if (frameRef.scanimage) 
-  {
-    frameRef.scanimage.width=newsize;
-    setScrollWidths();
-    imgstyle.top=0+bPX;
-    imgstyle.left=0+bPX;
-  }
+function ZoomInputValue() {
+    return parseInt(docRef().editform.imgzoom.value);
 }
 
-function focusText()
-{
-if (isLded && inProof)
-  {docRef.editform.text_data.focus();}
+function SetZoomInputValue(val) {
+    docRef().editform.imgzoom.value = val.toString();
 }
 
-function initializeStuff(wFace)
-{
-  frameRef=top.proofframe.document;
-  isLded=1;
-  inProof=1;
-  inFace=wFace;
-  cRef=top.menuframe.document.markform;
-  markRef=top.menuframe.document.markform;
-  if(wFace==1)
-    {
-      // enhanced interface, non-spellcheck
-      docRef=top.proofframe.document;
-      cnSel=docRef.selection? true : false;
-      setLayer();
-      doBU();
-    }
-  else if (wFace==0)
-    {
-      // standard interface, non-spellcheck
-      docRef=top.proofframe.textframe.document;
-      cnSel=docRef.selection? true : false;
-      if (window.opera) {cnSel=false;}
-    }
-  else if (wFace==2)
-    {
-      // enhanced interface, spellcheck
-      docRef=top.proofframe.document;
-      cnSel=false;
-      setLayer();
-    }
-  else if (wFace==3)
-    {
-      // standard interface, spellcheck
-      docRef=top.proofframe.document;
-      cnSel=false;
-    }
-
-
+function SetImageWidth() {
+    frameRef.scanimage.style.width = (10 * ZoomInputValue()).toString() +'px';
 }
-inProof=0; // used by dp_proof.js
-isLded=0;
-inFace=0;
+
+function focusText() {
+    if (isLded && inProof) {
+        docRef().editform.text_data.focus();
+    }
+}
+
+function eScroll (event) {
+    var t;
+    if(! event.altKey)
+        return;
+    event.cancelBubble = true;
+	if (event.stopPropagation) 
+        event.stopPropagation();
+    
+    var rolled = 0;
+    if ('wheelDelta' in event) {
+        rolled = event.wheelDelta;
+    }
+    else {  // Firefox - units of detail and wheelDelta properties different.
+        rolled = -40 * event.detail;
+    }
+
+    if(event.srcElement) {
+        t = event.srcElement;
+    }
+    else if(event.target) {
+        t = event.target;
+    }
+
+    if(t.id == "scanimage") {
+        return imageSize(rolled);
+    }
+    else if(t.id == "text_data") {
+        return textSize(rolled);
+    }
+}
+
+function textSize(amt) {
+    var ts = docRef().getElementById("fntSize");
+    if(amt < 0) {
+        if(ts.selectedIndex > 0) {
+            ts.selectedIndex -= 1;
+        }
+        chFSize(ts.value);
+    }
+    if(amt > 0) {
+        if(ts.selectedIndex < ts.options.length) {
+            ts.selectedIndex += 1;
+        }
+        chFSize(ts.value);
+    }
+    return false;
+}
+
+function initZoom() {
+    var zoom = ZoomCookieValue();
+    SetZoomInputValue(zoom);
+    SetImageWidth(zoom);
+}
+
+function initializeStuff(wFace) {
+    var textdata;
+
+    initZoom();
+
+    interface = wFace;
+
+    frameRef = top.frames[0].document;
+    isLded = 1;
+    inProof = 1;
+    cRef = top.menuframe.document.markform;
+
+
+    // if(wFace == 1) {
+            // enhanced interface, non-spellcheck
+            // docRef = top.frames[0].document;
+            // doBU();
+    // }
+    // else if (wFace == 0) {
+        // standard interface, non-spellcheck
+        // docRef = top.frames[0].textframe.document;
+    // }
+    if(proofframe && proofframe.imageframe 
+                  && proofframe.imageframe.document
+                  && proofframe.imageframe.document.getElementById) {
+        scanimage = proofframe.imageframe.document.getElementById("scanimage");
+    }
+    else {
+        scanimage = proofframe.document.getElementById("scanimage");
+    }
+
+    scanimage.style.width = 10 * ZoomInputValue() + 'px'
+
+    if (scanimage.addEventListener) {
+        scanimage.addEventListener ("mousewheel", eScroll, false);
+        scanimage.addEventListener ("DOMMouseScroll", eScroll, false);
+    }
+    else {
+        scanimage.attachEvent ("onmousewheel", eScroll);
+    }
+
+    if ( docRef.editform.text_data ) {
+        textdata = docRef.editform.text_data;
+    }
+    if (textdata.addEventListener) {
+        textdata.addEventListener ("mousewheel", eScroll, false);
+        textdata.addEventListener ("DOMMouseScroll", eScroll, false);
+    }
+    else {
+        textdata.attachEvent ("onmousewheel", eScroll);
+    }
+    if(! docRef.selection ) {
+        docRef.editform.text_data.style.whiteSpace = 'pre-line';
+    }
+}
+
+function ImgBigger() {
+    SetZoomInputValue(ZoomInputValue() * 1.2);
+    SetImageWidth();
+}
+
+function ImgSmaller() {
+    SetZoomInputValue(ZoomInputValue() / 1.2);
+    SetImageWidth();
+}
+
+function ResetImageSize() {
+    SetZoomInputValue(100);
+    SetImageWidth();
+}
+
+function imageSize(amt) {
+    var zoom = ZoomInputValue();
+    if(amt > 0) {
+        zoom += 5;
+        if(zoom > 150) {
+            zoom = 150;
+        }
+    }
+    else if(amt < 0) {
+        zoom = min(zoom = 5, 20);
+    }
+    SetZoomInputValue(zoom);
+    scanimage.style.width = (zoom * 10).toString() + 'px';
+    return false;
+}
+
+    
+inProof = 0; // used by dp_proof.js
+isLded = 0;
+// inFace = 0;

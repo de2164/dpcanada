@@ -1,248 +1,324 @@
-<?PHP
-include_once($relPath.'site_vars.php');
-include_once($relPath.'connect.inc');
-include_once($relPath.'iso_639_list.inc');
+<?php
+include_once($relPath.'wordcheck_engine.inc');
 
-//MS
-$charset = 'utf-8';
+// Arguments:
+//   orig_text - original text to run through dictionary
+//   projectid - id of projected, needed for temp filename
+//               and to load the custom dictionaries
+//   imagefile - image filename, needed for temp filename
+//   aux_languages - auxiliary language to check against
+//   accepted_words - array of words that should not be considered misspelled
+//
+// Returns an array consisting of:
+//     -- a string containing the HTML code for the 'text' part of the spellcheck interface.
+//     -- an array of messages (errors/warnings)
+//     -- an array of names of languages used.
+//
+function spellcheck_text($orig_text, $projectid, $imagefile, $aux_language,
+                                    $accepted_words) {
+    global $puncCharacters;
+    global $code_url;
 
-function spellcheck_text( $orig_text, $projectid, $imagefile )
-{
-	$orig_text=str_replace(array("\r","\n\n","\n"),array("\n","[lf]","[lf]"),$orig_text);
+    // variable holding final string
+    $returnString="";
 
-	echo "<input type='hidden' name='text_data' value='" . html_safe($orig_text) . "'>";
+    // change all EOL characters to [lf]
+    $orig_text = str_replace(array("\r","\n\n","\n"),array("\n","[lf]","[lf]"),$orig_text);
 
-	$orig_lines= explode("[lf]",$orig_text);
+    // split the lines out into an array for later processing
+    $orig_lines = explode("[lf]",$orig_text);
 
-	{
-		global $aspell_temp_dir;
-		$tmp_file_name = $projectid . substr($imagefile,0,-4) . ".txt";
-		$tmp_file_path = "$aspell_temp_dir/$tmp_file_name";
+    // save the original text in a hidden form field
+    // this is used when applying spelling corrections
+    $returnString .= "<input type='hidden' name='text_data' value='" 
+                    . html_safe($orig_text) . "'>\n";
 
-		$fd=fopen($tmp_file_path,"w");
-		if (!$fd)
-		{
-			return;
-		}
+    // prepare the text for checking, in this case change all EOLs to spaces
+    $orig_text = str_replace('[lf]',' ',$orig_text);
 
-		fwrite($fd,"!\n");
-		foreach($orig_lines as $orig_line)
-		{
-			// adding carat
-			fwrite($fd,"^$orig_line\n");
-		}
-		fclose($fd);
+    // Handle a UI-ism so that func only needs to handle ''.
+    if ( $aux_language == _("Language") ) 
+        $aux_language = '';
 
-		global $aspell_executable, $aspell_prefix, $iso_639, $charset;
+    list($badWordHash,$languages,$messages) =
+        get_bad_words_for_text( $orig_text, $projectid, $imagefile,
+                            $aux_language, $accepted_words, 'LEVELS' );
 
-		// Decide which dictionaries to ask for.
-		$aspell_dict = '';
-		$abort = FALSE;
-		$project_language_property = mysql_result(mysql_query("
-			SELECT language FROM projects WHERE projectid='$projectid'
-			"),0);
-		$languages = preg_split('/ with /', $project_language_property );
-		// foreach ($languages as $language )
-		// We want to iterate over all of the project's languages,
-		// but aspell can't handle dictionaries from more than one lang,
-		// so instead we specify only the "primary" language.
-		$language = $languages[0];
-		{
-			$langcode = array_search( $language, $iso_639 );
-			if ( $langcode )
-			{
-				$dict_file = "$aspell_prefix/lib/aspell/$langcode.multi";
-				if ( file_exists( $dict_file ) )
-				{
-					$aspell_dict .= "-d $langcode ";
-				}
-				else
-				{
-					echo "Error: no dictionary file for language '$language'.<br>";
-					$abort = TRUE;
-				}
-			}
-			else
-			{
-				echo "Error: unrecognized language '$language'.<br>";
-				$abort = TRUE;
-			}
-		}
+    // ok, at this point we have a finalized list of bad words.
+    // start preparing the page
 
-		if ($abort)
-		{
-			echo "Aborting spellcheck due to errors.<br>";
-			echo "Use either button below to return to the proofreading interface.<br>";
-			return;
-		}
+    // define the styles used for the interface (highlight for the punctuation, AW button, etc)
+    $returnString.="<style type='text/css'>" .
+                   "  .hl { background-color: yellow; color: black; }" .
+                   "  img.aw { border: 0; margin-left: 5px; }" .
+                   "  .dpmono { font-family: DPCustomMono2,monospace; }" .
+                   "  span.aw { background-color: white; color: black; }" .
+                   "</style>";
+    $returnString.="<pre>\n";
 
-		$aspell_command="cat $tmp_file_path | {$aspell_executable} --prefix={$aspell_prefix} {$aspell_dict} --encoding {$charset} -H -a";
-		// echo $aspell_command; // Very useful for debugging
-		// run aspell
-		// "asr" stands for "aspell result"
-		$asr_text = `$aspell_command`;
-		$asr_text = str_replace(array("\r","\n"),array('',"[lf]"),$asr_text);
-		$asr_lines = explode("[lf]",$asr_text);
-	}
+    $puncArray = str_split($puncCharacters);
 
-	$n_bad_words=0;
+    // initialize the wordCount and the numBadWords
+    $numBadWords = 0;
+    $wordCount = array();
+    $badWords = array_keys($badWordHash);
+    // we need to force PHP to treat bad words that are numbers
+    // as strings (and compare them as such), otherwise things like
+    // having a bad word of '0' messes up the in_array function
+    $badWords = array_map('strval',$badWords);
 
-  echo "<style type='text/css'> .hl { background-color:yellow;color:black;}</style>";
-	echo "<pre>";
+    // loop through all the original lines one at a time
+    for ( $origLineNum = 0; $origLineNum < count($orig_lines); $origLineNum++ ) {
+        // get the line in a string
+        $origLine = $orig_lines[$origLineNum];
 
-	$orig_line_i = 0;
-	$orig_start  = 0;
+        // $origLine -- original line, punctuation and all
+        //  $newLine -- new line fully futzed with
 
-	// $asr_lines[0] is the identification line, so start at 1.
-	for ( $i = 1; $i < count($asr_lines); $i++ )
-	{
-		$orig_line = $orig_lines[$orig_line_i];
+        $newLine = $origLine;
 
-		$asr_line = $asr_lines[$i];
-		if ( $asr_line == '' )
-		{
-			// aspell outputs a blank line
-			// after it has finished with the current input line.
+        $lineIndex = $indexArray = array();
 
-			// Flush any remaining original-text on this line.
-			$orig_str = substr( $orig_line, $orig_start );
-			echo punct_hilite(html_safe($orig_str));
+        // find the index for each punctuation
+        for($lineIndex = 0; $lineIndex<strlen($origLine); $lineIndex++) {
+            $character = $origLine[$lineIndex];
+            if(in_array($character,$puncArray)) {
+                // check to see if we're dealing with an escaped HTML char
+                // (aka: &amp; &lt; &gt) and if so, skip it
+                if($character==';' 
+                    && preg_match("/&\w+;$|&#\d+;$/", substr($origLine, 0, $lineIndex+1))) {
+                   continue;
+                }
+                $indexArray[$lineIndex] = $character;
+            }
+        }
 
-			// Put a line-break in the output.
-			echo "<br>\n";
-			// (A single '\n' would do, but it makes the lines too squished.)
+        // find the index for each word before we futz with the line
+        foreach ( get_all_words_in_text($origLine,TRUE) as $lineIndex => $word ) {
+            if($word != "" 
+                && (in_array($word, $badWords) || in_array($word, $accepted_words))) {
+                // erase any punctuation-markers covered by this word
+                for( $li = $lineIndex; $li < $lineIndex + strlen($word); $li++ ) {
+                    unset($indexArray[$li]);
+                }
+                // and now mark the word
+                $indexArray[$lineIndex] = $word;
+            }
+        }
 
-			// And proceed to the next original-line.
-			$orig_line_i++;
-			$orig_start = 0;
-		}
-		else
-		{
-			$asr_flag = $asr_line{0};
-			// Because aspell was invoked in "terse" mode,
-			// $asr_flag must be one of & ? #
+        // now do the search/replace
+        krsort($indexArray);
+        foreach($indexArray as $lineIndex => $word) {
+            if($word == "") 
+                continue;
 
-			if ( $asr_flag == '&' || $asr_flag == '?' )
-			{
-				// format:
-				//     &  <original>  <count>  <offset>: <miss>, <miss>, ..., <guess>, ...
-				//     ?  <original>     0     <offset>: <guess>, <guess>, ...
+            $wordLen = strlen($word);
 
-				$sug_array = explode(":",$asr_line);
-				$asr_fields = explode(' ',$sug_array[0]);
-				$orig_word        = $asr_fields[1];
-				$n_suggs          = $asr_fields[2];
-				$orig_word_offset = $asr_fields[3];
-				$suggs_str        = trim($sug_array[1]);
-			}
-			else if ( $asr_flag == '#' )
-			{
-				// format:
-				//     # <original> <offset>
-				$asr_fields = explode(' ',$asr_line);
-				$orig_word        = $asr_fields[1];
-				$orig_word_offset = $asr_fields[2];
-				$n_suggs          = 0;
-				$suggs_str        = '';
-			}
-			else
-			{
-				echo "unexpected aspell flag: '$asr_flag'<BR>\n";
-				return;
-			}
+            // see if we are punctuation
+            if(in_array($word,$puncArray)) {
+                $newLine = substr_replace($newLine, _wrapPunc($word), $lineIndex, $wordLen);
+            } else if(in_array($word, $accepted_words)) {
+                // see if we're an AW word
+                $newLine = substr_replace($newLine, _wrapAW($word), $lineIndex, $wordLen);
+            }
+            else {
+                // not punctuation, handle word
 
-			// Because we wrote aspell's input file with a '^' at the start
-			// of each line, the offsets it gives us are one more than
-			// we'd get by looking at the original line.
-			// So decrease $orig_word_offset by 1.
-			$orig_word_offset -= 1;
+                // sanitize the words for the AW javascript
+                $jsSanitizedWord = bin2hex($word);
+                @$wordCount[$word]++;
+                $wordID = "{$jsSanitizedWord}_{$wordCount[$word]}";
+                $numBadWords++;
+                $wordSafe = html_safe($word);
 
-			// Flush any original-text preceding the bad word.
-			$orig_str = substr( $orig_line, $orig_start, $orig_word_offset-$orig_start );
-			echo punct_hilite(html_safe($orig_str));
+                // set the size of the edit box
+                // note: in some browsers the edit box is not wide enough
+                // for longer words, hence the scaling mechanism
+                $textBoxLen = $wordLen + max(1 + round($wordLen/5), 2);
 
-			$n_bad_words++;
+                // reset the string that will hold the edit box
+                $replaceString = "";
 
-			// Take the length *before* passing it through html_safe.
-			$orig_word_len = strlen($orig_word);
+                // if the AW button is wanted, add the initial span
+                if($badWordHash[$word] == WC_WORLD ) {
+                    $replaceString .= "<span id='$wordID'>";
+                    $onChange = " onBlur=\"disableAW('$wordID');\"";
+                    $onChange.= " onKeyup=\"disableAW('$wordID');\"";
+                }
+                else {
+                    $onChange = " onBlur=\"markPageChanged();\"";
+                    $onChange.= " onKeyup=\"markPageChanged();\"";
+                }
 
-			$orig_word = html_safe($orig_word);
+                // create the edit box
+                $replaceString .=
+                    "<input type='hidden' name='posit{$numBadWords}'
+                    value='$origLineNum|$lineIndex|$wordLen'>" 
+                    . "<input type='text' id='input_$wordID' name='sp$numBadWords'
+                    size='$textBoxLen' value='$wordSafe'
+                    class='dpmono'$onChange>";
 
-			// create html
-			// hidden values line|offset|word length
-			echo
-				"<input
-					type='hidden'
-					name='posit{$n_bad_words}'
-					value='$orig_line_i|$orig_word_offset|$orig_word_len'
-				><input
-					type='hidden'
-					name='wd{$n_bad_words}'
-					value='{$orig_word}'
-				><select
-					name='sp{$n_bad_words}'
-					onChange='setSpell($n_bad_words,this.value);'
-					style='font-family: DPCustomMono2'>
-					<option value='{$orig_word}' selected>{$orig_word}</option>
-					<option value='sp1input'>-- Insert --</option>
-				";
+                // if the AW button is wanted, add the closing span and the button
+                if($badWordHash[$word] == WC_WORLD ) {
+                    $replaceString .=
+                        "<a href='#' id='a_$wordID' onClick=\"return
+                        acceptWord('$jsSanitizedWord','$wordCount[$word]');\">"
+                        . "<img id='button_$wordID'
+                        src='$code_url/graphics/Book-Plus-Small.gif' title='" .
+                        _("Unflag All &amp; Suggest Word") . "'
+                        class='aw'></a>" .  "</span>";
+                }
 
-			if ($n_suggs > 0)
-			{
-				$suggs_str = html_safe($suggs_str);
+                $newLine = substr_replace($newLine,$replaceString,$lineIndex,strlen($word));
+            }
+        }
 
-				// break word list
-				$suggs = explode(', ',$suggs_str);
+        // output the final line
+        $returnString.=$newLine . "<br>\n";
+    }
 
-				foreach ($suggs as $sugg)
-				{
-					echo "<option value='$sugg'>$sugg</option>\n";
-				}
-			}
-			echo "</select>";
+    $returnString.="</pre>";
+    $returnString.="<input id='sptotal' type='hidden' name='sptotal' value='$numBadWords'>";
 
-			// Advance $orig_start
-			$orig_start = $orig_word_offset + $orig_word_len;
-		}
-	}
-
-	echo "</pre>";
-
-	echo "<input type='hidden' name='sptotal' value='$n_bad_words'>";
+    return array($returnString,$languages,$messages);
 }
 
-function html_safe( $str )
+// adds HTML code to punctuation to highlight it
+function _wrapPunc($word) {
+    return "<span class='hl'>$word</span>";
+}
+
+// adds HTML code to an accepted word to highlight it
+function _wrapAW($word) {
+    return "<span class='aw'>$word</span>";
+}
+
+
 // Return a copy of $str which has been rendered safe to send as
 // element-content or attribute-content in an HTML document.
-{
-        return htmlspecialchars($str,ENT_QUOTES);	
-}
-function punct_hilite( $str )
-// Return a copy of $str which has punctuation highlighted
-{
-	$ppattern='/[.,;:?!¡¿-]/';
-	$new = preg_replace( $ppattern,'<span class="hl">$0</span>',$str);
-	// unmangle the single/double quotes lt gt and ampersand
-	return preg_replace(
-	'@&(#039|quot|gt|lt|amp)<span class="hl">;</span>@', '&$1;', $new );
+function html_safe( $str ) {
+        return htmlspecialchars($str, ENT_QUOTES);    
 }
 
-// I think this function would only be useful
-// if you were sending the HTML to a browser
-// that only accepted (7-bit) ASCII.
-// But the rest of the site assumes
-// that any Latin-1 character is okay to send,
-// so I don't see why we wouldn't assume that here.
-//
-function escapeStringEntities($text)
-{
-	$ent_array=array();
-	for ($i=161;$i<256;$i++)
-	{
-		$ent_array[chr($i)]="&#{$i};";
-	}
-	$text=strtr($text,$ent_array);
-	return $text;
+function spellcheck_echo_script() {
+    global $charset;
+    global $code_url;
+
+    echo "
+    <script type='text/javascript'>
+    // function to accept specified words in the spellcheck
+    // it works by finding (span) elements with IDs in the format
+    // word_# and when found sets the content of the span
+    // to be just the word thereby removing the select and button
+    function acceptWord(wordIDprefix, wordNumber) {
+        var wordID=wordIDprefix + '_' + wordNumber;
+
+        // Get the original word
+        var input = document.getElementById('input_' + wordID);
+
+        // Double-check that the value hadn't changed
+        if(input && input.value != input.defaultValue) {
+            // what? it has? disable that button & bail!
+            disableAW(wordID);
+            return false;
+        }
+        // get the original word value
+        var wordOrig = input.value;
+
+        // loop through all bad words
+        var totalNumWords = document.getElementById('sptotal').value;
+        for(wordIndex=1; wordIndex<=totalNumWords; wordIndex++) {
+            // find occurrences of the word
+            var wordOccurID = wordIDprefix + '_' + wordIndex;
+
+            // check to see if this instance has been edited already
+            // by comparing the before and after words
+            var input = document.getElementById('input_' + wordOccurID);
+            if(input && input.value == input.defaultValue) {
+                // get the span
+                var wordSpan = document.getElementById(wordOccurID);
+                // set contents to be the word itself
+                wordSpan.innerHTML=wordOrig;
+                wordSpan.className='aw';
+            }
+        }
+
+        // save the word in the accepted_words list
+        var acceptedWordsInput = document.getElementById('accepted_words');
+        if(acceptedWordsInput.value == '') {
+            acceptedWordsInput.value = wordOrig;
+        } else {
+            acceptedWordsInput.value = acceptedWordsInput.value + ' ' + wordOrig;
+        }
+
+        return false;
+    }
+
+    // Disable the Unflag button
+    function disableAW(wordID) {
+        var input = document.getElementById('input_' + wordID);
+        var a = document.getElementById('a_' + wordID);
+
+        // If the value of the input field hasn't changed, don't disable
+        if(input && input.value == input.defaultValue) {
+           // if the current and original values are the same
+           // and the button has been disabled, re-enable it
+           if(a && !a.href) {
+               enableAW(wordID); 
+           }
+           return false;
+        }
+
+        // If we're here, we should be disabling the button
+        var button = document.getElementById('button_' + wordID);
+        if(button && a && a.href) {
+            button.src = '{$code_url}/graphics/Book-Plus-Small-Disabled.gif';
+            button.title = '" 
+            . _("Word has been edited; unable to Suggest") 
+            . "';
+            a.removeAttribute('href');
+        }
+
+        markPageChanged();
+
+        return false;
+    }
+
+    // Enable an already-disabled button
+    function enableAW(wordID) {
+        var button = document.getElementById('button_' + wordID);
+        var a = document.getElementById('a_' + wordID);
+        if(button && a) {
+            button.src = '{$code_url}/graphics/Book-Plus-Small.gif';
+            button.title = '"
+                . _("Unflag All & Suggest Word") . "'>;
+            a.href='#';
+        }
+        return false;
+    }
+
+    // Confirm exit if changes have been made
+    function confirmExit() {
+        // see if changes have been made
+        var changesMade = document.getElementById('is_changed').value;
+        if(changesMade==1) {
+            return confirm('" . _('Changes have been made. OK to quit without saving?')
+            . "');
+        }
+
+        // return true (ie: confirm exit) if no changes were made
+        return true;
+    }
+
+    // function to mark the page as changed
+    function markPageChanged() {
+        // mark the page as having been changed
+        document.getElementById('is_changed').value = 1;
+
+        return false;
+    }
+    </script>
+";
 }
 
 // --------------------------------------------
@@ -255,55 +331,85 @@ function escapeStringEntities($text)
 // so we apply stripslashes to anything (textual) we get from $_POST.
 
 
-function spellcheck_quit()
-{
-	$orig_text = stripslashes($_POST['text_data']);
-	return str_replace( "[lf]", "\r\n", $orig_text );
+function spellcheck_quit() {
+    $orig_text = stripslashes($_POST['revert_text']);
+    return str_replace( "[lf]", "\r\n", $orig_text );
 }
 
-function spellcheck_apply_corrections()
-{
-	$orig_text = stripslashes($_POST['text_data']);
+function spellcheck_apply_corrections() {
+    $orig_text = stripslashes($_POST['text_data']);
 
-	// were there any corrections?
-	$n_bad_words=isset($_POST['sptotal'])?$_POST['sptotal']:0;
-	if ($n_bad_words==0)
-	{
-		// just give them the text
-		$correct_text = str_replace("[lf]","\r\n",$orig_text);
-	}
-	else
-	{
-		// make corrections
-		$text_array = explode("[lf]",$orig_text);
+    $corrections = array();
 
-		// If there are multiple corrections on a single line,
-		// and you do them from left to right,
-		// any correction (after the first) will have its offset info invalidated
-		// (or at least, rendered harder to use) by the corrections to its left
-		// (if any of them has a $correct_word with a different length from the
-		// $orig_word).
-		// So we want to the corrections on a line from right to left.
-		// The easiest way to do this is to do all corrections in reverse order.
-		//
-		for ( $i = $n_bad_words; $i >= 1; $i-- )
-		{
-			// hidden values line|offset|word length
-			$inst_array=explode('|',$_POST['posit'.$i]);
-			$orig_line_i      = $inst_array[0];
-			$orig_word_offset = $inst_array[1];
-			$orig_word_length = $inst_array[2];
-			// hidden word
-			$correct_word=stripslashes($_POST['wd'.$i]);
-			// replace word in string
-			$text_array[$orig_line_i] =
-				substr($text_array[$orig_line_i],0,$orig_word_offset) .
-				$correct_word .
-				substr($text_array[$orig_line_i],$orig_word_offset+$orig_word_length);
-		}
-		$correct_text = implode("\r\n",$text_array);
-	}
-	return $correct_text;
+    // were there any corrections?
+    $n_bad_words = isset($_POST['sptotal'])?$_POST['sptotal']:0;
+    if($n_bad_words == 0) {
+        // just give them the text
+        $correct_text = str_replace("[lf]","\r\n",$orig_text);
+    }
+    else {
+        // make corrections
+        $text_array = explode("[lf]",$orig_text);
+
+        // If there are multiple corrections on a single line,
+        // and you do them from left to right,
+        // any correction (after the first) will have its offset info invalidated
+        // (or at least, rendered harder to use) by the corrections to its left
+        // (if any of them has a $correct_word with a different length from the
+        // $orig_word).
+        // So we want to the corrections on a line from right to left.
+
+        // First we go through them and build a list of the words on a given line,
+        // sort descending by the offset, and then do the corrections from RtL
+        //
+        $offsetList = array();
+        for ( $i = $n_bad_words; $i >= 1; $i-- ) {
+            if ( !isset($_POST['posit'.$i]) ) continue;
+            // hidden values line|offset|word length
+            list($orig_line_i,$orig_word_offset,$orig_word_length) =
+                explode('|', $_POST['posit'.$i]);
+
+            if(!isset($offsetList[$orig_line_i]))
+                $offsetList[$orig_line_i] = array();
+            array_push($offsetList[$orig_line_i], $orig_word_offset);
+            $offsetLookup["{$orig_line_i}_{$orig_word_offset}"] = $i;
+        }
+
+        // sort each row's offset array descending
+        $affectedRows = array_keys($offsetList);
+        foreach($affectedRows as $affectedRow) {
+            rsort($offsetList[$affectedRow]);
+        }
+
+        // now iterate over the lines and offsets doing the corrections
+        foreach($affectedRows as $affectedRow) {
+            foreach($offsetList[$affectedRow] as $offsetKey) {
+                $i = $offsetLookup["{$affectedRow}_{$offsetKey}"];
+
+                // hidden values line|offset|word length
+                list($orig_line_i, $orig_word_offset, $orig_word_length) =
+                    explode('|', $_POST['posit'.$i]);
+
+                // get the modified word, strip off any trailing spaces
+                $correct_word = rtrim(stripslashes($_POST['sp'.$i]));
+
+                // pull the original word
+                $orig_word = substr($text_array[$orig_line_i], $orig_word_offset, $orig_word_length);
+
+                if($orig_word!=$correct_word)
+                    $corrections[] = array($orig_word, $correct_word);
+
+                // replace word in string
+                $text_array[$orig_line_i] =
+                    substr($text_array[$orig_line_i],0,$orig_word_offset) 
+                    .  $correct_word 
+                    .  substr($text_array[$orig_line_i], $orig_word_offset+$orig_word_length);
+            }
+        }
+        $correct_text = implode("\r\n", $text_array);
+    }
+    return array($correct_text, $corrections);
 }
 
+// vim: sw=4 ts=4 expandtab
 ?>

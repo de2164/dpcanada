@@ -1,12 +1,15 @@
 <?PHP
-include_once($relPath.'site_vars.php'); // $wikihiero_dir
+global $relPath;
+// include_once($relPath.'dpinit.php'); // $wikihiero_dir
 
-//MS
-$charset="UTF-8";
-
-$utf8_site = (strcasecmp($charset,"UTF-8") == 0);
+$charset = "UTF-8";
+$utf8_site = true;
 
 // "PIT" stands for "Proofing Interface Toolbox" (ctrl_frame.php)
+//
+// Pit Tool Popup Links,
+// Pit Tool Buttons,
+// Pit Tool Links
 
 // -----------------------------------------------------------------------------
 
@@ -15,53 +18,40 @@ $utf8_site = (strcasecmp($charset,"UTF-8") == 0);
 
 $all_pit_popup_links = array();
 
-function define_pit_popup_link( $id, $label, $url, $window_name, $width, $height )
-{
-    $window_features = "width=$width,height=$height,directories=0,location=0,menubar=0,resizable,scrollbars,status=0,toolbar=0";
-    $js = "window.open('$url','$window_name','$window_features'); return false;";
-    $element = "<a href='#' onClick=\"$js\"\n>$label</a>\n";
-
-    global $all_pit_popup_links;
-    $all_pit_popup_links[$id] = $element;
-}
-
-function echo_popup_links( $ids )
-{
-    global $all_pit_popup_links;
-    echo implode('&nbsp;|&nbsp;', array_extract($all_pit_popup_links, $ids));
-}
-
-define_pit_popup_link(
-    'search_and_replace',
+// S and R
+define_pit_popup_link( 'search_and_replace',
     _('Search/Replace'),
     'srchrep.php',
     'dp_searchrepl',
     300, 250
 );
-define_pit_popup_link(
-    'table_maker',
+
+// table maker
+define_pit_popup_link( 'table_maker',
     _('Table Maker'),
     'mktable.php',
     'dp_mktable',
     600, 500
 );
-define_pit_popup_link(
-    'greek_transliterator',
+
+// greek translit
+define_pit_popup_link( 'greek_transliterator',
     _('Greek Transliterator'),
     'greek2ascii.php',
     'gkasciiWin',
     640, 210
 );
-if ($wikihiero_dir)
-{
-    define_pit_popup_link(
-        'hieroglyph_transliterator',
-        _("Hieroglyphs"),
-        'hiero/index.php',
-        'dp_hiero',
-        600, 400
-    );
-}
+
+// hiero translit
+// if ($wikihiero_dir) {
+    // define_pit_popup_link(
+        // 'hieroglyph_transliterator',
+        // _("Hieroglyphs"),
+        // 'hiero/index.php',
+        // 'dp_hiero',
+        // 600, 400
+    // );
+// }
 
 // -----------------------------------------------------------------------------
 
@@ -70,80 +60,56 @@ if ($wikihiero_dir)
 
 $all_pit_tool_buttons = array();
 
-function define_pit_tool_button( $id, $accesskey, $title, $label, $onclick )
-{
-    # IE, not surprisingly, differs from all other browsers
-    # in rendering the buttons. The difference is in the centering
-    # of the labels, and only Opera gets it wrong if pretending to be IE
-    $spc = stristr(@$_SERVER['HTTP_USER_AGENT'],"msie") ? "" : "&nbsp;";
-
-    $onmousedown_js = "this.style.position = 'relative'; this.style.top = '1px'; this.style.left = '1px'";
-    $onmouseup_js = "this.style.top = '0px'; this.style.left = '0px'";
-
-    global $all_pit_tool_buttons;
-    $all_pit_tool_buttons[$id] = <<<EOS
-<a
-    href="#"
-    onclick="$onclick"
-    accesskey="$accesskey"
->
-<div
-    class='proofbutton'
-    style='height: 22px; width: 22px; padding-left: 2px; padding-right: 2px;'
-    onmousedown="$onmousedown_js"
-    onmouseup="$onmouseup_js"
-    align="top"
-    title="$title"
->$spc$label
-</div>
-</a>
-
-EOS;
-}
-
-function echo_tool_buttons( $ids )
-{
-    global $all_pit_tool_buttons;
-    echo implode('', array_extract($all_pit_tool_buttons, $ids));
-}
-
-define_pit_tool_button(
-    'italic',
+// italic
+define_pit_tool_button( 'italic',
     'i',
     _('Italics'),
     '<i>i</i>',
     "top.new_iMU('<i>','</i>')"
 );
-define_pit_tool_button(
-    'bold',
+
+// bold
+define_pit_tool_button( 'bold',
     'b',
     _('Bold'),
     '<b>B</b>',
     "top.new_iMU('<b>','</b>')"
 );
-define_pit_tool_button(
-    'small_caps',
+
+// small caps
+define_pit_tool_button( 'small_caps',
     's',
     _('Small Caps markup'),
     "<span style='font-variant: small-caps;'>Sc</span>",
     "top.new_iMU('<sc>','</sc>')"
 );
-define_pit_tool_button(
-    'upper_case',
+
+// remove markup
+define_pit_tool_button( 'remove_markup',
+    'm',
+    _('Remove markup'),
+    "<span style='text-decoration: line-through;'>&lt;x&gt;</span>",
+    "top.transformText('remove_markup')"
+);
+
+// uppercase
+define_pit_tool_button( 'upper_case',
     'u',
     _('Uppercase selection'),
     'ABC',
     "top.transformText('upper-case')"
 );
-define_pit_tool_button(
-    'title_case',
+
+// title case
+define_pit_tool_button( 'title_case',
     't',
     _('Title case selection'),
     'Abc',
     "top.transformText('title-case')"
 );
-define_pit_tool_button(
-    'lower_case',
+
+// lowercase
+define_pit_tool_button( 'lower_case',
     'l',
     _('Lowercase selection'),
     'abc',
@@ -159,8 +125,7 @@ define_pit_tool_button(
 
 $all_pit_tool_links = array();
 
-function define_pit_tool_link( $id, $label, $title, $onclick )
-{
+function define_pit_tool_link( $id, $label, $title, $onclick ) {
     $label   = htmlspecialchars($label, ENT_NOQUOTES);
     $title   = htmlspecialchars($title);
     $onclick = htmlspecialchars($onclick);
@@ -170,115 +135,127 @@ function define_pit_tool_link( $id, $label, $title, $onclick )
         "<a href='#' onclick=\"$onclick\" title=\"$title\">$label</a>";
 }
 
-function echo_tool_links( $ids )
-{
+function echo_tool_links( $ids ) {
     global $all_pit_tool_links;
     echo implode("\n&nbsp;\n", array_extract($all_pit_tool_links, $ids));
 }
 
+// [Greek: ]
 define_pit_tool_link(
     'greek',
     '[Greek: ]',
     '[Greek:',
     "top.new_iMU('[Greek: ',']')"
 );
+
+// [Sidenote: ]
 define_pit_tool_link(
     'sidenote',
     '[Sidenote: ]',
     '[Sidenote:',
     "top.new_iMU('[Sidenote: ',']')"
 );
+
+// [Illustration: ]
 define_pit_tool_link(
     'illustration',
     '[Illustration: ]',
     '[Illustration:',
     "top.new_iMU('[Illustration: ',']')"
 );
+
+// [** note]
 define_pit_tool_link(
     'note',
     '[** ]',
     'Note',
     "top.new_iMU('[** ',']')"
 );
+
+// [ ]
 define_pit_tool_link(
     'brackets',
     '[ ]',
     '[ ]',
     "top.new_iMU('[',']')"
 );
-//define_pit_tool_link(
-//    'curlybraces',
-//    '&#123; &#125;',
-//    '&#123; &#125;',
-//    "top.new_iMU('&#123;','&#125;')"
-//);
+
+
+// { }
+define_pit_tool_link(
+    'curlybraces',
+    '{ }',
+    '{ }',
+    "top.new_iMU('{','}')"
+);
+
+// [Footnote ]
 define_pit_tool_link(
     'footnote',
     '[Footnote #: ]',
     '[Footnote #:',
     "top.new_iMU('[Footnote #: ',']')"
 );
+
+// /* */
 define_pit_tool_link(
     'slash_star',
     '/* */',
-    _('Start poetry/table'),
-    "top.new_iMU('/*\\n','\\n*/')"
+    _('poetry/table'),
+    "top.new_iMU('/*\\\\n','\\\\n*/')"
 );
+
+// /# #/
 define_pit_tool_link(
     'slash_number',
     '/# #/',
     _('Start block quote'),
     "top.new_iMU('/#\\n','\\n#/')"
 );
+
+// <tb>
 define_pit_tool_link(
     'thought_break',
     '<tb>',
     _('Thought Break'),
     "top.new_iMU('\\n<tb>\\n','')"
 );
+
+// [Blank Page]
 define_pit_tool_link(
     'blank_page',
     '[Blank Page]',
     '[Blank Page]',
-    "top.iMUO(6)"
+    "top.iBlankPage()"
 );
 
 // -----------------------------------------------------------------------------
 
-function echo_character_selector( $id, $title, $option_args )
-{
+function echo_character_selector( $id, $title, $option_args ) {
     global $utf8_site;
 
     echo '<td align="right">';
     echo <<<EOS
-<select
-    name="tChars{$id}"
-    ID="tChars{$id}"
-    title="{$title}"
-    onchange="if (this.options[selectedIndex].value !=0){top.new_iMUc(this.options[selectedIndex].value);}"
-    class="dropchars"
->
+<select name="tChars{$id}" id="tChars{$id}" title="{$title}"
+    onchange="if (this.options[selectedIndex].value != 0){top.new_iMUc(this.options[selectedIndex].value);}"
+    onfocus="this.style.fontSize='200%';"
+    onblur="this.style.fontSize='100%';"
+    class="dropchars">
 
 EOS;
 
-    foreach ( $option_args as $arg )
-    {
-        if ( is_string($arg) )
-        {
+    foreach ( $option_args as $arg ) {
+        if ( is_string($arg) ) {
             echo "<option value='0'>{$arg}</option>\n";
         }
-        elseif ( is_array($arg) )
-        {
-            foreach ( $arg as $codepoint )
-            {
-                if ( $codepoint <= 255 || $utf8_site )
-                {
+        elseif ( is_array($arg) ) {
+            foreach ( $arg as $codepoint ) {
+                if ( $codepoint <= 255 || $utf8_site ) {
                     echo "<option value='$codepoint'>&#{$codepoint};</option>\n";
                 }
             }
         }
-        else
-        {
+        else {
             assert( 0 );
         }
     }
@@ -287,8 +264,7 @@ EOS;
     echo "</td>\n";
 }
 
-function echo_character_selectors_block()
-{
+function echo_character_selectors_block() {
     echo "<table border='0' cellpadding='0' cellspacing='0'>\n";
 
     // START OF ROW 1
@@ -386,24 +362,16 @@ function echo_character_selectors_block()
     global $utf8_site;
 
     ?>
-        <td valign="top" <? if($utf8_site) echo "rowspan='2'"; ?>>
-            <input
-                TYPE="text"
-                VALUE=""
-                accesskey="\"
-                name="markBoxChar"
-                class="dropnormal"
-                size="1"
-                onclick="this.select()"
-            >
+        <td class="top" <? if($utf8_site) echo "rowspan='2'"; ?>>
+            <input type="text" value="" accesskey="\" name="markBoxChar" id="markBoxChar" 
+                size="2" onclick="this.select()" >
         </td>
     <?
 
     echo "</tr>\n";
     // END OF ROW 1
 
-    if ($utf8_site)
-    {
+    if ($utf8_site) {
         // START OF ROW 2
         echo "<tr>\n";
 
@@ -476,28 +444,61 @@ function echo_character_selectors_block()
 
 // -----------------------------------------------------------------------------
 
-function array_extract( $source, $keys )
-{
-    if ( $keys == 'ALL' )
-    {
+function array_extract( $source, $keys ) {
+    if ( $keys == 'ALL' ) {
         return $source;
     }
 
     $result = array();
-    foreach ( $keys as $key )
-    {
-        if ( array_key_exists($key, $source) )
-        {
+    foreach ( $keys as $key ) {
+        if ( array_key_exists($key, $source) ) {
             $result[$key] = $source[$key];
-        }
-        else
-        {
-            // It's tempting to do an assert(0), but $key could be for a tool
-            // that *can* exist, but happens not to in this installation.
-            // (i.e., currently, hieroglyph_transliterator)
         }
     }
     return $result;
+}
+
+function define_pit_popup_link( $id, $label, $url, $window_name, $width, $height ) {
+    $window_features = 
+        "width=$width,height=$height,directories=0,location=0,menubar=0,"
+       ."resizable,scrollbars,status=0,toolbar=0";
+    $js = "window.open('$url','$window_name','$window_features'); return false;";
+    $element = "<a href='#' onClick=\"$js\"\n>$label</a>\n";
+
+    global $all_pit_popup_links;
+    $all_pit_popup_links[$id] = $element;
+}
+
+function echo_popup_links( $ids ) {
+    global $all_pit_popup_links;
+    echo implode('&nbsp;|&nbsp;', array_extract($all_pit_popup_links, $ids));
+}
+
+function define_pit_tool_button( $id, $accesskey, $title, $label, $onclick ) {
+    # IE, not surprisingly, differs from all other browsers
+    # in rendering the buttons. The difference is in the centering
+    # of the labels, and only Opera gets it wrong if pretending to be IE
+    $spc = stristr(@$_SERVER['HTTP_USER_AGENT'],"msie") ? "" : "&nbsp;";
+
+    $onmousedown_js = "this.style.position = 'relative'; this.style.top = '1px'; this.style.left = '1px'";
+    $onmouseup_js = "this.style.top = '0px'; this.style.left = '0px'";
+
+    global $all_pit_tool_buttons;
+    $all_pit_tool_buttons[$id] = <<<EOS
+<a href="#" onclick="$onclick" accesskey="$accesskey" >
+<div class='proofbutton'
+    style='height: 22px; width: 22px; padding-left: 2px; padding-right: 2px;'
+    onmousedown="$onmousedown_js" onmouseup="$onmouseup_js"
+    align="top" title="$title">$spc$label
+</div>
+</a>
+
+EOS;
+}
+
+function echo_tool_buttons( $ids ) {
+    global $all_pit_tool_buttons;
+    echo implode('', array_extract($all_pit_tool_buttons, $ids));
 }
 
 // vim: sw=4 ts=4 expandtab

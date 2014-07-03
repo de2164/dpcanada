@@ -1,12 +1,13 @@
 <?PHP
 $relPath='../../pinc/';
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'dpsql.inc');
 include_once($relPath.'theme.inc');
 
 error_reporting(E_ALL);
 
-if (!(user_is_a_sitemanager() || user_is_an_access_request_reviewer())) die("permission denied");
+if (!($User->IsSiteManager() || $User->MayManageRoles()))
+    die("permission denied");
 
 $username = @$_REQUEST['username'];
 

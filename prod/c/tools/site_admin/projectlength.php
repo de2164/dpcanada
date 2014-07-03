@@ -1,13 +1,14 @@
 <?
 $relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'user_is.inc');
 include_once($relPath.'theme.inc');
 
 function echo_result($result) {
   ?><table><tr><?
-  if(! $result) { ?><th>result not valid</th><? }
+  if(! $result) {
+    ?><th>result not valid</th><? 
+  }
   else {
     $i = 0;
     while ($i < mysql_num_fields($result)) {
@@ -33,14 +34,23 @@ function echo_result($result) {
 
 theme("Project Timing", "header");
 
-$query = 'SELECT projects.projectid AS \'ID\', projects.nameofwork AS \'Name\', projects.authorsname AS \'Author\', projects.username AS \'User\', projects.state AS \'State\', projects.postednum AS \'PostedPG\', FROM_UNIXTIME(project_events.timestamp) AS \'Start\', FROM_UNIXTIME(projects.modifieddate) AS \'Last Modified\', '
-        . ' DATEDIFF(FROM_UNIXTIME(projects.modifieddate), FROM_UNIXTIME(project_events.timestamp)) AS \'Mod Days\','
-        . ' FROM_UNIXTIME(projects.t_last_edit) AS \'Last Edit\', '
-        . ' DATEDIFF(FROM_UNIXTIME(projects.t_last_edit), FROM_UNIXTIME(project_events.timestamp)) AS \'Edit Days\''
-        . ' FROM projects'
-        . ' LEFT JOIN project_events ON projects.projectid = project_events.projectid'
-        . ' WHERE project_events.event_type = "creation"'
-        . ' ORDER BY projects.postednum, project_events.timestamp';
+$query = "SELECT p.projectid AS ˝ID˝,
+                 p.nameofwork AS ˝Name˝,
+                 p.authorsname AS ˝Author˝,
+                 p.username AS ˝User˝,
+                 p.state AS ˝State˝,
+                 p.postednum AS ˝PostedPG˝,
+                 FROM_UNIXTIME(project_events.timestamp) AS ˝Start˝,
+                 FROM_UNIXTIME(p.modifieddate) AS ˝Last Modified˝, '
+                 DATEDIFF(FROM_UNIXTIME(p.modifieddate),
+                 FROM_UNIXTIME(project_events.timestamp)) AS ˝Mod Days˝,
+                 FROM_UNIXTIME(p.t_last_edit) AS ˝Last Edit˝,
+                 DATEDIFF(FROM_UNIXTIME(p.t_last_edit),
+                          FROM_UNIXTIME(project_events.timestamp)) AS ˝Edit Days˝
+            FROM projects p
+            LEFT JOIN project_events  pe ON p.projectid = pe.projectid
+            WHERE pe.event_type = 'creation'
+            ORDER BY p.postednum, pe.timestamp";
 
 $result = mysql_query($query);
 

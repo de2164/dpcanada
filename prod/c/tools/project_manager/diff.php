@@ -1,71 +1,194 @@
 <?php
+/*
+    buttons are: next, prev, proofer next, proofer prev
+    which needs current projectid, pagename, roundid, proofer
+    to make query SELECT pagename FROM pages
+                  WHERE projectid ... AND pagename < or > pagename
+                  (AND maybe roundn_user = joe)
+*/
+
 $relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
-include_once($relPath.'stages.inc');
-include_once($relPath.'theme.inc');
-include_once($relPath.'project_edit.inc');
-include_once('projectmgr.inc');
+require_once $relPath . "dpinit.php";
+require_once $relPath . "DpProject.class.php";
+require_once $relPath . "DpPage.class.php";
+require_once "DifferenceEngineWrapper.php";
 
-$projectid   = $_GET['project'];
-$image       = $_GET['image'];
-$L_round_num = $_GET['L_round_num'];
-$R_round_num = $_GET['R_round_num'];
+/** @var $User DpThisUser */
+$User->IsLoggedIn()
+    or RedirectToLogin();
 
-$title = sprintf( _('Difference for page %s'), $image );
+$projectid       = ArgProjectId();
+$imagefile       = Arg("imagefile");
+$pagename        = Arg("pagename", imagefile_to_pagename($imagefile));
+$roundid         = Arg("roundid");
 
-$no_stats=1;
-$extra_args = array("css_data" => "span.custom_font {font-family: DPCustomMono2, Courier New, monospace;}");
-theme($title, "header", $extra_args);
+$btnnext         = IsArg("btnnext");
+$btnprev         = IsArg("btnprev");
+$btnprfnext      = IsArg("btnprfnext");
+$btnprfprev      = IsArg("btnprfprev");
 
-echo "<h3 align='center'>$title</h3>";
+if(! $projectid)
+    die(_("Project id not provided."));
+if($imagefile == "" && $pagename == "")
+    die(_("Page Name not provided."));
+if(! $roundid)
+    die(_("Round id not provided."));
+
+$project         = new DpProject($projectid);
+$page            = new DpPage($projectid, $pagename);
+$proofername     = $page->RoundUser($roundid);
+$prevroundid     = RoundIdBefore($roundid);
+$prevproofername = $page->RoundUser($prevroundid);
 
 
-if ( $L_round_num == 0 )
-{
-	$L_text_column_name = 'master_text';
-	$L_label = _('OCR');
+// determine what page is wanted
+if($btnnext) {
+    $pgname = $project->PageNameAfter($pagename);
+    if($pgname) {
+        $pagename = $pgname;
+    }
 }
-else
-{
-	$L_round = get_Round_for_round_number($L_round_num);
-	$L_text_column_name = $L_round->text_column_name;
-	$L_label = $L_round->id;
+else if($btnprev) {
+    $pgname = $project->PageNameBefore($pagename);
+    if($pgname) {
+        $pagename = $pgname;
+    }
+}
+else if($btnprfnext) {
+    $pgname = $project->ProoferRoundPageNameAfter($pagename, $prevroundid);
+    if($pgname) {
+        $pagename = $pgname;
+    }
+}
+else if($btnprfprev) {
+    $pgname = $project->ProoferRoundPageNameBefore($pagename, $prevroundid);
+    if($pgname) {
+        $pagename = $pgname;
+    }
 }
 
-{
-	$R_round = get_Round_for_round_number($R_round_num);
-	$R_text_column_name = $R_round->text_column_name;
-	$R_label = $R_round->id;
-}
+// if(empty($pagename)) {
+    // $pagename = $imagefile;
+// }
 
-$res = mysql_query("
-	SELECT $L_text_column_name, $R_text_column_name
-	FROM $projectid
-	WHERE image='$image'
-");
-list($L_text, $R_text) = mysql_fetch_row($res);
+// get the page
+$page        = new DpPage($projectid, $pagename);
+
+$proofername     = $page->RoundUser($roundid);
+$prevproofername = $page->RoundUser($prevroundid);
+$pagename        = $page->PageName();
+$project_title   = $page->Title();
+$text            = $page->RoundText($roundid);
+$prevtext        = $page->RoundText($prevroundid);
+
+$label           = $project->UserMaySeeNames()
+                     ? $roundid . " " . $page->RoundUser($roundid)
+                     : $roundid;
+$prevlabel       = $project->UserMaySeeNames()
+                     ? $prevroundid." ".$page->RoundUser($prevroundid)
+                     : $prevroundid;
+
+// now have the image, users, labels etc all set up
+// -----------------------------------------------------------------
+
+$pagename   = $page->PageName();
+$title      = "Diff {$page->Title()} ("._("page name ")."{$pagename})";
+// $imgurl     = $page->ImageUrl();
+$projlink   = link_to_project($projectid, "Go to project page");
+
+$diffEngine = new DifferenceEngineWrapper();
+$view_image = _("view image");
+$imgurl = url_for_view_image($projectid, $pagename, true);
+
+echo "<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>$title</title>
+<link type='text/css' rel='stylesheet' href='{$css_url}/dp.css'>
+<script type='text/javascript' src='dpdiff.js'></script>
+</head>
+
+<body onload='init()'>
+<div class='container left'>
+
+<h1>$title</h1>
+
+<div id='diffbox' class='center w80'>
+    <a href='{$imgurl}'>$view_image</a>
+    <form id='navform' name='navform' method='GET' 
+            accept-charset='UTF-8' class='right' >\n";
+
+    echo "
+        <div class='lfloat'>
+        <input type='submit' name='btnprev' value='"
+            ._("Previous")."'>
+
+        ". _("Jump to:") . " 
+        <select id='pagelist' onChange='eListChange()'>\n";
+
+    foreach($project->PageRows() as $row) {
+        $sel = ($row['fileid'] === $pagename
+            ? " selected='selected' "
+            : "");
+        $name = $row['fileid'];
+        echo "<option value='$name' {$sel}>$name</option>\n";
+    } 
+
+    echo "
+        </select>
+    <input type='submit' name='btnnext' value='"._("Next")."'>
+    </div>\n";
+
+    if($prevroundid == "P1" || $prevroundid == "P2" 
+    || $prevroundid == "P3" || $prevroundid == "F1" ) {
+        echo "
+        <div class='rfloat'>
+        <input type='submit' name='btnprfprev' 
+                            value='"._("$prevroundid $prevproofername Prev")."'>
+        <input type='submit' name='btnprfnext' 
+                                value='"._("$prevroundid $prevproofername Next")."'>
+        </div>\n";
+    }
+
+    echo "
+        <input type='hidden' 
+            id='projectid' name='projectid' value='$projectid'>
+        <input type='hidden' 
+            id='pagename' name='pagename' value='$pagename'>
+        <input type='hidden' id='roundid' name='roundid' 
+            value='$roundid'>
+        <input type='hidden' id='imagepath' value='{$imgurl}'>
+    </form>
+    <p>{$projlink}</p>
+    </div>\n";
+
+    if($prevtext == $text) {
+        echo "
+        <div class='w50 center'>
+            <h1>
+                <span class='pct75 nobold'>$prevroundid($prevproofername)</span>"
+                ._("&nbsp;&nbsp;No differences.&nbsp;&nbsp;")."
+                <span class='pct75 nobold'>$roundid($proofername)</span>"
+            ."</h1>
+        </div>\n";
+    }
+    else {
+        $a = maybe_convert($prevtext);
+        $b = maybe_convert($text);
+        $diffEngine->showDiff($a, $b, $prevlabel, $label);
+    }
+echo "
+</div>
+</body></html>\n";
 
 // ---------------------------------------------------------
 
-class OutputPage {
-	function addHTML($text) {
-		echo $text;
-	}
-}
 
-function wfMsg($key) {
-	return ($key=="lineno")?_("Line $1"):$key;
-}
+// theme_footer();
+exit;
 
-$wgOut=new Outputpage();
 
-include("DifferenceEngine.inc");
-DifferenceEngine::showDiff(
-	$L_text,
-	$R_text,
-	$L_label,
-	$R_label
-);
-
-theme("", "footer");
+// vim: sw=4 ts=4 expandtab
 ?>
+projectID50c6514b5aff5

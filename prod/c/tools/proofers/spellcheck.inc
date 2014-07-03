@@ -1,62 +1,62 @@
-<?
-$relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
-include_once($relPath.'dp_main.inc');
+<?php
+$relPath = "./../../pinc/";
 include_once($relPath.'slim_header.inc');
+include_once($relPath.'links.php'); // new_window_link
 include_once('spellcheck_text.inc');
-include_once('PPage.inc');
+include_once('image_block_enh.inc');
 
-$text_data= isset($_POST['text_data'])? stripslashes($_POST['text_data']):'';
+// text_data should be set before we get here -- should take place in processtext.php
+#$text_data = isset($_POST['text_data'])? stripslashes($_POST['text_data']): $text_data;
 
-// set image and text height and width
-  if ($userP['i_layout']=='1')
-      {
-        $textWidth=$userP['v_tframe'];
-        $imageWidth=(100-$userP['v_tframe'])-1;
-        $textHeight=99;
-        $imageHeight=99;
-        $textTop="0px";
-        $textLeft=(100-$userP['v_tframe'])."%";
-      }
-  else
-      {
-        $textWidth=99;
-        $imageWidth=99;
-        $textHeight=$userP['h_tframe'];
-        $imageHeight=(100-$userP['h_tframe'])-1;
-        $textTop=100-$userP['h_tframe']."%";
-        $textLeft="1%";
-      }
+$revert_text = isset($_POST['revert_text']) 
+    ? stripslashes($_POST['revert_text']) 
+    : $text_data;
 
-slim_header("Spell Check",TRUE,FALSE);
-?>
-<SCRIPT LANGUAGE="JavaScript" SRC="dpspell.js" TYPE="text/javascript"></SCRIPT>
-<script language="JavaScript" type="text/javascript">
-<!--
-function ldAll()
-{top.initializeStuff(<?PHP
-  if ($userP['i_type']==1)
-    {echo "2";}
-  else
-    {echo "3";}
-?>);}
-function scrollImage(sDir)
-{top.scrollImage(sDir);}
-function scrollOver(sDir)
-{top.scrollOver(sDir);}
-function stopOver()
-{top.stopOver();}
-function getCurSel()
-{top.getCurSel();}
-function getCurCaret()
-{top.getCurCaret();}
-function showIZ()
-{top.showIZ();alert('done it');
-return false;}
-// -->
+$is_header_visible = array_get($_SESSION, "is_header_visible", 1);
+
+slim_header(_("WordCheck"), TRUE, FALSE);
+
+if($userP['i_type'] == 1)
+    ibe_echo_script();
+
+spellcheck_echo_script();
+
+echo "
+<script type='text/javascript'>
+function ldAll(){
+  top.initializeStuff(";
+  if ($userP['i_type'] == 1) {
+    echo '2';
+  }
+  else {
+    echo '3';
+  }
+echo ");
+}
+
+function toggleWCHeader() {
+    var header = document.getElementById('wc_header');
+    var headerLink = document.getElementById('wc_header_link');
+    var headerStateSave = document.getElementById('is_header_visible');
+    if(header) {
+        if(header.style.display == '') {
+            header.style.display = 'none';
+            headerLink.innerHTML = '" . _("Show WordCheck Header") . "';
+            headerStateSave.value = 0;
+        } else{
+            header.style.display = '';
+            headerLink.innerHTML = '" . _("Hide WordCheck Header") . "';
+            headerStateSave.value = 1;
+        }
+    }
+    return false;
+}
+
 </script>
-<style type="text/css">
-<!--
+";
+
+echo "
+<style type='text/css'>
 body {
   font-family: verdana, arial, helvetica, sans-serif;
   font-size: 12px;
@@ -64,120 +64,22 @@ body {
   background-color:#CDCDC1;
   text-align:center;
   overflow:auto;
-  }
-A:link {
-  color:#000000;
-  text-decoration : none; 
-  }
-A:visited {
-  color:#000000;
-  text-decoration : none; 
-  }
-A:hover {
-  color:#003300;
-  font-weight: bold;
-  text-decoration : none; 
-  }
-A:active {
-  color:#000033;
-  font-weight: bold;
-  text-decoration : none; 
-  }
-#imagehorz {
-  position:absolute;
-  left:25px;
-  top:0px;
-  <?PHP
-    echo "width:".($imageWidth-3)."%;\r\n";
-  ?>
-  height:25px;
-  z-index:3;
-  }
-#imagevert {
-  position:absolute;
-  left:0px;
-  top:25px;
-  width:25px;
-  <?PHP
-    echo "height:".($imageHeight-3)."%;\r\n";
-  ?>
-  z-index:4;
-  }
-#imageframe {
-  <?PHP
-/*    if ($userP['i_layout']=='1')
-      {
-        echo "position:absolute;\r\n".
-          "top:0px;\r\n".
-          "left:0px;\r\n";
-        echo "width:".$imageWidth."%;\r\n";
-      }
-    else {echo "position:relative;\r\n";}
-*/
-    echo "position:absolute;\r\n".
-      "top:25px;\r\n".
-      "left:25px;\r\n";
-    echo "width:".($imageWidth-3)."%;\r\n";
-    echo "height:".($imageHeight-3)."%;\r\n";
-  ?>
-  clip:rect(0px, 100%, 100%, 0px);
-  z-index:2;
-  text-align:center;
-  overflow:auto;
-  }
-#imagedisplay {
-  position:absolute;
-  left:0px;
-  top:0px;
-  z-index:1;
-  background-color:#EEDFCC;
-  }
-#controlframe { 
-  <?PHP
-/*    if ($userP['i_layout']=='1')
-      {
-        echo " position:absolute;\r\n";
-        echo "left:".$textLeft.";\r\n";
-        echo "top:".$textTop.";\r\n";
-        echo "width:".$textWidth."%;\r\n";
-      }
-    else {echo "position:relative;\r\n";}
-*/
-    echo " position:absolute;\r\n";
-    echo "left:".$textLeft.";\r\n";
-    echo "top:".$textTop.";\r\n";
-    echo "width:".$textWidth."%;\r\n";
-    echo "height:".$textHeight."%;\r\n";
-  ?>
-  clip:rect(0px, 100%, 100%, 0px);
-  background-color:#CE928C;
-  text-align:center;
-  z-index:6;
-  overflow:auto;
-  }
-// This declaration is what breaks spellcheck display for Opera users
-// Commenting it corrects the issue for the standard interface only.
-// Enhanced interface still experiences the same issue, and will require
-// more significant refactoring to address. (donovan)
-// #allframe { 
-//  position:absolute;
-//  left:0;
-//  top:0;
-//  width:100%;
-//  height=100%;
-//  background-color:#CE928C;
-//  text-align:center;
-//  z-index:6;
-//  overflow:auto;
-//  }
+  margin-top: 0;
+  }\n";
+
+if($userP['i_type'] == 1)
+    ibe_echo_styles();
+
+echo "
 #tbtext {
   border:1px solid #000000;
   text-align:left;
   } 
 #tdtop {
+  font-size:12px;
   border:1px solid #000000;
   background-color:#CDC0B0;
-  text-align:center;
+  text-align:left;
   padding:2px;
   }
 #tdtext {
@@ -185,100 +87,142 @@ A:active {
   background-color:#FFF8DC;
   padding:2px;
   }
-#tdbottom {
-  border:1px solid #000000;
-  background-color:#EEDFCC;
-  text-align:center;
-  padding:2px;
-  }
-#text_data {
-  padding:2px;
-  background-color:#FFF8DC;
-  color:#000000;
-  }
-.dropsmall {
-  font-size: 75%;
-  background-color:#FFF8DC;
-  }
-.dropnormal {
-  background-color:#FFF8DC;
-  }
-.boxnormal {
-  background-color:#FFF8DC;
-  }
 -->
 </style>
 </head><body 
-  text="#000000" 
-  topmargin="0" 
-  onload="ldAll()">
+  onload = 'ldAll()'>
+";
 
-<?PHP
-  // print basic image html
-    if ($userP['i_type']==1)
-      {
-?>
-<div 
-id="imagehorz"><table 
-  id="tbhorz" 
-  width="100%"><tr><td 
-    align="left"><a 
-    href="JavaScript:scrollImage('left')"><img 
-      src="gfx/a1_left.png" width="11" height="11" alt="Move Left" title="Move Left" border="0"></a>&nbsp;&nbsp;&nbsp;<a 
-    href="JavaScript: //" onmouseover="scrollOver('left')" onmouseout="stopOver()"><img 
-      src="gfx/a2_left.png" width="11" height="11" alt="Scroll Left" title="Scroll Left" border="0"></a></td><td 
-      align="right"><a 
-      href="JavaScript: //" onmouseover="scrollOver('right')" onmouseout="stopOver()"><img 
-        src="gfx/a2_right.png" width="11" height="11" alt="Scroll Right" title="Scroll Right" border="0"></a>&nbsp;&nbsp;&nbsp;<a 
-     href="JavaScript:scrollImage('right')"><img 
-       src="gfx/a1_right.png" width="11" height="11" alt="Move Right" title="Move Right" border="0"></a></td></tr></table></div><div 
-id="imagevert"><table 
-  id="tbvert" 
-  height="95%"><tr><td 
-    valign="top"><a 
-    href="JavaScript:scrollImage('up')"><img 
-      src="gfx/a1_up.png" width="11" height="11" alt="Move Up" title="Move Up" border="0"></a><p><a 
-    href="JavaScript: //" onmouseover="scrollOver('up')" onmouseout="stopOver()"><img 
-      src="gfx/a2_up.png" width="11" height="11" alt="Scroll Up" title="Scroll Up" border="0"></a></p></td></tr><tr><td 
-      valign="bottom"><a 
-      href="JavaScript: //" onmouseover="scrollOver('down')" onmouseout="stopOver()"><img 
-        src="gfx/a2_down.png" width="11" height="11" alt="Scroll Down" title="Scroll Down" border="0"></a><p><a 
-    href="JavaScript:scrollImage('down')"><img 
-      src="gfx/a1_down.png" width="11" height="11" alt="Move Down" title="Move Down" border="0"></a></p></td></tr></table></div><div 
-id="imageframe"><div 
-id="imagedisplay"><a href="JavaScript: //"><img 
-name="scanimage" id="scanimage" title="" alt="" 
-src="<?PHP echo $ppage->url_for_image();?>" 
-border="0" width="<?PHP 
-  if ($userP['i_layout']==1)
-    {$iWidth=$userP['v_zoom'];}
-  else {$iWidth=$userP['h_zoom'];}
-  $iWidth=round((1000*$iWidth)/100);
-  echo $iWidth;
-?>"></a></div></div><div 
-id="controlframe"><?PHP 
-      }
-    else
-      {
-       echo "<div \r\nid=\"allframe\">";
-      }
-?><form 
-name="spcorrects" action="processtext.php" method="POST"><table 
-  id="tbtext" 
-  cellpadding="10" 
-  align="center"><tr><?PHP
-    if ($userP['i_type'] !=1)
-    {
-        $url = $ppage->url_for_image();
-        echo "<td id=\"tdbottom\"><a href=\"$url\" target=\"imageshowwin\">View Image</a></td></tr><tr>";
+// print basic image html
+if ($userP['i_type'] == 1) {
+    if ($userP['i_layout'] == 1) {
+      $iWidth = $userP['v_zoom']; 
     }
-?><td 
+    else {
+      $iWidth = $userP['h_zoom']; 
+    }
+    $iWidth = round((1000*$iWidth)/100);
+
+    ibe_echo_block( $page->ImageUrl(), $iWidth );
+
+    echo '<div id="controlframe">';
+} 
+else {
+    echo '<div>';
+}
+
+echo "
+<form name='spcorrects' action='processtext.php' method='POST'>
+";
+    // change all EOL characters to [lf]
+    $revert_text = str_replace(array("\r","\n\n","\n"),array("\n","[lf]","[lf]"),$revert_text);
+    echo "<input type='hidden' name='revert_text' value='" . html_safe($revert_text) . "'>\n";
+    echo "<input type='hidden' id='is_changed' name='is_changed' value='0'>\n";
+    echo "<input type='hidden' id='accepted_words' name=\"accepted_words\" value='" 
+        . html_safe(implode(' ',$accepted_words)) . "'>\n";
+    echo "<input type='hidden' id='is_header_visible' name=\"is_header_visible\" value='$is_header_visible'>\n";
+
+    // run the text through the spellcheck - returns the form contents and a list of languages the page was checked against
+    list($page_contents,$languages,$messages) =
+        spellcheck_text( $text_data, $page->ProjectId(), $page->ImageFile(), $aux_language, $accepted_words );
+
+    // start the div containing the link to show/hide the WordCheck header
+    echo "<div>";
+    echo "<a id='wc_header_link' href='#' onClick='return toggleWCHeader();'>";
+    if($is_header_visible) {
+        echo _("Hide WordCheck Header");
+        $header_style="";
+    } else {
+        echo _("Show WordCheck Header");
+        $header_style="style='display: none;'";
+    }
+    echo "</a>";
+    echo "</div>";
+
+    // start the div that consists of the WordCheck header
+    // that can be toggled shown/hidden
+    echo "<div id='wc_header' $header_style>";
+    if ( count($messages) != 0 )
+    {
+        // warnings or errors were raised, print them out
+        echo "<p class='warning'>" . _("The following warnings/errors were raised:") . "<br>\n";
+        foreach ( $messages as $message ) {
+            echo "$message<br>\n";
+        }
+        echo "</p>";
+    }
+
+    // start the first line of the WordCheck header
+    // printing any dictionaries used
+    echo "<p>";
+    if(count($languages) > 0) {
+        echo sprintf(_("Dictionaries used: <b>%s</b>."),implode(', ', $languages));
+    } else {
+        echo "<b>" . _("No check against a dictionary has been made.") . "</b>";
+    }
+
+    // for the vertical layout, stick in a line break
+    // for the horizontal one, stick in a space
+    if ($userP['i_layout']==1) 
+        echo "<br>";
+    else 
+        echo " ";
+
+    // output the code allowing the user to select another language
+    echo _("Use additional: ");
+    echo "<select name='aux_language'>";
+    echo "<option value=''>" . _("Language") . "</option>\n";
+
+    // get a list of languages with dictionaries installed on the system
+    $dict_list = get_languages_with_dictionaries();
+    asort($dict_list);
+    foreach($dict_list as $langcode => $language) {
+        // skip the languages that we just used.
+        if(in_array($language, $languages)) 
+            continue;
+        echo "<option value='" .  htmlspecialchars($language, ENT_QUOTES) . "'";
+        if(strcmp($language, $aux_language) == 0) 
+            echo " selected";
+        echo ">$language</option>\n";
+    }
+    echo "</select>";
+
+echo "
+<input type='submit' name='rerunauxlanguage' value='" . _("Check") . "
+    title='" . _("Check page against an additional language") . "'>
+<br>\n";
+
+    // show help blurb on the UA&S icon
+    echo sprintf(
+        _("The %s icon accepts the word for this page and suggests it for the dictionary."),
+        "<img src=\"$code_url/graphics/Book-Plus-Small.gif\" border=\"0\">"
+    );
+    echo "</p>";
+    echo "</div>";
+    // here ends the div for the WordCheck header
+
+?>
+<table id="tbtext" cellpadding="10" align="center">
+<tr><td id="tdtop">
+<?php echo _("Resize image:"); ?>
+    <input title="<?php echo attr_safe(_("Zoom Out 25%")); ?>" id="zoomout_button" type="button" value="-25%" onclick="top.reSizeRelative(0.75)?true:this.disabled=true;">
+    <input title="<?php echo attr_safe(_("Zoom In 25%")); ?>" type="button" value="+25%" onclick="top.reSizeRelative(1.25); document.getElementById('zoomout_button').disabled=false;">
+    <input title="<?php echo attr_safe(_("Zoom to Original Size")); ?>" type="button" value="100%" onclick="top.reSizeRelative(-1); document.getElementById('zoomout_button').disabled=false;">
+<?php
+    // print the link to the WordCheck FAQ
+    echo " &nbsp; ";
+    echo new_window_link( "$code_url/faq/wordcheck-faq.php", _("WordCheck FAQ") );
+?>
+</td></tr>
+<tr>
+<td 
   id="tdtext" 
   valign="top">
-<?PHP
-    $ppage->echo_hidden_fields();
-
-    spellcheck_text( $text_data, $ppage->projectid(), $ppage->imagefile() );
+<?php
+echo "
+<input type='hidden' value='{$page->ImageFile()}' name='imagefile' id='imagefile'>
+<input type='hidden' value='{$page->ProjectId()}' name='projectid' id='projectid'>\n";
+    echo $page_contents;
 ?>
 </td>
 </tr>
@@ -287,20 +231,23 @@ name="spcorrects" action="processtext.php" method="POST"><table
         <input
             type="submit"
             name="spcorrect"
-            value="<? echo _("Submit Corrections"); ?>"
-            title="<? echo _("Keep spelling corrections and return to proofreading this page"); ?>"
+            value="<?php echo attr_safe(_("Submit Corrections")); ?>"
+            title="<?php echo attr_safe(_("Keep corrections and return to proofreading this page")); ?>"
         >
         &nbsp;&nbsp;&nbsp;
         <input
             type="submit"
             name="spexit"
-            value="<? echo _("Quit Spell Check"); ?>"
-            title="<? echo _("Abandon spelling corrections and return to proofreading this page"); ?>"
+            value="<?php echo attr_safe(_("Quit WordCheck")); ?>"
+            title="<?php echo attr_safe(_("Abandon corrections and return to proofreading this page")); ?>"
+            onClick="return confirmExit();"
         >
     </td>
 </tr>
 </table>
 </form>
 </div>
-</body>
-</html>
+<?php
+slim_footer();
+
+// vim: sw=4 ts=4 expandtab

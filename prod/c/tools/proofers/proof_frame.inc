@@ -1,13 +1,8 @@
 <?PHP
-// Invoking this file via include() causes the "image & text & buttons" parts
-// of the proofing interface (i.e., everything but the "AEIOU+" panel)
-// to be sent to the user.
 
-include_once($relPath.'dp_main.inc');
-
+global $userP;
 $interface_type = $userP['i_type'];
-switch ($interface_type)
-{
+switch ($interface_type) {
     case 0:
         // standard interface
         include('proof_frame_std.inc');
@@ -18,9 +13,13 @@ switch ($interface_type)
         include('proof_frame_enh.inc');
         break;
 
+    case 2:
+        // super interface
+        include('proof_frame_super.inc');
+        break;
+
     default:
         die( "unknown i_type: '$interface_type'" );
 }
 
 // vim: sw=4 ts=4 expandtab
-?>

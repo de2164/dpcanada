@@ -3,36 +3,27 @@
 // List contents vary with user permissions
 
 $relPath='../../pinc/';
-include_once($relPath.'dpsession.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'maintenance_mode.inc');
 include_once($relPath.'theme.inc');
 include_once($relPath.'project_states.inc');
 include_once($relPath.'dpsql.inc');
 
-// the user_is functions don't work unless this has been executed previously!
-// it's in dp_main.inc, but we also want this page to be accessible to 
-// people who aren't logged in, so we can't include that file,
-// which requries a visitor to log in
-dpsession_resume();
-
 //Check to see if we are in a maintenance mode
 abort_if_in_maintenance_mode();
-
-$locuserSettings = Settings::get_Settings($pguser);
 
 $no_stats = 1;
 
 // ---------------------------------------
 // Page construction varies with whether the user is logged in or out
-if (isset($GLOBALS['pguser'])) { $logged_in = TRUE;} else { $logged_in = FALSE;}
-
-if ($logged_in)
-{
-    if  ( user_is_image_sources_manager() ) {
+if ($User->IsLoggedIn()) {
+    if  ( $User->IsImageSourcesManager() ) {
         $min_vis_level = 0;
-    } else if (user_is_PM()) {
+    }
+    else if ($User->IsProjectManager()) {
         $min_vis_level = 1;
-    } else {
+    }
+    else {
         $min_vis_level = 2;
     }
 }
@@ -54,7 +45,7 @@ if (!isset($_GET['name']))
         echo "<a href='projectmgr.php'>"._("Back to your PM page")."</a><br><br>";
     }
 
-    if ($logged_in) {
+    if ($User->IsLoggedIn()) {
         $query = "SELECT
                     display_name as '"._("Name in<br>Dropdown")."',
                     case when length(url) > 5 then concat('<a href=\"',url,'\">',full_name,'</a>') 
@@ -121,7 +112,7 @@ if (!isset($_GET['name']))
     $can_see = 	(
 				($visibility == 3) 
 			or 
-				($logged_in 
+				($User->IsLoggedIn()
 					and 	
 							(	$visibility == 2 
 							   or 
@@ -177,7 +168,7 @@ if (!isset($_GET['name']))
 
         echo "<br><h3>$sub_title</h3>\n";
 
-        if ($logged_in) {
+        if ($User->IsLoggedIn()) {
 		echo "<br><h4>$details</h4>\n";
 	 }
        echo "\n<h4>$more_info</h4>\n\n";

@@ -7,29 +7,30 @@
 include_once($relPath.'http_headers.inc');
 include_once($relPath.'slim_header.inc');
 
-if ($userP['i_layout']=='1')
-{
+$userP = $User->UserP();
+
+if($User->IsVerticalLayout()) {
     $rows_or_cols = "COLS='*,{$userP['v_tframe']}%'";
+    $text_scrolling = ( 
+        $userP['v_tscroll'] == 0 
+            ? "SCROLLING='no'"
+            : "" );
 }
-else
-{
+else {
     $rows_or_cols = "ROWS='*,{$userP['h_tframe']}%'";
+    $text_scrolling = ( 
+        $userP['h_tscroll'] == 0 
+            ? "SCROLLING='no'"
+            : "" );
 }
 
-$params = $ppage->urlencoded();
+$imgurl = "image_frame_std.php"
+            ."?projectid=$projectid"
+            ."&amp;pagename=$pagename";
 
-if ( ($userP['i_layout']=='1' && $userP['v_tscroll']==0)
-    ||
-     ($userP['i_layout']=='0' && $userP['h_tscroll']==0) )
-{
-    $text_scrolling = "SCROLLING='no'";
-}
-else
-{
-    $text_scrolling = "";
-}
-
-$margins = "marginwidth='2' marginheight='2'";
+$texturl = "text_frame_std.php"
+            ."?projectid=$projectid"
+            ."&amp;pagename=$pagename";
 
 // -------------------------------------
 
@@ -37,16 +38,17 @@ echo "
     <!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Frameset//EN'
     'http://www.w3.org/TR/html4/frameset.dtd'>
 ";
-slim_header($ppage->projectid(),FALSE,FALSE);
+
+slim_header($projectid, FALSE, FALSE);
+
 echo "
-    </HEAD>
-    <FRAMESET $rows_or_cols>
-    <FRAME NAME='imageframe' SRC='image_frame_std.php?$params' $margins>
-    <FRAME NAME='textframe' SRC='text_frame_std.php?$params' $margins $text_scrolling>
-    </FRAMESET>
-    <NOFRAMES>Your browser is not frames capable!</NOFRAMES>
-    </HTML>
-";
+    </head>
+    <frameset $rows_or_cols>
+    <frame name='imageframe' src='$imgurl'>
+    <frame name='textframe' src='$texturl'>
+    </frameset>
+    <noframes>your browser is not frames capable!</noframes>
+    </html>";
 
 // vim: sw=4 ts=4 expandtab
 ?>
