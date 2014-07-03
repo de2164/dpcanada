@@ -1,14 +1,11 @@
 <?PHP
-$relPath="./../pinc/";
-include_once($relPath.'connect.inc');
+$relPath = "./../pinc/";
+include_once($relPath.'dpinit.php');
 include_once($relPath.'theme.inc');
 
-$db_Connection=new dbConnect();
+$title = _("Sign In");
 
-$signin = _("Sign In");
-theme($signin, "header");
-
+theme($title, "header");
 echo _("ID and Password are case sensitive.<BR>Make sure your caps lock is not on.");
-
 theme("", "footer");
 ?>
