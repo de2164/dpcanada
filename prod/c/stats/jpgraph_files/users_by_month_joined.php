@@ -1,12 +1,10 @@
 <?
 $relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
+include_once($relPath.'dpinit.php');
 include_once($jpgraph_dir.'/src/jpgraph.php');
 include_once($jpgraph_dir.'/src/jpgraph_bar.php');
 include_once($jpgraph_dir.'/src/jpgraph_line.php');
-include_once($relPath.'connect.inc');
 include_once($relPath.'page_tally.inc');
-new dbConnect();
 
 
 ///////////////////////////////////////////////////
@@ -16,16 +14,12 @@ new dbConnect();
 //
 $result = mysql_query("
 	SELECT
-		FROM_UNIXTIME(date_created, '%Y-%m')
-		  AS month,
-		count(*)
-		  AS num_who_joined,
-		SUM($user_ELR_page_tally_column > 0)
-		  AS num_who_proofed
+		FROM_UNIXTIME(date_created, '%Y-%m') AS month,
+		count(*) AS num_who_joined,
+		SUM($user_ELR_page_tally_column > 0) AS num_who_proofed
 	FROM users $joined_with_user_ELR_page_tallies 
 	GROUP BY month
-	ORDER BY month
-");
+	ORDER BY month");
 
 
 while ( $row = mysql_fetch_object($result) )

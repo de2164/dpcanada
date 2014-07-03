@@ -1,92 +1,77 @@
 <?
 $relPath='../pinc/';
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'dpsql.inc');
-include_once($relPath.'project_states.inc');
-include_once($relPath.'stages.inc');
-include_once($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
 
 $title = _("Most Requested Books");
-theme($title,'header');
+theme($title, 'header');
 
-echo "<br><h2 style='color: $theme[color_headerbar_bg];'>$title</h2><br>\n
-<p>You can sign up for notifications by following the &quot;Click here to register for automatic email notification of when this has been posted to Project Gutenberg Canada&quot; link on the Project Comments page when proofreading.</p>";
+echo _("<h2 class='headerbar'>$title</h2>
+<p>You can sign up for notifications by following the &quot;Click here to
+register for automatic email notification of when this has been posted to
+Project Gutenberg Canada&quot; link on the Project Comments page when
+proofreading.</p>");
 
-echo "<br><br><h3 style='color: $theme[color_headerbar_bg];'>" . _("Most Requested Books Being Proofread") . "</h2><br>\n";
+echo _("<h3 class='headerbar'>Most Requested Books Being Proofread</h3>\n");
+$tbl = new DpTable();
+$tbl->AddColumn("<Title", "nameofwork", "etitle");
+$tbl->AddColumn("<Author", "authorsname");
+$tbl->AddColumn("<Genre", "genre");
+$tbl->AddColumn("^Language", "language");
+$tbl->AddColumn("^Requests", "ncount");
+$tbl->SetRows(Query("WHERE phase IN ('P1', 'P2', 'P3', 'F1', 'F2')"));
+$tbl->EchoTableNumbered();
 
-$comments_url1 = mysql_escape_string("<a href='$code_url/project.php?id=");
-$comments_url2 = mysql_escape_string("'>");
-$comments_url3 = mysql_escape_string("</a>");
 
-// Looking at the other two queries, you might expect the first one to use
-// SQL_CONDITION_BRONZE. However, that would exclude the WAITING_FOR_RELEASE
-// states, which we apparently want to include here.
-// Instead, custom-build a project-state condition that includes the
-// WAITING and AVAILABLE states from each round.
-$state_condition = '0';
-for ( $rn = 1; $rn <= MAX_NUM_PAGE_EDITING_ROUNDS; $rn++ )
-{
-    $round = get_Round_for_round_number($rn);
-    $state_condition .= "
-        OR state='{$round->project_waiting_state}'
-        OR state='{$round->project_available_state}'
-    ";
-}
-dpsql_dump_themed_ranked_query("
-    SELECT
-        CONCAT('$comments_url1',projectID,'$comments_url2', nameofwork, '$comments_url3') AS 'Title', 
-        authorsname AS 'Author', 
-        genre AS 'Genre',
-        language AS 'Language',
-        COUNT(*) AS 'Notification Requests' 
-    FROM usersettings, projects 
-    WHERE value = projectid 
-        AND setting = 'posted_notice' 
-        AND ($state_condition)
-    GROUP BY value 
-    ORDER BY 'Notification Requests' DESC 
-    LIMIT 50
-");
+echo _("<h3 class='headerbar'>Most Requested Books In Post-Processing</h3>\n");
+$tbl = new DpTable();
+$tbl->AddColumn("<Title", "nameofwork", "etitle");
+$tbl->AddColumn("<Author", "authorsname");
+$tbl->AddColumn("<Genre", "genre");
+$tbl->AddColumn("^Language", "language");
+$tbl->AddColumn("^Requests", "ncount");
+$tbl->SetRows(Query("WHERE phase IN ('PP', 'PPV')"));
+$tbl->EchoTableNumbered();
 
-echo "<br>\n";
-echo "<br><br><h3 style='color: $theme[color_headerbar_bg];'>" . _("Most Requested Books In Post-Processing") . "</h2><br>\n";
 
-//        $post_url1 = mysql_escape_string("<a href='$code_url/project.php?id=");
-
-dpsql_dump_themed_ranked_query("
-    SELECT
-        CONCAT('$comments_url1',projectID,'$comments_url2', nameofwork, '$comments_url3') AS 'Title', 
-        authorsname AS 'Author', 
-        genre AS 'Genre',
-        language AS 'Language',
-        COUNT(*) AS 'Notification Requests' 
-    FROM usersettings, projects 
-    WHERE value = projectid 
-        AND setting = 'posted_notice' 
-        AND ".SQL_CONDITION_SILVER."
-    GROUP BY value 
-    ORDER BY 'Notification Requests' DESC 
-    LIMIT 50
-");
-
-echo "<br>\n";
-echo "<br><br><h3 style='color: $theme[color_headerbar_bg];'>" . _("Most Requested Books Posted to Project Gutenberg Canada") . "</h2><br>\n";
-
-$pg_url1 = mysql_escape_string("<a href='http://www.gutenberg.ca/etext/");
-dpsql_dump_themed_ranked_query("
-    SELECT
-        CONCAT('$pg_url1',postednum,'$comments_url2', nameofwork, '$comments_url3') AS 'Title', 
-        authorsname AS 'Author', 
-        genre AS 'Genre',
-        language AS 'Language',
-        int_level AS 'Notification Requests' 
-    FROM projects 
-    WHERE ".SQL_CONDITION_GOLD."
-        AND int_level !=0
-    ORDER BY 'Notification Requests' DESC 
-    LIMIT 50
-");
+echo _("<h3 class='headerbar'>Most Requested Books Posted to FadedPage.com</h3>\n");
+$tbl = new DpTable();
+$tbl->AddColumn("<Title", "nameofwork", "eposted");
+$tbl->AddColumn("<Author", "authorsname");
+$tbl->AddColumn("<Genre", "genre");
+$tbl->AddColumn("^Language", "language");
+$tbl->AddColumn("^Requests", "ncount");
+$tbl->SetRows(Query("WHERE phase = 'POSTED'"));
+$tbl->EchoTableNumbered();
 
 theme("","footer");
+exit;
+
+function etitle($title, $row) {
+    return link_to_project($row["projectid"], $title);
+}
+
+function eposted($title, $row) {
+    return link_to_fadedpage_catalog($row["postednum"], $title);
+}
+
+function Query($where) {
+    global $dpdb;
+    return $dpdb->SqlRows("
+        SELECT 
+            n.projectid,
+            p.nameofwork,
+            p.authorsname,
+            p.genre,
+            p.language,
+            p.postednum,
+            COUNT(1) ncount
+        FROM notify n
+        JOIN projects p
+        ON n.projectid = p.projectid 
+        $where
+        GROUP BY n.projectid 
+        ORDER BY ncount DESC 
+        LIMIT 50");
+}
 
 ?>

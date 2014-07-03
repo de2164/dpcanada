@@ -1,9 +1,8 @@
 <?
 $relPath="./../../pinc/";
 include_once($relPath.'dpsql.inc');
-include_once($relPath.'connect.inc');
+include_once($relPath.'dpinit.php');
 include_once('common.inc');
-new dbConnect();
 
 ///////////////////////////////////////////////////
 //Numbers of users logging on in each hour of the day, since the start of stats

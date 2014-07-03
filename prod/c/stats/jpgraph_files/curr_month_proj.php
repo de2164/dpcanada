@@ -1,14 +1,11 @@
 <?
 $relPath="./../../pinc/";
 include_once($relPath.'dpsql.inc');
-include_once($relPath.'site_vars.php');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'project_states.inc');
-include_once($relPath.'connect.inc');
 include_once($code_dir.'/stats/statestats.inc');
 include_once($relPath.'gettext_setup.inc');
 include_once('common.inc');
-
-new dbConnect();
 
 // Create "projects Xed per day" graph for current month
 

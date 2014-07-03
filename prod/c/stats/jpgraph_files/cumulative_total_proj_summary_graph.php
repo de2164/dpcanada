@@ -1,17 +1,14 @@
 <?
 $relPath="./../../pinc/";
 include_once($relPath.'dpsql.inc');
-include_once($relPath.'site_vars.php');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'project_states.inc');
 include_once($jpgraph_dir.'/src/jpgraph.php');
 include_once($jpgraph_dir.'/src/jpgraph_line.php');
 include_once($jpgraph_dir.'/src/jpgraph_bar.php');
-include_once($relPath.'connect.inc');
 include_once($code_dir.'/stats/statestats.inc');
 include_once($relPath.'gettext_setup.inc');
 include_once('common.inc');
-
-new dbConnect();
 
 // Create the graph. These two calls are always required
 //Last value controls how long the graph is cached for in minutes

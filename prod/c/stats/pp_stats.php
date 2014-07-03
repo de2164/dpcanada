@@ -1,85 +1,72 @@
 <?
 $relPath='../pinc/';
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'dpsql.inc');
-include_once($relPath.'project_states.inc');
-include_once($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
+
+$stats = $dpdb->SqlOneObject("
+    SELECT COUNT(1) nprojects, COUNT(DISTINCT postproofer) nproofers
+    FROM projects WHERE phase IN ('POSTED', 'PPV')");
+
+$rows1 = array(array("nprojects" => $stats->nprojects));
+$tbl1 = new DpTable("tbl1", "dptable minitab", "Total Projects Post-Processed");
+$tbl1->SetRows($rows1);
+$tbl1->AddColumn("^Projects", "nprojects");
+
+$rows2 = array(array("nproofers" => $stats->nproofers));
+$tbl2 = new DpTable("tbl2", "dptable minitab", "Number of Post-Processors");
+$tbl2->SetRows($rows2);
+$tbl2->AddColumn(">Projects", "nproofers");
+
+$rows3 = $dpdb->SqlRows("
+    SELECT postproofer, COUNT(1) nprojects
+    FROM projects WHERE phase IN ('POSTED', 'PPV')
+    GROUP BY postproofer
+    ORDER BY COUNT(1) DESC");
+$tbl3 = new DpTable("tbl3", "dptable minitab", "Post-Processor Project Counts");
+$tbl3->AddColumn("<PPer", "postproofer");
+$tbl3->AddColumn(">Projects", "nprojects");
+$tbl3->SetRows($rows3);
+
+$rows4 = $dpdb->SqlRows("
+    SELECT postproofer, COUNT(1) nprojects
+    FROM projects WHERE phase = 'POSTED'
+    GROUP BY postproofer
+    ORDER BY COUNT(1) DESC");
+$tbl4 = new DpTable("tbl4", "dptable minitab", "Post-Processor Project Counts");
+$tbl4->AddColumn("<PPer", "postproofer");
+$tbl4->AddColumn(">Projects", "nprojects");
+$tbl4->SetRows($rows4);
 
 $title = "Post-Processing Statistics";
 theme($title,'header');
 
-echo "<br><br><h2>$title</h2><br>\n";
+echo "
+    <h2>$title</h2>
+    ".link_to_pper_charts()."
 
-echo "<a href='projects_Xed_graphs.php?which=PPd'>" . _("Projects PPd Graphs") . "</a><br>";
+    <h3>" . _("Total Projects Post-Processed Since Statistics were Kept") . "</h3>\n";
+    $tbl1->EchoTable();
 
-echo "<a href='PP_unknown.php'>" . _("Books with Mystery PPers") . "</a>";
+echo "
+    <h3>" . _("Number of Distinct Post-Processors") . "</h3>\n";
+    $tbl2->EchoTable();
 
-echo "<br>\n";
+echo "
+    <h3>" . _("Most Prolific Post-Processors") . "</h3>
+    <h4>" . _("(Number of Projects Finished PPing)") . "</h4>\n";
 
-echo "<h3>" . _("Total Projects Post-Processed Since Statistics were Kept") . "</h3>\n";
-
-$psd = get_project_status_descriptor('PPd');
-dpsql_dump_themed_query("
-	SELECT
-		SUM(num_projects) as 'Total Projects Post-Processed So Far'
-	FROM project_state_stats WHERE $psd->state_selector
-	GROUP BY date ORDER BY date DESC LIMIT 1
-");
-
-echo "<br>\n";
-echo "<br>\n";
-
-echo "<h3>" . _("Number of Distinct Post-Processors") . "</h3>\n";
-
-dpsql_dump_themed_query("
-	SELECT
-		count(distinct postproofer) as 'Different PPers'
-	FROM projects
-");
-
-echo "<br>\n";
+$tbl3->EchoTable();
 
 
+echo "
+    <h3>" . _("Most Prolific Post-Processors") . "</h3>
+    <h4>" . _("(Number of Projects Posted)") . "</h4>\n";
 
-echo "<h3>" . _("Most Prolific Post-Processors") . "</h3>\n";
-echo "<h4>" . _("(Number of Projects Finished PPing)") . "</h4>\n";
-
-$psd = get_project_status_descriptor('PPd');
-dpsql_dump_themed_ranked_query("
-	SELECT
-		postproofer as 'PPer',
-		count(*) as 'Projects Finished PPing'
-	FROM projects
-	WHERE $psd->state_selector
-		AND postproofer is not null
-	GROUP BY postproofer
-	ORDER BY 2 DESC
-");
-
-echo "<br>\n";
-
-
-echo "<h3>" . _("Most Prolific Post-Processors") . "</h3>\n";
-echo "<h4>" . _("(Number of Projects Posted to PG)") . "</h4>\n";
-
-$psd = get_project_status_descriptor('posted');
-dpsql_dump_themed_ranked_query("
-	SELECT
-		postproofer as 'PPer',
-		count(*) as 'Projects Posted to PG'
-	FROM projects
-	WHERE $psd->state_selector
-	AND postproofer is not null
-	GROUP BY postproofer
-	ORDER BY 2 DESC
-");
-
-echo "<br>\n";
-
-
-
-echo "<br>\n";
+$tbl4->EchoTable();
 
 theme("","footer");
-?>
+exit;
+
+function link_to_pper_charts() {
+    return "";
+}
 

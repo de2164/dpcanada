@@ -1,13 +1,10 @@
 <?
 $relPath='./../pinc/';
-include_once($relPath.'connect.inc');
 include_once($relPath.'project_states.inc');
 include_once($relPath.'theme.inc');
-new dbConnect();
 
 $which = $_GET['which'];
-if (empty($which))
-{
+if (! $which) {
     die("parameter 'which' is unset/empty");
 }
 

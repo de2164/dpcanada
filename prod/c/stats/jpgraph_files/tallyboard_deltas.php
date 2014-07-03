@@ -1,10 +1,8 @@
 <?
 $relPath="./../../pinc/";
-include_once($relPath.'misc.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'TallyBoard.inc');
-include_once($relPath.'connect.inc');
 include_once('common.inc');
-new dbConnect();
 
 $tally_name  = array_get( $_GET, 'tally_name',  '' );
 $holder_type = array_get( $_GET, 'holder_type', '' );

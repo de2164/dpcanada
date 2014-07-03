@@ -1,7 +1,5 @@
 <?
 $relPath = '../pinc/';
-include($relPath.'connect.inc');
-new dbConnect();
 include($relPath.'project_states.inc');
 
 echo "

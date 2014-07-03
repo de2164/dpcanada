@@ -1,21 +1,21 @@
 <?
 $relPath="./../../pinc/";
-include_once($relPath.'dpsql.inc');
-include_once($relPath.'connect.inc');
+include_once($relPath.'dpinit.php');
 include_once('common.inc');
-new dbConnect();
+
+// $past is year or day
+// $interval is hour, day, week, or four-week
 
 // For each hour in the $past interval,
 // show the number of (distinct) users who had logged in
-// (at least once) during the $preceding interval.
+// (at least once) during the $interval interval.
 
-$past = $_GET['past'];
-$preceding = $_GET['preceding'];
+$past = Arg("past");
+$interval = Arg('interval');
 
-$seconds_per_day = 24 * 60 * 60;
+$seconds_per_day = 24*60*60;
 
-switch ( $past )
-{
+switch ( $past ) {
 	case 'year':
 		$min_timestamp = time() - 366 * $seconds_per_day;
 		$date_format = '%Y-%b-%d %H';
@@ -30,8 +30,7 @@ switch ( $past )
 		die("bad value for 'past'");
 }
 
-switch ( $preceding )
-{
+switch ( $interval ) {
 	case 'hour':
 		$title = "Number of users newly logged in each hour";
 		$column_name = 'L_hour';
@@ -57,35 +56,41 @@ switch ( $preceding )
 		break;
 
 	default:
-		die("bad value for 'preceding'");
+		die("bad value for 'interval'");
 }
 
 
 ///////////////////////////////////////////////////
 //query db and put results into arrays
 
-$result = mysql_query("
-    SELECT DATE_FORMAT(FROM_UNIXTIME(time_stamp),'$date_format'), $column_name
+$row = $dpdb->SqlOneObject("
+    SELECT DATE_FORMAT(FROM_UNIXTIME(time_stamp), '$date_format') dt,
+        'month' `interval`
     FROM user_active_log 
     WHERE time_stamp >= $min_timestamp
-    ORDER BY time_stamp
-");
+    ORDER BY time_stamp");
 
-list($datax,$datay) = dpsql_fetch_columns($result);
+list($datax, $datay) = array($row->dt, $row->interval);
 
+dump($row);
+dump($datax, $datay);
 // calculate tick interval based on number of datapoints
 // the data is hourly, there are 168 hours in a week
 // once we have more than about 30 labels, the axis is getting too crowded
 $mynumrows = count($datay);
 if ($mynumrows < 30) {
 	$tick = 1;              // one label per hour
-} else if ($mynumrows < (30 * 168)) {
+}
+else if ($mynumrows < (30 * 168)) {
 	$tick = 168;            // one label per week
-} else if ($mynumrows < (30 * 168 * 4)) {
+}
+else if ($mynumrows < (30 * 168 * 4)) {
 	$tick = 168 * 4;        // one label per 4 weeks (pseudo-month)
-} else if ($mynumrows < (30 * 168 * 13)) {
+}
+else if ($mynumrows < (30 * 168 * 13)) {
 	$tick = 168 * 13;       // one label per quarter
-} else {
+}
+else {
 	$tick = 168 * 52;       // one label per year
 }
 
@@ -96,7 +101,6 @@ draw_simple_bar_graph(
 	$title,
 	_('Fresh Logons'),
 	640, 400,
-	$cache_timeout
-);
+	$cache_timeout);
 
 ?>

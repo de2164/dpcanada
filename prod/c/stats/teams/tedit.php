@@ -1,89 +1,111 @@
 <?
 $relPath="./../../pinc/";
-include_once($relPath.'site_vars.php');
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'theme.inc');
-include_once('../includes/team.inc');
-$popHelpDir="$code_url/faq/pophelp/teams/edit_";
+include_once($relPath.'dpinit.php');
+//include_once($relPath.'theme.inc');
+//include_once('../teams/team.inc');
 
-//Do we need this anymore?
-if (!empty($_POST['tsid'])) { $tid = $_POST['tsid']; } else { $tid = $_GET['tid']; }
+$tid            = Arg("tid", Arg("tsid"));
+$team           = new DpTeam($tid);
 
-$result = select_from_teams("id = $tid");
-$curTeam = mysql_fetch_assoc($result);
-
-if ($userP['u_id'] != $curTeam['owner']) {
-	$title = _("Authorization Failed");
-	$desc = _("You are not authorized to edit this team....");
-	metarefresh(4,"tdetail.php?tid=$tid",$title,$desc);
-	exit;
+if ($User->Username() != $team->OwnerName()) {
+    divert("tdetail.php?tid=$tid");
+    exit;
 }
 
-if (isset($_GET['tid'])) {
-	include($relPath.'js_newpophelp.inc');
-	$edit = _("Edit");
-	theme($edit." ".$curTeam['teamname'], "header");
-	echo "<center><br>";
-	showEdit(unstripAllString($curTeam['teamname'],0),unstripAllString($curTeam['team_info'],1),unstripAllString($curTeam['webpage'],1),0,$tid,0,0);
-	echo "</center>";
+$teamname       = Arg('teamname');
+$team_info      = Arg('text_data');
+$webpage        = Arg('teamwebpage');
+$avatarfile     = FileArg('teamavatar');
+$iconfile       = FileArg('teamicon');
+
+if ($team) {
+	$edit = _("Edit") . $team->Name();
+	theme($edit, "header");
+	showTeamEditForm($team);
 	theme("", "footer");
-} elseif (isset($_POST['edPreview'])) {
-	include($relPath.'js_newpophelp.inc');
-	$preview = _("Preview");
-    	theme($preview." ".$_POST['teamname'], "header");
-    	$teamimages = uploadImages(1,$tid,"both");
-    	$curTeam['teamname'] = stripAllString($_POST['teamname']);
-    	$curTeam['team_info'] = stripAllString($_POST['text_data']);
-    	$curTeam['webpage'] = stripAllString($_POST['teamwebpage']);
-    	if (!empty($_FILES['teamavatar']['tmp_name'])) {
-    		$curTeam['avatar'] = $teamimages['avatar'];
-    		$tavatar = 1;
-    	}
-    	if (!empty($_FILES['teamicon']['tmp_name'])) {
-    		$ticon = 1;
-    	}
-    	echo "<center><br>";
-	showEdit(htmlentities(stripslashes($_POST['teamname'])),stripslashes($_POST['text_data']),stripslashes($_POST['teamwebpage']),0,$tid,$tavatar,$ticon);
-    	echo "<br>";
-    	showTeamProfile($curTeam);
-    	echo "</center><br>";
-    	theme("", "footer");
-} elseif (isset($_POST['edMake'])) {
-	$result = mysql_query("SELECT id FROM user_teams WHERE id != ".$tid." AND teamname = '".addslashes(stripAllString(trim($_POST['teamname'])))."'");
-	if (mysql_num_rows($result) > 0) {
-			include($relPath.'js_newpophelp.inc');
-			$preview = _("Preview");
-    	theme($preview, "header");
-    	$teamimages = uploadImages(1,$tid,"both");
-    	if (!empty($_FILES['teamavatar']['tmp_name'])) {
-    		$curTeam['avatar'] = $teamimages['avatar'];
-    		$tavatar = 1;
-    	}
-    	if (!empty($_FILES['teamicon']['tmp_name'])) {
-    		$ticon = 1;
-    	}
-    	echo "<center><br>The team name must be unique.  Please make any changes and resubmit.<br>";
-			showEdit(htmlentities(stripslashes($_POST['teamname'])),stripslashes($_POST['text_data']),stripslashes($_POST['teamwebpage']),0,$tid,$tavatar,$ticon);
-    	echo "<br></center><br>";
-    	theme("", "footer");
-	} else {
-		if (!empty($_POST['tavatar'])) {
-	    		mysql_query("UPDATE user_teams SET avatar='".$_POST['tavatar']."' WHERE id = $tid");
-	    	} elseif (!empty($_FILES['teamavatar'])) {
-	    		uploadImages(0,$tid,"avatar");
-	    	}
-		if (!empty($_POST['ticon'])) {
-	    		mysql_query("UPDATE user_teams SET icon='".$_POST['ticon']."' WHERE id = $tid");
-	    	} elseif (!empty($_FILES['teamicon'])) {
-	    		uploadImages(0,$tid,"icon");
-	    	}
-	
-	    	mysql_query("UPDATE user_teams SET teamname='".addslashes(stripAllString(trim($_POST['teamname'])))."', team_info='".addslashes(stripAllString($_POST['text_data']))."', webpage='".addslashes(stripAllString($_POST['teamwebpage']))."' WHERE id='$tid'");
-	
-		$title = _("Saving Team Update");
-		$desc = _("Updating team....");
-	  metarefresh(0,"tdetail.php?tid=$tid",$title, $desc);
-	}
+    exit;
 }
 
-?>
+showTeamEditForm(null);
+//showTeamProfile($team);
+theme("", "footer");
+exit;
+
+function showTeamEditForm($team) {
+    /** @var DpTeam $team */
+    global $theme;
+    global $User;
+
+    $avatarfile = FileArg("avatar");
+    $iconfile   = FileArg("icon");
+
+    echo "<form enctype='multipart/form-data' id='mkTeam' name='mkTeam' method='POST'";
+    if($team) {
+        echo " action='tedit.php'>\n";
+        echo "<input type='hidden' name='tsid' value='{$team->Id()}'>";
+    }
+    else {
+        echo " action='new_team.php'>\n";
+    }
+    if ($avatarfile != "") {
+        echo "<input type='hidden' name='avatar' value='$avatarfile'>";
+    }
+    if ($iconfile != "") {
+        echo "<input type='hidden' name='icon' value='$iconfile'>";
+    }
+    echo "\n<table id='team_edit_table>";
+    echo "<tr><th>\n";
+    if ($team->OwnerId() == $User->Username()) {
+        echo _("Edit Team Information")."</b></font></td></tr>";
+    }
+    else {
+        echo _("New Proofreading Team")."</b></font></td></tr>";
+    }
+    echo "\n<tr><td>
+        <table border='0' cellspacing='0' cellpadding='0' width='100%'>
+            <tr><td>"._("Team Name").":&nbsp;</td>
+          <td><input type='text' value='{$team->Name()}' name='teamname' size='50'>&nbsp;</td></tr>
+         <tr><td>
+        "._("Team Webpage").":&nbsp;</td>
+          <td><input type='text' value='{$team->WebPage()}' name='teamwebpage' size='50'>&nbsp;</td></tr>
+        <tr><td>"._("Team Avatar").":&nbsp;</td>
+        <td><input type='file' name='teamavatar' size='50'>&nbsp;</td></tr>
+        <tr><td> "._("Team Icon").":&nbsp;</td>
+        <td><input type='file' name='teamicon' size='50'>&nbsp;</td></tr>
+    </table></td></tr>
+    <tr> <td>"._("Team Description")."</b>&nbsp;
+    <br /><textarea name='text_data' cols='40' rows='6'>{$team->Info()}</textarea> <br /></td></tr>\n";
+
+    if ($team->OwnerId() == $User->Username()
+        && $User->Team1() != 0
+        && $User->Team2() != 0
+        && $User->Team3() != 0 ) {
+        echo "
+            <tr bgcolor='".$theme['color_mainbody_bg']."'><td><center>"
+            ._("You must join the team to create it,
+                    which team space would you like to use?")."<br />
+        <select name='tteams' title='"._("Team List")."'>
+        <option value='{$User->Team1()}'>$User->Team1()</option>
+        <option value='{$User->Team2()}'>$User->Team2()</option>
+        <option value='{$User->Team3()}'>$User->Team3()</option>
+        </select></center></td></tr>";
+    }
+    else {
+        echo "<input type='hidden' name='teamall' value='1'>";
+    }
+
+    if ($team->OwnerId() == $User->Username()) {
+        echo "<tr><td>
+        <input type='submit' name='mkMake' value='" ._("Make Team")."'>&nbsp;&nbsp;&nbsp;
+        <input type='submit' name='Quit' value='" ._("Quit")."'> </td></tr>
+        </table>
+        </form>\n";
+    } else {
+        echo "<tr><td>
+        <input type='submit' name='edMake' value='" ._("Save Changes")."'>&nbsp;&nbsp;&nbsp;
+        <input type='submit' name='edQuit' value='" ._("Quit")."'>
+        </td></tr>
+        </table>
+        </form>\n";
+    }
+}

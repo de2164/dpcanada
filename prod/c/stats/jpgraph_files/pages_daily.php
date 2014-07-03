@@ -1,11 +1,10 @@
 <?
 $relPath="./../../pinc/";
+require_once $relPath . "dpinit.php";
 include_once($relPath.'dpsql.inc');
-include_once($relPath.'connect.inc');
 include_once($relPath.'TallyBoard.inc');
 include_once($relPath.'page_tally.inc');
 include_once('common.inc');
-new dbConnect();
 
 $tally_name = @$_GET['tally_name'];
 if (empty($tally_name))
