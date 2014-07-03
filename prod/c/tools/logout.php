@@ -1,14 +1,11 @@
 <?
 //clear cookie if one is already set
-$relPath='./../pinc/';
-include_once($relPath.'dpsession.inc');
-include_once($relPath.'metarefresh.inc');
+$relPath = './../pinc/';
+include_once($relPath.'dpinit.php');
 
-if ( dpsession_resume() )
-{
-	dpsession_end();
+if($User->IsLoggedIn()) {
+    $User->Logout();
 }
 
-metarefresh(0, "../default.php", _("Logout Complete"),
-     "<A HREF=\"../default.php\">"._("Return to DP Home Page.")."</A>");
+divert("../default.php");
 ?>

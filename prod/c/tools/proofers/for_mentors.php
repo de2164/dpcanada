@@ -7,7 +7,7 @@
 */
 $relPath='../..//pinc/';
 // to establish logon
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 // for dpsql_dump_query
 include_once($relPath.'dpsql.inc');
 // for PRIVACY_* constants
@@ -48,7 +48,7 @@ function page_summary_sql($projectid)
     return "SELECT
                 CASE WHEN u.u_privacy = ".PRIVACY_ANONYMOUS." THEN 'Anonymous'
                 ELSE CONCAT('<a href=\""
-                    .$code_url . "/stats/members/mdetail.php?&id=',u.u_id,
+                    .$code_url . "/stats/members/member_stats.php?&id=',u.u_id,
                     '\">',u.username,'</a>')
                 END AS " . _("Proofreader") . ",
                 COUNT(1) AS '" . _("Pages this project") . "',

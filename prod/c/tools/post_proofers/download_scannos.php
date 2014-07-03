@@ -4,9 +4,9 @@
 // Guiguts' .rc files should be in the format 'scanno' => 'scanno',\n
 // enclosed in %scannoslist = ( );.
 
-$relPath="../../pinc/";
-include($relPath.'site_vars.php');
-include($relPath.'theme.inc');
+$relPath = "../../pinc/";
+include_once($relPath.'dpinit.php');
+include_once($relPath.'theme.inc');
 
 
 // Currently valid languages: eng, fr, ger

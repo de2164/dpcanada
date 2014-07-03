@@ -1,6 +1,6 @@
 <?
 $relPath='../../pinc/';
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'dpsql.inc');
 include_once($relPath.'theme.inc');
 $no_stats = 1;
@@ -11,7 +11,7 @@ theme($title, "header");
 echo "<br><h2>$title</h2>\n";
 echo _("The Name column shows what the colour looks like with a link on top, the Comment with ordinary text")."<br><br>";
 
-if (user_is_PM()) {
+if ($User->IsLoggedIn()) {
     echo "<a href='projectmgr.php'>"._("Back to your PM page")."</a><br><br>";
 }
 

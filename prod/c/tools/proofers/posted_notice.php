@@ -1,17 +1,33 @@
 <?
 $relPath="./../../pinc/";
-include($relPath.'metarefresh.inc');
-include($relPath.'dp_main.inc');
+include_once $relPath.'dpinit.php';
 
-$project = $_GET['project'];
-$proofstate = $_GET['proofstate'];
-
-$result = mysql_query("SELECT * FROM usersettings WHERE username = '".$pguser."' AND setting = 'posted_notice' AND value = '".$project."'");
-if (mysql_num_rows($result) == 0) {
-    $insert = mysql_query("INSERT INTO usersettings (username, setting, value) VALUES ('".$pguser."', 'posted_notice', '".$project."')");
-} else {
-    $del = mysql_query("DELETE FROM usersettings WHERE username = '".$pguser."' AND setting = 'posted_notice' AND value = '".$project."'");
+if(! $User->IsLoggedIn()) {
+    die("Please log in.");
 }
 
-metarefresh(0, "$code_url/project.php?id=$project&amp;expected_state=$proofstate", _("Posted Notice"), "");
+$projectid  = Arg('projectid');
+$setclear   = Arg('setclear');
+$username   = $User->Username();
+
+if($setclear == "set" && ! $dpdb->SqlExists("
+            SELECT 1 FROM notify 
+            WHERE projectid = '$projectid' AND username = '$username'")) {
+    $dpdb->SqlExecute("
+            INSERT INTO notify (projectid, username)
+            VALUES ('$projectid', '$username')");
+}
+else if($setclear == "clear") {
+    $dpdb->SqlExecute("
+            DELETE FROM notify 
+            WHERE projectid = '$projectid' AND username = '$username'");
+}
+
+$projectstate = $dpdb->SqlOneValue("
+            SELECT state FROM projects
+            WHERE projectid = '$projectid'");
+
+divert( "$code_url/project.php"
+                    ."?id=$projectid"
+                    ."&amp;expected_state=$proofstate" );
 ?>

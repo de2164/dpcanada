@@ -1,11 +1,12 @@
 <?PHP
 $relPath='../pinc/';
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'dpsql.inc');
 include_once($relPath.'stages.inc');
 include_once($relPath.'theme.inc');
 
-if (!(user_is_a_sitemanager() || user_is_an_access_request_reviewer())) die("permission denied");
+($User->MayManageRoles() || $User->IsSiteManager())
+    or die("permission denied");
 
 $title = _('Pending Requests for Access');
 
@@ -24,22 +25,20 @@ foreach ( $Stage_for_id_ as $stage )
 $activity_ids[] = 'P2_mentor';
 
 // Look for unexpected activity_ids
-$res = mysql_query("
+$requests = $dpdb->SqlValues("
     SELECT DISTINCT REPLACE(setting,'.access', '')
     FROM usersettings
-    WHERE setting LIKE '%.access' AND value='requested'
-") or die(mysql_error());
-while ( list($activity_id) = mysql_fetch_row($res) )
-{
-    if ( !in_array( $activity_id, $activity_ids ) )
-    {
+    WHERE setting LIKE '%.access' AND value='requested'");
+
+foreach($requests as $activity_id) {
+    if ( !in_array( $activity_id, $activity_ids ) ) {
         $activity_ids[] = $activity_id;
     }
 }
 
 // ----------------------------------
 
-mysql_query("
+$dpdb->SqlExecute("
     CREATE TEMPORARY TABLE access_log_summary
     SELECT 
         activity,
@@ -47,41 +46,34 @@ mysql_query("
         MAX( timestamp * (action='request'         ) ) AS t_latest_request,
         MAX( timestamp * (action='deny_request_for') ) AS t_latest_deny
     FROM access_log
-    GROUP BY activity, subject_username
-") or die(mysql_error());
+    GROUP BY activity, subject_username");
 
-foreach ( $activity_ids as $activity_id )
-{
+foreach ( $activity_ids as $activity_id ) {
     echo "<h3>";
     echo sprintf( _('Users requesting access to %s'), $activity_id );
     echo "</h3>\n";
 
     $access_name = "$activity_id.access";
 
-    $res = mysql_query("
-        SELECT
-            usersettings.username,
-            users.u_id,
-            access_log_summary.t_latest_request,
-            access_log_summary.t_latest_deny
+    $rows = $dpdb->SqlRows("
+        SELECT  usersettings.username,
+                users.u_id,
+                access_log_summary.t_latest_request,
+                access_log_summary.t_latest_deny
         FROM usersettings
-            LEFT OUTER JOIN users USING (username)
-            LEFT OUTER JOIN access_log_summary ON (
-                access_log_summary.subject_username = usersettings.username
-                AND
-                access_log_summary.activity = '$activity_id'
-            )
-        WHERE setting = '$access_name' AND value='requested'
-        ORDER BY username
-    ") or die(mysql_error());
+            LEFT JOIN users USING (username)
+            LEFT JOIN access_log_summary
+            ON access_log_summary.subject_username = usersettings.username
+                AND access_log_summary.activity = '$activity_id'
+        WHERE setting = '$access_name'
+            AND value='requested'
+        ORDER BY username");
 
-    if ( mysql_num_rows($res) == 0 )
-    {
+    if ( count($rows) == 0)  {
         $word = _('none');
         echo "($word)";
     }
-    else
-    {
+    else {
         $review_round = get_Round_for_round_id($activity_id);
         if ( $review_round && $review_round->after_satisfying_minima == 'REQ-HUMAN' )
         {
@@ -116,9 +108,12 @@ foreach ( $activity_ids as $activity_id )
             echo "\n";
         }
 
-        while ( list($username, $u_id, $t_latest_request, $t_latest_deny) = mysql_fetch_row($res) )
-        {
-            $member_stats_url = "$code_url/stats/members/mdetail.php?id=$u_id";
+        foreach($rows as $row) {
+            $username = $row['username'];
+            $u_id = $row['u_id'];
+            $t_latest_request = $row['t_latest_request'];
+            $t_latest_deny = $row['t_latest_deny'];
+            $member_stats_url = "$code_url/stats/members/member_stats.php?id=$u_id";
             $t_latest_request_f = strftime('%Y-%m-%d&nbsp;%T', $t_latest_request);
             $t_latest_deny_f = (
                 $t_latest_deny == 0

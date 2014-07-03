@@ -1,11 +1,15 @@
 <?
 $relPath="../../pinc/";
-include_once($relPath.'site_vars.php');
-include_once($relPath.'dp_main.inc');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'theme.inc');
 include_once($relPath.'maybe_mail.inc');
-include_once($relPath.'Project.inc'); //user_can_work_in_stage()
 include_once($relPath.'projectinfo.inc');
+
+$projectid = Arg("projectid", Arg("project"));
+
+if($projectid == "") {
+    die("No projectid argument provided.");
+}
 
 $theme_args['js_data'] = "
 function set_html(sw)
@@ -48,13 +52,6 @@ div.shrinker a {
 theme(_('Post-Processing Verification Reporting'),'header', $theme_args);
 
 
-if (empty($_REQUEST['project'])) {
-   	echo _("No project specified. Supply a 'project' parameter.");
-   	theme('','footer');
-   	die;
-}
-
-
 // To make PPVer collaboration easier, allow any PPVer to fill in the report card.
 // (The link is still only shown to the PPVer with the project checked-out.)
 // All report cards are sent to the PPVers' list, signed by the person filling
@@ -65,8 +62,6 @@ if (!user_can_work_in_stage($pguser, 'PPV')) {
   theme('','footer');
  	exit();
 }
-
-$projectid = mysql_real_escape_string($_REQUEST['project']);
 
 $project = mysql_fetch_object(mysql_query("SELECT * FROM projects WHERE projectid = '$projectid'"));
 $ppver = mysql_fetch_object(mysql_query("SELECT * FROM users WHERE username = '$pguser'"));
@@ -234,7 +229,7 @@ function textarea_size_control($id, $br = true)
 }
 
 echo "<br />
-      <form action='{$code_url}/tools/post_proofers/ppv_report.php?project=$projectid&send=1'
+      <form action='{$code_url}/tools/post_proofers/ppv_report.php?projectid=$projectid&send=1'
 			 name='ppvform' method='post'>
       <table border='1' id='report_card' style='width: 95%';>
 

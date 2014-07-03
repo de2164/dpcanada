@@ -3,201 +3,128 @@
 // including (most importantly) the list of projects available for work.
 
 $relPath='../../pinc/';
-include_once($relPath.'misc.inc');
-include_once($relPath.'dpsql.inc');
-include_once($relPath.'stages.inc');
-include_once($relPath.'dp_main.inc');
-include_once($relPath.'showavailablebooks.inc');
-include_once($relPath.'theme.inc');
-include_once($relPath.'gradual.inc');
-include_once($relPath.'SettingsClass.inc');
-include_once($relPath.'site_news.inc');
-include_once($relPath.'mentorbanner.inc');
-include_once($relPath.'page_tally.inc');
+include_once $relPath.'dpinit.php';
+include_once $relPath.'site_news.inc';
+include_once $relPath.'mentorbanner.inc';
 
-$userSettings = Settings::get_Settings($pguser);
-
-$round_id = array_get( $_GET, 'round_id', NULL );
-if (is_null($round_id))
-{
-    echo "round.php invoked without round_id parameter.";
-    exit;
+$roundid = Arg('round_id', Arg('roundid'));
+if (!$roundid) {
+    die("round.php invoked without round_id parameter.");
+}
+$round = get_Round_for_round_id($roundid);
+if(! $round) {
+    die("round.php invoked with invalid round_id='$roundid'.");
 }
 
-$round = get_Round_for_round_id($round_id);
-if (is_null($round_id))
-{
-    echo "round.php invoked with invalid round_id='$round_id'.";
-    exit;
-}
+$username = $User->Username();
+$pagesproofed = $User->PageCount();
 
-if ($userP['i_newwin']==1)
-{
+if($User->IsNewWindow()) {
     $newProofWin_js = include($relPath.'js_newwin.inc');
     $theme_extras = array( 'js_data' => $newProofWin_js );
 }
-else
-{
+else {
     $theme_extras = array();
 }
 
 theme( "$round->id: $round->name", 'header', $theme_extras );
 
-$uao = $round->user_access( $pguser );
+$title = "$round->id: $round->name";
+echo "<h1 class='center'>$title</h1>\n";
 
-$round->page_top( $uao );
-
-// ---------------------------------------
-
-$pagesproofed = get_pages_proofed_maybe_simulated();
-
-//MS
-welcome_see_beginner_forum_newuser( $pagesproofed );
-
-
-show_news_for_page($round_id);
-
-
-if ($pagesproofed <= 100 && $ELR_round->id == $round_id)
-{
-    echo "<hr width='75%'>\n";
-
-    if ($pagesproofed > 80)
-    {
-        echo "<i><font size=-1>";
-        echo _("After you proof a few more pages, the following introductory Simple Proofreading Rules will be removed from this page. However, they are permanently available ");
-        echo "<a href ='http://www.pgdpcanada.net/wiki/index.php/Simple_Proofreading_Rules'>";
-        echo _("here");
-        echo "</a> ";
-        echo _("if you wish to refer to them later. (You can bookmark that link if you like.)");
-        echo "</font></i><br><br>";
-    }
-
-    include($relPath.'simple_proof_text.inc');
+if(! $User->MayWorkInRound($roundid)) {
+    echo "<p align='center'>
+    " . sprintf( _("Welcome to %s!"), $roundid ) . "
+    ". _("Feel free to explore this stage.
+    You can find out what happens here, and follow the progress of projects
+    from earlier rounds. If you're interested in working in this stage, see
+    below to find out how you can qualify.") . "</p>\n";
 }
 
-// What guideline document are we needing?
+echo "<p>"._('What happens in this stage'). ":<br>$round->description</p>\n";
+
+show_news_for_page($roundid);
 $round_doc_url = "$code_url/faq/$round->document";
 
-if ($pagesproofed >= 10)
-{
-    echo "<hr width='75%'>\n";
-
-    if ($pagesproofed < 40)
-    {
-        echo "<font size=-1 face=" . $theme['font_mainbody'] . "><i>";
-        echo _("                                                                                                                                          ");
-        echo " <a href=" . $round_doc_url . ">";
-        echo _("          ");
-        echo "</a> ";
-        echo _("                             ");
-        echo "<br>";
-        echo _("                                               ");
-        echo "</i></font><br><br>";
-    }
-
-
-    echo "<font face=".$theme['font_mainbody']."><b>";
-    echo _("           ");
-    echo "</b></font><br>";
-
-
-    $result = dpsql_query("SELECT anchor,subject,rule FROM rules WHERE document = '$round->document' ORDER BY RAND(NOW()) LIMIT 1");
-    $rule = mysql_fetch_assoc($result);
-    echo "<i>".$rule['subject']."</i><br>";
-    echo "".$rule['rule']."<br>";
-    echo _("        ");
-    echo "<a href='$round_doc_url#".$rule['anchor']."'>".$rule['subject']."</a>";
-    echo _("                ");
-    echo "<a href='$round_doc_url'>";
-    echo _("          ");
-    echo "</a><br><br>";
+if ($pagesproofed >= 15 && $pagesproofed < 200) {
+    echo "
+        <hr class='w75'>
+        <p>". _("New Proofreaders:")."
+        <a href='$forums_url/viewtopic.php?t=388'>
+        ". _("What did you think of the Mentor feedback you received?")."
+        </a></p>\n";
 }
 
-thoughts_re_mentor_feedback( $pagesproofed );
-
-if ( $round->is_a_mentor_round() )
-{
-    if(user_can_work_on_beginner_pages_in_round($round))
-        mentor_banner($round);
+if ($pagesproofed <= 20 && $User->MayWorkInRound($roundid)) {
+    echo "
+    <hr class='w75'>
+    <p class='mainfont'>
+    ". _("Click on the name of a book in the list below to start proofreading.")."
+    </p>\n";
 }
 
-if ($pagesproofed <= 20)
-{
-    if ($uao->can_access)
-    {
-        echo "<hr width='75%'>\n";
+$phase = $round->id;
+$sql = "
+    SELECT  p.projectid,
+            p.nameofwork,
+            p.authorsname,
+            p.language,
+            p.genre,
+            p.difficulty,
+            p.username,
+            LOWER(p.username) pmsort,
+            p.n_pages,
+            p.n_available_pages,
+            DATEDIFF(CURRENT_DATE(),
+                FROM_UNIXTIME(COALESCE(MAX(pe.timestamp), p.phase_change_date)))
+                AS days_avail
+    FROM projects p
+    LEFT JOIN project_events pe
+    ON p.projectid = pe.projectid
+            AND pe.phase = p.phase
+            AND event_type = 'hold'
+            AND details1 LIKE 'release%'
+    WHERE p.phase = '$phase'
+        AND p.projectid NOT IN (
+            SELECT projectid FROM project_holds
+            WHERE phase = '$roundid'
+        )
+    GROUP BY p.projectid
+    ORDER BY days_avail";
+echo html_comment($sql);
+$rows = $dpdb->SqlRows($sql);
 
-        echo "<font face=" . $theme['font_mainbody'] ."><b>";
-        echo _("Click on the name of a book in the list below to start proofreading.");
-        echo "</b></font><br><br>\n";
-    }
-}
-else
-{
-    // Link to queues.
-    echo "<hr width='75%'>\n";
-    echo "<h4 align='center'>", _('Release Queues'), "</h4>";
-    $res = dpsql_query("
-        SELECT COUNT(*)
-        FROM queue_defns
-        WHERE round_id='{$round->id}'
-    ");
-    list($n_queues) = mysql_fetch_row($res);
-    if ( $n_queues == 0 )
-    {
-        echo sprintf(
-            _("%s does not have any release queues. Any projects that enter the round's waiting area will automatically become available within a few minutes."),
-            $round->id
-        );
-        echo "\n";
-    }
-    else
-    {
-        echo sprintf(
-            _("The <a href='%s'>%s release queues</a> show the books that are waiting to become available for work in this round."),
-            "$code_url/stats/release_queue.php?round_id={$round->id}",
-            $round->id
-        );
-        echo "\n";
-    }
+$tbl = new DpTable();
+$tbl->AddColumn("<Title", "nameofwork", "etitle");
+$tbl->AddColumn("<Author", "authorsname");
+$tbl->AddColumn("<Language", "language");
+$tbl->AddColumn("<Genre", "genre");
+$tbl->AddColumn("<Project<br>Mgr", "username", "epm", "sortkey=pmsort");
+$tbl->AddColumn("^Available<br>Pages", "n_available_pages", "enumber");
+$tbl->AddColumn("^Total<br>Pages", "n_pages", "enumber");
+$tbl->AddColumn(">Days", "days_avail", "enumber");
 
+$tbl->SetRows($rows);
+$tbl->EchoTable();
 
-    // filter block
-    echo "<hr width='75%'>\n";
-
-	$state_sql = " (state = '{$round->project_available_state}') ";
-	$label = $round->name;
-    $filtertype_stem = $round->id;
-    include_once($relPath.'filter_project_list.inc');
-}
-if (!isset($RFilter)) { $RFilter = ""; }
-
-if ( !$uao->can_access )
-{
-    echo "<hr width='75%'>\n";
-    show_user_access_object( $uao );
-}
-
-// special colours legend
-// Don't display if the user has selected the
-// setting "Show Special Colors: No".
-// Regardless of the preference, don't display
-// the legend to newbies.
-if ($pagesproofed >= 10 && !$userSettings->get_boolean('hide_special_colors'))
-{
-    echo "<hr width='75%'>\n";
-    echo "<p><font face='{$theme['font_mainbody']}'>\n";
-    if (!isset($state_sql)) {
-        $state_sql = " (state = '{$round->project_available_state}') ";
-    }
-    echo_special_legend($state_sql);
-    echo "</font></p><br>\n";
-}
-
-show_block_for_round($round->round_number, $RFilter);
 
 theme('', 'footer');
+exit;
+
+// -----------------------------------------------------------------------------
+
+function etitle($title, $row) {
+    $projectid = $row["projectid"];
+    return link_to_project($projectid, $title);
+}
+
+function epm($username) {
+    return link_to_pm($username);
+}
+
+function enumber($val) {
+    return $val;
+}
 
 // vim: sw=4 ts=4 expandtab
 ?>

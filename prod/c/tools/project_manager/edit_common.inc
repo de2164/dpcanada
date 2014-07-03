@@ -1,31 +1,28 @@
 <?PHP
+global $relPath;
 include_once($relPath.'iso_lang_list.inc');
 include_once($relPath.'genres.inc');
 
-function encodeFormValue($value)
-{
+function encodeFormValue($value) {
   return htmlspecialchars($value,ENT_QUOTES);
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function just_echo( $field_value )
-{
+function just_echo( $field_value ) {
     echo encodeFormValue($field_value);
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function text_field( $field_value, $field_name )
-{
+function text_field( $field_value, $field_name ) {
     $enc_field_value = encodeFormValue($field_value);
     echo "<input type='text' size='67' name='$field_name' value='$enc_field_value'>";
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function DP_user_field( $field_value, $field_name )
-{
+function DP_user_field( $field_value, $field_name ) {
     $enc_field_value = encodeFormValue($field_value);
     echo "<input type='text' size='25' name='$field_name' value='$enc_field_value'>";
 }
@@ -33,52 +30,59 @@ function DP_user_field( $field_value, $field_name )
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function language_list($language)
-{
-    if (strpos($language, "with") > 0)
-    {
+function language_list($language) {
+    if (strpos($language, "with") > 0) {
         $pri_language = trim(substr($language, 0, strpos($language, "with")));
         $sec_language = trim(substr($language, (strpos($language, "with")+5)));
     }
-    else
-    {
+    else {
         $pri_language = $language;
         $sec_language = '';
     }
 
     $array_list = $GLOBALS['lang_list'];
 
-    echo "<select name='pri_language'>";
-    echo "<option value=''>Primary Language</option>";
-    echo "\n";
-    for ($i=0;$i<count($array_list);$i++)
-    {
-        echo "<option value='".encodeFormValue($array_list[$i]['lang_name'])."'";
-        if ($pri_language == $array_list[$i]['lang_name']) { echo " SELECTED"; }
-        echo ">".$array_list[$i]['lang_name']."</option>";
+    echo "
+    <select name='pri_language'>
+    <option value=''>Primary Language</option>\n";
+
+    foreach($array_list as $item) {
+    // for ($i = 0; $i<count($array_list); $i++) {
+        $lang_name = $item['lang_name'];
+        echo "<option value='"
+            . encodeFormValue($lang_name) . "'";
+
+       if ($pri_language == $lang_name) {
+            echo " SELECTED"; 
+       }
+        echo ">$lang_name</option>\n";
+    }
+    echo "</select>\n";
+
+    echo "
+    &nbsp;&nbsp;<select name='sec_language'>
+    <option value=''>Secondary Language</option>\n";
+
+    foreach($array_list as $item) {
+        $lang_name = $item['lang_name'];
+        echo "<option value='"
+            . encodeFormValue($lang_name) . "'";
+
+        if ($sec_language == $lang_name) {
+            echo " SELECTED"; 
+        }
+        echo ">$lang_name</option>";
         echo "\n";
     }
-    echo "</select>&nbsp;&nbsp;<select name='sec_language'>";
-    echo "<option value=''>Secondary Language</option>";
-    echo "\n";
-    for ($i=0;$i<count($array_list);$i++)
-    {
-        echo "<option value='".encodeFormValue($array_list[$i]['lang_name'])."'";
-        if ($sec_language == $array_list[$i]['lang_name']) { echo " SELECTED"; }
-        echo ">".$array_list[$i]['lang_name']."</option>";
-        echo "\n";
-    }
-    echo "</select>";
+    echo "</select>\n";
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function genre_list($genre)
-{
+function genre_list($genre) {
     global $GENRES;
     echo "<select name='genre'>";
-    foreach($GENRES as $k=>$v)
-    {
+    foreach($GENRES as $k => $v) {
         echo "<option value='".encodeFormValue($k)."'";
         if ($genre == $k) { echo " SELECTED"; }
         echo ">$v</option>";
@@ -89,37 +93,22 @@ function genre_list($genre)
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function difficulty_list($difficulty_level)
-{
-    global $pguser;
-    $result = mysql_query("SELECT * FROM users WHERE username = '$pguser'");
-    if (mysql_result($result,0,"sitemanager") == "yes") $sa = 1; else $sa = 0;
+function difficulty_list($difficulty = "Average") {
+    $difs = array("Beginner", "Easy", "Average", "Hard");
 
-    $array_list = array('Beginner', 'Easy', 'Average', 'Hard');
-
-    // only show the beginner level to the BEGIN PM or SiteAdmins
-    // don't let garvint create EASY projects
-    for ($i=0;$i<count($array_list);$i++)
-    {
-        if (($i > 0) || ($pguser == "BEGIN") || ($sa))
-        {
-            if (!($pguser == "garvint" && $i == 1))
-            {
-                echo "<input type='radio' name='difficulty_level' value='".encodeFormValue(strtolower($array_list[$i]))."'";
-                if (strtolower($difficulty_level) == strtolower($array_list[$i]))
-                {
-                    echo " CHECKED";
-                }
-                echo ">$array_list[$i]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-            }
-        }
+    foreach($difs as $dif) {
+        $checked = (strtolower($dif) == strtolower($difficulty)
+                        ? " CHECKED"
+                        : "");
+        echo "
+        <input type='radio' name='difficulty' value='$dif' 
+            $checked>$dif&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
     }
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function special_list($special)
-{
+function special_list($special) {
     // get info on special days
     $specs_result = mysql_query("
         SELECT
@@ -135,8 +124,7 @@ function special_list($special)
     $specials_array = array();
 
     // put list into array
-    while ($s_row = mysql_fetch_assoc($specs_result))
-    {
+    while ($s_row = mysql_fetch_assoc($specs_result)) {
         $show = $s_row['display_name']." (".$s_row['Start Date'].")";
         $code = $s_row['spec_code'];
         $specials_array["$code"] = $show;
@@ -190,8 +178,7 @@ function special_list($special)
     echo "<option value=''></option>";
     echo "\n";
     $i = 1;
-    while ($i <= 12)
-    {
+    while ($i <= 12) {
         $v = sprintf("%02d", $i);
         echo "<option value='$v'";
         if ($v == $bdaymonth) { echo " SELECTED"; }
@@ -205,8 +192,7 @@ function special_list($special)
     echo "<option value=''></option>";
     echo "\n";
     $i = 1;
-    while ($i <= 31)
-    {
+    while ($i <= 31) {
         $v = sprintf("%02d", $i);
         echo "<option value='$v'";
         if ($v == $bdayday) { echo " SELECTED"; }
@@ -219,8 +205,7 @@ function special_list($special)
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function image_source_list($image_source)
-{
+function image_source_list($image_source) {
     // get info on image_sources
     $imso_result = mysql_query("
         SELECT code_name, display_name
@@ -265,8 +250,7 @@ function image_source_list($image_source)
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function proj_comments_field($comments)
-{
+function proj_comments_field($comments) {
     $enc_comments = encodeFormValue($comments);
     $template_blurb  = _("How To Use A Template");
     $biography_blurb = _("How To Use A Biography");
@@ -284,8 +268,7 @@ function proj_comments_field($comments)
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function extra_credits_field($extra_credits)
-{
+function extra_credits_field($extra_credits) {
     $enc_credits = encodeFormValue($extra_credits);
 
     echo "<center>";
@@ -297,8 +280,7 @@ function extra_credits_field($extra_credits)
 
 
 
-function description_field( $description, $field_name )
-{
+function description_field( $description, $field_name ) {
     $enc_description = encodeFormValue($description);
 
     echo "<center>";
@@ -310,4 +292,3 @@ function description_field( $description, $field_name )
 
 // vim: sw=4 ts=4 expandtab
 
-?>
