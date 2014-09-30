@@ -34,6 +34,7 @@ echo "
         </p>
     </div>\n";
 
+global $User;
 
 if($User->IsSiteManager() || $User->IsProjectFacilitator() || $User->IsProjectManager()) {
     echo "
@@ -141,6 +142,8 @@ echo "
     . _("Find out how!")
     . "</a>
     </li>\n";
+
+global $Context;
 
 foreach ( $Context->Rounds() as $roundid ) {
     $phase_icon_path = "$dyn_dir/stage_icons/$roundid.jpg";

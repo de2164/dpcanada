@@ -2,12 +2,10 @@
 // Translated by user 'cbgrf' at pgdp.net, 2006-08-26
 
 $relPath='../../c/pinc/';
-include($relPath.'site_vars.php');
+include($relPath.'dpinit.php');
 include($relPath.'faq.inc');
 include($relPath.'pg.inc');
-include($relPath.'connect.inc');
 include($relPath.'theme.inc');
-new dbConnect();
 $no_stats=1;
 theme('Reglas de Revisión','header');
 
@@ -211,7 +209,7 @@ claro, avísenos por favor.
 </p>
 <p>
 Este documento está evolucionando en el tiempo. Ayúdenos a mejorar
-escribiendo sus sugerencias en el Foro de Documentación en <a href="http://www.pgdp.net/phpBB2/viewtopic.php?t=18057"> este enlace</a>.
+escribiendo sus sugerencias en el Foro de Documentación en <a href="h{$forums_url}/viewtopic.php?t=18057"> este enlace</a>.
 </p>
 
 <h3><a name="comments">Comentarios del proyecto</a></h3>
@@ -238,7 +236,7 @@ manejarlos (Vea abajo).
 </p>
 <p>En la Project Page (Página del Proyecto), el enlace 'Images, Pages
 Proofread, & Differences' (Imágenes, Páginas Revisadas y Diferencias) le
-permite ver como otros revisores han hecho los cambios. <a href="http://www.pgdp.net/phpBB2/viewtopic.php?t=10217"> En este foro</a> se
+permite ver como otros revisores han hecho los cambios. <a href="{$forums_url}/viewtopic.php?t=10217"> En este foro</a> se
 habla sobre las diferentes maneras de usar esta información.
 </p>
 
@@ -2525,7 +2523,7 @@ tipo es la palabra «and» reconocida por el OCR como «arid». Otros
 ejemplos: «eve» por «eye», «Torn» por «Tom», «train» por «tram», «había»
 por «habla», «cuidad» por «ciudad». Es más difícil encontrar este tipo y
 le damos un nombre especial: «Stealth Scannos». Coleccionamos ejemplos
-de «Stealth Scannos» en <a href="http://www.pgdp.net/phpBB2/viewtopic.php?t=1563">
+de «Stealth Scannos» en <a href="ht{$forums_url}/viewtopic.php?t=1563">
 este foro.</a> Los ejemplos de los scannos en español <a href="http://www.pgdpcanada.net/wiki/Scannos_en_espa%C3%B1ol">se encuentran aquí</a>.
 </p>
 <p>Encontrar estos errores es más fácil si utiliza una fuente

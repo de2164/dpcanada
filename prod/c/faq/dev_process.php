@@ -1,6 +1,6 @@
 <?php
 $relPath='../pinc/';
-include_once($relPath.'site_vars.php');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'theme.inc');
 
 $test_host='http://www.pgdp.org';	

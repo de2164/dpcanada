@@ -1,10 +1,8 @@
 <?
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
-include($relPath.'connect.inc');
+include($relPath.'dpinit.php');
 include($relPath.'theme.inc');
 include($relPath.'faq.inc');
-new dbConnect();
 
 if ( isset($_GET['i_type']) )
 {

@@ -565,7 +565,7 @@ it."
 
 <a href="<? echo $projects_forum_url ?>">  
 is what we use for the project forums URL, instead
-of something like <a href="http://www.pgdpcanada.net/phpBB2/viewforum.php?f=2">.
+of something like <a href="http://www.pgdpcanada.net/forum/viewforum.php?f=2">.
 This anchor will never need changing, even if the site 
 moves and the forums are renamed or moved, you can always 
 just cut-n-paste this string for the project 
@@ -608,10 +608,8 @@ the FAQ file with a snippet of PHP code like:
 
 <?
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
-include($relPath.'connect.inc');
+include($relPath.'dpinit.php');
 include($relPath.'theme.inc');
-new dbConnect();
 $no_stats=1;
 theme('Post-Processing FAQ','header');
 ?>
@@ -668,9 +666,9 @@ it is not actually in the FAQ file)
 <font face='verdana, helvetica, sans-serif' size='1' color='#ffffff'>
 <a href='http://www.pgdpcanada.net/c/faq/faq_central.php'>
 <font face='verdana, helvetica, sans-serif' size='1' color='#ffffff'>Help</font></a>&nbsp;
-<b>&#183;</b>&nbsp;<a href='http://www.pgdpcanada.net/phpBB2/'>
+<b>&#183;</b>&nbsp;<a href='http://www.pgdpcanada.net/forum/'>
 <font face='verdana, helvetica, sans-serif' size='1' color='#ffffff'>Forums</font></a>&nbsp;
-<b>&#183;</b>&nbsp;<a href='http://www.pgdpcanada.net/phpBB2/privmsg.php?folder=inbox'>
+<b>&#183;</b>&nbsp;<a href='http://www.pgdpcanada.net/forum/privmsg.php?folder=inbox'>
 <font face='verdana, helvetica, sans-serif' size='1' color='#ffffff'>Inbox</a></font>&nbsp;
 <b>&#183;</b>&nbsp;<a href='http://www.pgdpcanada.net/c/userprefs.php'>
 <font face='verdana, helvetica, sans-serif' size='1' color='#ffffff'>Preferences</font></a>&nbsp;
@@ -696,10 +694,8 @@ we can start our FAQs with
 
 <?
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
-include($relPath.'connect.inc');
+include($relPath.'dpinit.php');
 include($relPath.'theme.inc');
-new dbConnect();
 $no_stats=1;
 theme('Post-Processing FAQ','header');
 ?>

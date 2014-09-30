@@ -1,9 +1,7 @@
 <?
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
-include($relPath.'connect.inc');
+include($relPath.'dpinit.php');
 include($relPath.'theme.inc');
-new dbConnect();
 $no_stats=1;
 theme('Templates available for Project Comments','header');
 ?>

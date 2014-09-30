@@ -1,20 +1,18 @@
 <?php
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
+include($relPath.'dpinit.php');
 include($relPath.'faq.inc');
 include($relPath.'pg.inc');
-include($relPath.'connect.inc');
 include($relPath.'theme.inc');
-new dbConnect();
-$no_stats=1;
+$no_stats = 1;
 
-echo "<meta http-equiv='refresh' content='0;url=http://www.pgdpcanada.net/wiki/index.php/FAQ_Proofreading_Guidelines'>";
+// echo "<meta http-equiv='refresh' content='0;url=http://www.pgdpcanada.net/wiki/index.php/Proofreading_Guidelines'>";
 
 $theme_args["css_data"] = "p.backtotop {text-align:right; font-size:75%;margin-right:-5%;}";
 
 theme(_('Proofreading Guidelines'),'header',$theme_args);
 
-$utf8_site=!strcasecmp($charset,"UTF-8");
+$utf8_site =! strcasecmp($charset,"UTF-8");
 ?>
 
 <!-- NOTE TO MAINTAINERS AND DEVELOPERS:

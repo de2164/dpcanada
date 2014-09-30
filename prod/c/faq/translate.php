@@ -1,6 +1,6 @@
 <?
 $relPath='../pinc/';
-include_once($relPath.'site_vars.php');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'theme.inc');
 $no_stats=1;
 theme('FAQ Central','header');
@@ -12,7 +12,7 @@ theme('FAQ Central','header');
 This page contains information on how to translate DP site. For information on translation status of various languages, see <a href='http://dp.rastko.net/stats/software.php' class='external' title="http://dp.rastko.net/stats/software.php">Software information</a>.
 
 <p>
-If you wish to translate our site to your language, or improve upon the existing translation, please visit the <a href='http:../phpBB2/viewtopic.php?t=107' class='external' title="http:../phpBB2/viewtopic.php?t=107">Site translation thread</a> first to make sure that noone is already doing that. You may also report problems with existing translation there.
+If you wish to translate our site to your language, or improve upon the existing translation, please visit the <a href='{$forums_url}/viewtopic.php?t=107' class='external' title="{$forums_url}/viewtopic.php?t=107">Site translation thread</a> first to make sure that noone is already doing that. You may also report problems with existing translation there.
 
 <p>
 There are several things that could be translated.
@@ -81,7 +81,7 @@ Clicking on "Translate" at the right will (finally!) let you to actually transla
 The translation interface is pretty straightforward. There is a list of strings, each followed with a text box. Type your translation of a string in its text box, and move onto the next string. When you have translated all the strings, or gotten bored, click on the "Save and Compile" button at the bottom to save your strings and that's it!
 
 <p>
-In the past, your strings would have been visible immediately after the translation. Unfortunately, this had to be turned off as it caused some problems on the site. The translations will be compiled periodically; if you have made a significant translation, <a href='http://dp.rastko.net/phpBB2/privmsg.php?mode=post&u=3' class='external' title="http://dp.rastko.net/phpBB2/privmsg.php?mode=post&amp;u=3">ask</a> the admin to compile it or announce it in the thread.
+In the past, your strings would have been visible immediately after the translation. Unfortunately, this had to be turned off as it caused some problems on the site. The translations will be compiled periodically; if you have made a significant translation, <a href='http://dp.rastko.net/forum/privmsg.php?mode=post&u=3' class='external' title="http://dp.rastko.net/forum/privmsg.php?mode=post&amp;u=3">ask</a> the admin to compile it or announce it in the thread.
 
 <p>
 Distributed Proofreaders Europe for a while used a different translation system, which resulted in somewhat incompatible translations. Partly because of this, and partly because some strings have changed between the two versions of the software (for example, "proofer" changed to "proofreader"), existing translations are not usable in entirety. In particular, of 173 messages in <code >messages.inc</code >, 80 are salvaged, and a few dozen more could be reinserted manually. You can download the .inc file for your language <a href='http://dp.rastko.net/downloads/old_translations' class='external' title="http://dp.rastko.net/downloads/old translations">here</a> if you want to reuse old messages.
@@ -209,7 +209,7 @@ After translating, send translated files to <a href='mailto:dp-admin@rastko.net'
 
 <h2><a name="Forums">Forums</a></h2>
 
-If your community is active enough, it can have a forum on its own, or even a full forum hierarchy. For a forum, just <a href='http://dp.rastko.net/phpBB2/privmsg.php?mode=post&u=3' class='external' title="http://dp.rastko.net/phpBB2/privmsg.php?mode=post&amp;u=3">ask</a> the admin. For full hierarchy, you have to translate all the forums' names and PM them to the admin.
+If your community is active enough, it can have a forum on its own, or even a full forum hierarchy. For a forum, just <a href='http://dp.rastko.net/forum/privmsg.php?mode=post&u=3' class='external' title="http://dp.rastko.net/forum/privmsg.php?mode=post&amp;u=3">ask</a> the admin. For full hierarchy, you have to translate all the forums' names and PM them to the admin.
 
 <p>
 Translation of the forum interface to your language should be installed when the language itself is installed, if not before. If it isn't, remind the admin to do it.
@@ -245,7 +245,7 @@ Currently the following URLs are available:
 </li></ul>
 
 <p>
-For more information, see <a href='http://dp.rastko.net/phpBB2/viewtopic.php?t=783' class='external' title="http://dp.rastko.net/phpBB2/viewtopic.php?t=783">Linking to the DP Europe site</a> forum topic.
+For more information, see <a href='http://dp.rastko.net/forum/viewtopic.php?t=783' class='external' title="http://dp.rastko.net/forum/viewtopic.php?t=783">Linking to the DP Europe site</a> forum topic.
 
 <h3><a name="Unsupported_languages">Unsupported languages</a></h3>
 
@@ -277,7 +277,7 @@ add the documentation) for the following languages and dialects:
 
 <p>
 You can make plans for translating them,
-<a href='http://dp.rastko.net/phpBB2/viewtopic.php?t=107' class='external' title="http://dp.rastko.net/phpBB2/viewtopic.php?t=107">contact us</a> about it, tell us how some of
+<a href='http://dp.rastko.net/forum/viewtopic.php?t=107' class='external' title="http://dp.rastko.net/forum/viewtopic.php?t=107">contact us</a> about it, tell us how some of
 them are actually called, and we do plan to solve the technical difficulties once.
 
 <p>
