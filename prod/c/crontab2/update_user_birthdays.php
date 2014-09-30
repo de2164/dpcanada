@@ -4,57 +4,53 @@ include('connect.inc');
 new dbConnect();
 header("Content-Type: text/plain");
 
-$mtime = microtime();
-$mtime = explode(" ",$mtime);
-$mtime = $mtime[1] + $mtime[0];
-$starttime = $mtime;
+// $mtime = microtime();
+// $mtime = explode(" ",$mtime);
+// $mtime = $mtime[1] + $mtime[0];
+// $starttime = $mtime;
 
 // Clear yesterday's birthdays.
-dpsql_query("DELETE FROM usersettings WHERE setting = 'birthday_today'");
+mysql_query("
+    DELETE FROM usersettings 
+    WHERE setting = 'birthday_today'");
+
 echo "Cleared yesterday's ".mysql_affected_rows()." birthdays.\n\n";
 
-$now = time();
-$today = getdate($now);
+// $now = time();
+// $today = getdate($now);
 
-$months = 24;
-$max = $months * 2592000;
-$res = dpsql_query("
-    SELECT username,date_created 
+// $months = 24;
+// $max = $months * 2592000;
+$rows = $dpdb->SqlRows("
+    SET @d = DAY(CURRENT_DATE());
+    SET @m = MONTH(CURRENT_DATE());
+    SET @y = YEAR(CURRENT_DATE());
+    SET @dt = DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR);
+
+    SELECT username, 
+        @y - YEAR(FROM_UNIXTIME(date_created)) yearsago
     FROM users
-    WHERE
-        FROM_UNIXTIME(date_created, '%m-%d') = FROM_UNIXTIME($now,'%m-%d')
-        AND ($now - t_last_activity) < $max
-        AND ($now - date_created) > 28512000
-") or die("Aborting");
+    WHERE MONTH(FROM_UNIXTIME(date_created)) = @m
+        AND DAY(FROM_UNIXTIME(date_created)) = @d
+        AND @y - YEAR(FROM_UNIXTIME(date_created)) >= 2
+    ORDER BY yearsago DESC, username;");
 
-while ( list($username,$date_created) = mysql_fetch_row($res) )
-{
-    $user_day = getdate($date_created);
-    $birthdays[$username] = ($today['year'] - $user_day['year']);
-}
-
-if (count($birthdays) == 0)
-{
+if (count($rows) == 0) {
     echo "No user birthdays today.";
-    die;
-}
-else
-{
-    echo "Today's birthdays:\n";
+    return;
 }
 
+echo "Today's birthdays:\n";
 
-foreach ($birthdays as $user => $years)
-{
-    dpsql_query("INSERT INTO usersettings VALUES('$user','birthday_today','$years')");
-    echo "  $user ($years)\n";
+foreach ($rows as $row) {
+    $username = $row["username"];
+    $yearsago = $row["yearsago"];
+    $dpdb->SqlExecute("
+        INSERT INTO usersettings 
+        VALUES('$username', 'birthday_today', '$years')");
+    echo "  $username ($years)\n";
 }
 
 echo "\nBirthdays updated. Mazel tov!";
 
-$mtime = microtime();
-$mtime = explode(" ",$mtime);
-$mtime = $mtime[1] + $mtime[0];
-$time = ($mtime - $starttime);
-echo "\n\nTook ".round($time,4)." seconds to run.";
 ?>

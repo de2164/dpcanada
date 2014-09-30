@@ -1,11 +1,9 @@
 <?
 $relPath='../pinc/';
-include_once($relPath.'site_vars.php');
+include_once($relPath.'dpinit.php');
 include_once($relPath.'pg.inc');
-include_once($relPath.'connect.inc');
 include_once($relPath.'theme.inc');
 include_once($relPath.'site_news.inc');
-new dbConnect();
 $no_stats=1;
 $theme_args = array("css_data" => "
 table.faqs td {font-family: Tahoma, sans-serif;}

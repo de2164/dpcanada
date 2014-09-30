@@ -3,12 +3,10 @@
 // Translated by user 'Pierre' at pgdp.net, 2006-02-08
 
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
+include($relPath.'dpinit.php');
 include($relPath.'faq.inc');
 include($relPath.'pg.inc');
-include($relPath.'connect.inc');
 include($relPath.'theme.inc');
-new dbConnect();
 $no_stats=1;
 theme('Directives de Relecture et correction','header');
 
@@ -261,7 +259,7 @@ points devraient être décrits de manière différente ou si quelque chose est
 vague, merci de nous le faire savoir.</P>
 <P>Ce document est un travail en évolution permanente. Aidez-nous à progresser en nous 
 envoyant vos suggestions de changements sur le forum Documentation dans <A 
-href="http://www.pgdp.net/phpBB2/viewtopic.php?t=10779">ce thread</A>. </P>
+href="{$forums_url}/viewtopic.php?t=10779">ce thread</A>. </P>
 <H3><A name=comments>Commentaires des projets</A> </H3>
 <P>Dans la page d'interface dans laquelle vous commencez à corriger des pages, 
 il y a une section "Commentaires du projet" qui contient des informations 
@@ -281,7 +279,7 @@ souvent utilisée par les relecteurs pour signaler aux autres relecteurs les
 problèmes récurrents dans le projet, et la meilleure façon de les résoudre. </P>
 <P>Sur la page Projet, le lien'Images, Pages Proofread, &amp; Differences' 
 permet de voir comment les autres relecteurs ont changé le texte. <A 
-href="http://www.pgdp.net/phpBB2/viewtopic.php?t=10217">Ce fil de discussion 
+href="{$forums_url}/viewtopic.php?t=10217">Ce fil de discussion 
 </A>discute les différentes façon d'utiliser cette information. </P>
 <H3><A name=forums>Forum/Discuter de ce Projet</A> </H3>
 <P>Dans la page d'interface dans laquelle vous commencez à corriger des pages, 
@@ -2198,7 +2196,7 @@ résultat peut être un mot qui:
 "môme" pour "même", "rosé" pour "rose", "a" pour "à", "vint" pour "vînt", etc. 
 Nous les appelons les "Scannos 
 furtifs", car ils sont plus difficiles à voir. Des exemples ont été collectés <A 
-href="http://www.pgdp.net/phpBB2/viewtopic.php?t=1563">ici</A>. Les scannos sont 
+href="{$forums_url}/viewtopic.php?t=1563">ici</A>. Les scannos sont 
 plus faciles à voir avec une fonte monospace comme <A 
 href="http://www.pgdpcanada.net/c/faq/font_sample.php">DPCustomMono</A> ou Courier. 
 </P><!-- END RR -->

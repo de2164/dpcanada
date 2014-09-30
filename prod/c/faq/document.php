@@ -1,14 +1,12 @@
 <?
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
+include($relPath.'dpinit.php');
 include($relPath.'faq.inc');
 include($relPath.'pg.inc');
-include($relPath.'connect.inc');
 include($relPath.'theme.inc');
-new dbConnect();
 $no_stats=1;
 
-echo "<meta http-equiv='refresh' content='0;url=http://www.pgdpcanada.net/wiki/index.php/FAQ_Formatting_Guidelines'>";
+// echo "<meta http-equiv='refresh' content='0;url=http://www.pgdpcanada.net/wiki/index.php/FAQ_Formatting_Guidelines'>";
 
 theme('Formatting Guidelines','header');
 

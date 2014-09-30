@@ -1,10 +1,8 @@
 <?
-$relPath='../pinc/';
-include($relPath.'site_vars.php');
-include($relPath.'connect.inc');
+$relPath = '../pinc/';
+include($relPath.'dpinit.php');
 include($relPath.'theme.inc');
-new dbConnect();
-$no_stats=1;
+$no_stats = 1;
 theme('Scanning FAQ','header');
 ?>
 

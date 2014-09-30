@@ -1,11 +1,9 @@
 <?
 $relPath='../pinc/';
-include($relPath.'site_vars.php');
+include($relPath.'dpinit.php');
 include($relPath.'faq.inc');
 include($relPath.'pg.inc');
-include($relPath.'connect.inc');
 include($relPath.'theme.inc');
-new dbConnect();
 $no_stats=1;
 theme('Proofreading Guidelines','header');
 ?>
