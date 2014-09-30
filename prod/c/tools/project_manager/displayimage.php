@@ -5,13 +5,12 @@ require_once $relPath . 'DpPage.class.php';
 
 $projectid      = Arg('projectid');
 $pagename       = Arg('pagename');
-$image_zoom     = Arg("image_zoom", "100");
 $submit_replace = IsArg("submit_replace");
 
 $project = new DpProject($projectid);
 $page    = new DpPage($projectid, $pagename);
 
-$image   = $page->Image();
+$imagefile   = $page->Image();
 
 /** @var DpPage $page */
 if($project->UserMayManage() && $submit_replace && count($_FILES) > 0 ) {
@@ -20,91 +19,123 @@ if($project->UserMayManage() && $submit_replace && count($_FILES) > 0 ) {
         $uptempname  = $_FILES["upfile"]["tmp_name"];
         $upfiletype  = $_FILES["upfile"]["type"];
         $upfilesize  = $_FILES["upfile"]["size"];
-        if(right($upfiletype, 3) != right($image, 3)) {
-            die("Cannot replace $image with $upfilename (different types)");
+        if(right($upfiletype, 3) != right($imagefile, 3)) {
+            die("Cannot replace $imagefile with $upfilename (different types)");
         }
         if($upfilesize == 0) {
-            die("Cannot replace $image with $upfilename (zero length file)");
+            die("Cannot replace $imagefile with $upfilename (zero length file)");
         }
         $page->ReplaceImage($uptempname);
         divert("?projectid=$projectid&pagename=$pagename");
     }
 }
 
-setcookie("image_zoom", $image_zoom);
-
 $rows = $dpdb->SqlObjects("
-        SELECT image, fileid AS pgname FROM $projectid
+        SELECT image,
+               fileid AS pgname
+        FROM $projectid
         ORDER BY image");
 
-if($pagename == "") {
-    $row = $rows[0];
-    $pagename = imagefile_to_pagename($row->pgname);
-    $image    = $row->image;
+if(! $pagename) {
+    $pagename = $rows[0]->pgname;
 }
 
-$prev_image = "";
-$next_image = "";
-$prev_pgname = "";
-$next_pgname = "";
+$jsrows = json_encode($rows);
 
 $opts = "";
-$isel = 0;
-for($i = 0; $i < count($rows); $i++) {
-    $row = $rows[$i];
+$i = 0;
+foreach($rows as $row) {
     $pgname     = $row->pgname;
-    if($pgname == $pagename) {
-        $image      = $row->image;
-        $isel       = $i;
+    if($row->pgname == $pagename) {
+        $opts .= "<option value='$i' selected='selected'>$pgname</option>\n";
     }
-    $opts .= "<option value='$pgname'>$pgname</option>\n";
-}
-
-if($isel > 0) {
-    $row = $rows[$isel-1];
-    $prev_image = $row->image;
-    $prev_pgname = $row->pgname;
-}
-if($isel < count($rows)-1) {
-    $row = $rows[$isel+1];
-    $next_image = $row->image;
-    $next_pgname = $row->pgname;
+    else {
+        $opts .= "<option value='$i'>$pgname</option>\n";
+    }
+    $i++;
 }
 
 $state = $project->State();
 $title = $project->NameOfWork();
 $returnto = _("Return to Project Page");
+$imgpath = "/projects/$projectid/";
 
 echo "
+<!DOCTYPE HTML>
 <html>
 <head>
+<title>DPC Page Image $pgname</title>
+<meta charset='utf-8'/>
 <script>
-function ebody() {
+    var jsrows = " . $jsrows . ";
+
+function $(ref) {
+    return document.getElementById(ref);
+}
+
+function save_zoom(pct) {
     var c = document.cookie;
-    if(! c)
+    if(! c) {
+        c = 'image_zoom=' + pct.toString();
+    }
+    var m = c.match(/(.*)(image_zoom=\d*)(.*)/);
+    if(m.length != 4) {
         return;
-    var m = c.match(/image_zoom=(.*?);/);
-    if(! m || m.length < 2)
-        return;
-    var val = m[1];
-    document.getElementById('image_zoom').value = val;
-    document.getElementById('jumpto').selectedIndex = {$isel};
+    }
+    document.cookie = m[1] + 'image_zoom=' + pct.toString() + m[3];
+}
+
+function init_zoom() {
+    var pct = parseInt($('image_zoom').value);
+
+    if(isNaN(pct)) {
+        var c = document.cookie;
+        var m = c.match(/image_zoom=(.*?);/);
+        if(m && m.length >= 2) {
+            pct = parseInt(m[1]);
+        }
+    }
+    pct = Math.max(pct, Math.min(pct, 200), 25);
+
+    $('image_zoom').value = pct.toString();
+    $('pageimage').style.width = pct.toString() + '%';
+}
+
+function eZoom() {
+    init_zoom();
+    return false;
+}
+
+function ebody() {
+    init_zoom();
 }
 
 function eJumpTo() {
     // set hidden input
-    document.getElementById('pagename').value 
-                        = document.getElementById('jumpto').value ;
-    // submit, with input set to desired pagename
-    document.forms[0].submit();
+    var i = $('jumpto').selectedIndex;
+    var r = jsrows[i];
+    var imgfile = r.image;
+    var src = $('imgpath').value + imgfile;
+    $('pageimage').src = src;
+    // $('pageimage').src = $('imgpath').value + r.image;
 }
+
 function ePrevClick() {
-    document.getElementById('pagename').value = '$prev_pgname';
-    document.forms[0].submit();
+    var i = $('jumpto').selectedIndex;
+    if(i <= 0) {
+        return;
+    }
+    $('jumpto').selectedIndex--;
+    $('pageimage').src = $('imgpath').value + jsrows[$('jumpto').selectedIndex].image;
 }
+
 function eNextClick() {
-    document.getElementById('pagename').value = '$next_pgname';
-    document.forms[0].submit();
+    var i = $('jumpto').selectedIndex;
+    if(i >= $('jumpto').length) {
+        return;
+    }
+    $('jumpto').selectedIndex++;
+    $('pageimage').src = $('imgpath').value + jsrows[$('jumpto').selectedIndex].image;
 }
 
 </script>
@@ -112,22 +143,22 @@ function eNextClick() {
 
 <body onload='ebody()'>
 <form name='imgform' id='imgform' 
-    enctype='multipart/form-data' method='POST' action=''
+    enctype='multipart/form-data' method='POST'
     style='margin: 0;'>
   <input type='hidden' name='projectid' id='projectid' value='$projectid'>
   <input type='hidden' name='pagename' id='pagename' value='$pagename'>
+  <input type='hidden' name='imgpath' id='imgpath' value='{$imgpath}'>
   <div style='width: 100%; text-align: center'>
     <a style='float: left' href='$code_url/project.php?projectid=$projectid'>$returnto</a>
     <h3 style='margin: 0;'>$title</h3> 
   </div>
   <div style='float: left'>
     Width:
-    <input type='text' maxlength='3' name='image_zoom' id='image_zoom' size='3'  
-            value='$image_zoom'> %
-    <input type='submit' value='Resize' name='submit_resize'>
+    <input type='text' maxlength='3' name='image_zoom' id='image_zoom' size='3' value=''> %
+    <input type='button' value='Resize' name='submit_resize' onclick='eZoom()'>
   </div>
   <div style='float: right'>
-    Jump to:
+    Page:
     <select name='jumpto' id='jumpto' onChange='eJumpTo()'>
       $opts
     </select>
@@ -145,6 +176,6 @@ if($project->UserMayManage()) {
 echo "
 </form>
 <br>
-<img src='{$projects_url}/{$projectid}/{$image}' width='{$image_zoom}%' border='1'>
+<img id='pageimage' src='{$imgpath}{$imagefile}' style='border: 1px solid gray;' alt=''>
 </body></html>";
 

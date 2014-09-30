@@ -5,46 +5,45 @@
 
     ************************************
 */
-$relPath='../..//pinc/';
-// to establish logon
-include_once($relPath.'dpinit.php');
-// for dpsql_dump_query
-include_once($relPath.'dpsql.inc');
-// for PRIVACY_* constants
-include_once($relPath.'prefs_options.inc');
-// for page marginalia
-include_once($relPath.'theme.inc');
-// for PROJ_ declarations
-include_once($relPath.'project_states.inc');
-// for TallyBoard
-include_once($relPath.'TallyBoard.inc');
 
-function project_sql($round_id)
-{
+
+ini_set("display_errors", true);
+error_reporting(E_ALL);
+
+$relPath='../..//pinc/';
+include_once($relPath.'dpinit.php');
+
+function project_sql() {
     return
         "SELECT
             projectid,
             nameofwork,
             authorsname
-        FROM
-            projects
-        WHERE
-            difficulty = 'BEGINNER'
-        AND
-            state='".constant("PROJ_{$round_id}_AVAILABLE")."'
-        ORDER BY
-            modifieddate ASC" ;
+        FROM projects
+        WHERE phase = 'P2'
+        ORDER BY modifieddate" ;
 }
 
-function page_summary_sql($projectid)
-{
-    global $forums_url,$code_url,$mentored_round_id;
+function page_summary_sql($projectid) {
+//    global $forums_url, $code_url, $mentored_round_id;
 
-    $round_tallyboard = new TallyBoard($mentored_round_id, 'U' );
+//    $round_tallyboard = new TallyBoard($mentored_round_id, 'U' );
 
-    list($joined_with_user_page_tallies,$user_page_tally_column) =
-            $round_tallyboard->get_sql_joinery_for_current_tallies('u.u_id');
+//    list($joined_with_user_page_tallies,$user_page_tally_column) =
+//            $round_tallyboard->get_sql_joinery_for_current_tallies('u.u_id');
 
+    return "
+        SELECT
+            p.round1_user,
+            COUNT(1) p1count,
+            SUM(urp.page_count) roundpages
+        FROM $projectid p
+        JOIN user_round_pages urp
+            ON p.round1_user = urp.username
+        GROUP BY p.round1_user
+        ORDER BY p.round1_user";
+
+    /*
     return "SELECT
                 CASE WHEN u.u_privacy = ".PRIVACY_ANONYMOUS." THEN 'Anonymous'
                 ELSE CONCAT('<a href=\""
@@ -59,19 +58,17 @@ function page_summary_sql($projectid)
                 INNER JOIN phpbb_users AS bbu ON u.username = bbu.username
                 $joined_with_user_page_tallies
             GROUP BY p.round1_user" ;
+    */
 }
 
-function page_list_sql($projectid)
-{
+function page_list_sql($projectid) {
     return "
     SELECT
-        p.fileid AS '" . _('Page') . "',
-        CASE WHEN u.u_privacy=".PRIVACY_ANONYMOUS." THEN 'Anonymous'
-        ELSE p.round1_user
-        END AS " . _('Proofreader') . "
-    FROM $projectid AS p
-        INNER JOIN users AS u ON p.round1_user = u.username
-    ORDER BY fileid " ;
+        p.fileid AS pagename,
+        p.round1_user
+    FROM $projectid p
+        JOIN users u ON p.round1_user = u.username
+    ORDER BY fileid";
 }
 
 
@@ -92,47 +89,40 @@ function page_list_sql($projectid)
 
     // ---------------------------------------------------------------
 
-    $round_id = @$_GET['round_id'];
-    if ( $round_id != '' )
-    {
-        $mentoring_round = get_Round_for_round_id($round_id);
-    }
-    else
-    {
+    $round_id = Arg("round_id");
+//    if ( $round_id != '' ) {
+//        $mentoring_round = get_Round_for_round_id($round_id);
+//    }
+//    else
+//    {
         // Consider the page they came from.
-        $referer = $_SERVER['HTTP_REFERER'];
+//        $referer = $_SERVER['HTTP_REFERER'];
 
         // If they're coming to this page from a MENTORS ONLY book in X2, 
         // referrer should contain &expected_state=X2.proj_avail.
-        foreach ( $Round_for_round_id_ as $round )
-        {
-            if ( strpos($referer, $round->project_available_state) )
-            {
-                $mentoring_round = $round;
-                break;
-            }
-        }
+//        foreach ( $Round_for_round_id_ as $round ) {
+//            if ( strpos($referer, $round->project_available_state) ) {
+//                $mentoring_round = $round;
+//                break;
+//            }
+//        }
 
-        if ( !isset($mentoring_round) )
-        {
+/*
+        if ( !isset($mentoring_round) ) {
             // Just take the first.
-            foreach ( $Round_for_round_id_ as $round )
-            {
-                if ( $round->is_a_mentor_round() )
-                {
+            foreach ( $Round_for_round_id_ as $round ) {
+                if ( $round->is_a_mentor_round() ) {
                     $mentoring_round = $round;
                     break;
                 }
             }
-            if ( !isset($mentoring_round) )
-            {
+            if ( !isset($mentoring_round) ) {
                 die("There are no mentoring rounds!");
             }
         }
     }
 
-    if ( !$mentoring_round->is_a_mentor_round() )
-    {
+    if ( !$mentoring_round->is_a_mentor_round() ) {
         die("$mentoring_round->id is not a mentoring round!");
     }
 
@@ -140,61 +130,50 @@ function page_list_sql($projectid)
 
     // Are there other mentoring rounds? If so, provide mentoring links for them.
     $other_mentoring_rounds = array();
-    foreach ( $Round_for_round_id_ as $round )
-    {
-        if ( $round->is_a_mentor_round() && $round->id != $mentoring_round->id )
-        {
+    foreach ( $Round_for_round_id_ as $round ) {
+        if ( $round->is_a_mentor_round() && $round->id != $mentoring_round->id ) {
             $other_mentoring_rounds[] = $round;
         }
     }
-    if ( count($other_mentoring_rounds) > 0 )
-    {
+    if ( count($other_mentoring_rounds) > 0 ) {
         echo "<p>(" . _('Show this page for:');
 
-        foreach( $other_mentoring_rounds as $other_round )
-        {
+        foreach( $other_mentoring_rounds as $other_round ) {
             $url = "$code_url/tools/proofers/for_mentors.php?round_id={$other_round->id}";
             echo " <a href='$url'>{$other_round->id}</a>";
         }
         echo ")</p>";
     }
+*/
 
     // ---------------------------------------------------------------
 
-    if ( !user_can_work_on_beginner_pages_in_round($mentoring_round) )
-    {
-        echo sprintf(
-                _("You do not have access to 'Mentors Only' projects in %s."),
-                $mentoring_round->id
-            );
-        echo "\n";
+    if(! $User->MayMentor()) {
+        echo  _("You do not have access to 'Mentors Only' projects in P2.\n");
         theme("","footer");
         exit;
     }
 
     // ---------------------------------------------------------------
 
-    echo "<h2>" . sprintf(_("Pages available to Mentors in round %s"), $mentoring_round->id) . "</h2>";
-    echo "<br>" . _("Oldest project listed first.") . "<br>";
+    echo _("<h2>Pages available to Mentors in round P2.</h2>
+        <p>Oldest project listed first.</p>\n");
 
-    $mentored_round_id = $mentoring_round->mentee_round->id;
-    $result = mysql_query(project_sql($mentoring_round->id));
-    while ($proj =  mysql_fetch_object($result))
-    {
-        // Display project summary info
-        echo "<br>" ;
-        echo "<b>$proj->nameofwork by $proj->authorsname</b>" ;
-        echo "<br>" ;
+    $projobjs = $dpdb->SqlObjects(project_sql());
 
-        dpsql_dump_query(page_summary_sql($proj->projectid));
+    foreach($projobjs as $proj) {
+        echo "<p>{$proj->nameofwork}</p>
+                <p>{$proj->authorsname}</p>\n";
 
-        echo "<br>" ;
-        echo _('Which proofreader did each page...') ;
+        $tbl1 = new DpTable();
+        $tbl1->SetRows( $dpdb->SqlRows(page_summary_sql($proj->projectid)));
+        $tbl1->EchoTable();
 
-        dpsql_dump_query(page_list_sql($proj->projectid));
+        $tbl2 = new DpTable();
+        $tbl2->SetRows( $dpdb->SqlRows(page_list_sql($proj->projectid)));
+        $tbl2->EchoTable();
     }
 
-    echo "<br><br><br><hr>\n";
     theme("","footer");
 
 // vim: sw=4 ts=4 expandtab

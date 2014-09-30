@@ -1,6 +1,7 @@
 <?
 // This file creates quiz objects for each quiz with data in CVS
 global $relPath;
+/*
 include_once($relPath."Quiz.inc");
 
 $defined_quizzes = array('PQ', 'FQ');
@@ -27,3 +28,4 @@ $PQ = new Quiz( "PQ", "Proofreading Quiz",
             _('Page Five') => 'step5'),
      array( 'maximum_age' => 6 * 30 * 24 * 60 * 60) // 6 months
 );
+*/

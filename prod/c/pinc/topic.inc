@@ -4,7 +4,7 @@ global $relPath;
 
 error_reporting(E_ALL);
 
-require_once $relPath . "phpbb2.inc";
+//require_once $relPath . "phpbb2.inc";
 
 // Parameters for topic_create() and topic_add_post()
 // are in the order Where, What, Who:
@@ -14,6 +14,7 @@ require_once $relPath . "phpbb2.inc";
 
 // -----------------------------------------------------------------------------
 
+/*
 // A proxy for phpbb2_create_topic() in phpbb2.inc
 function create_topic( $forum_id, $post_subject, $post_text, $poster_name,
                                         $poster_is_real, $make_poster_watch_topic) {
@@ -26,9 +27,11 @@ function create_topic( $forum_id, $post_subject, $post_text, $poster_name,
     // }
     return $topic_id;
 }
+*/
 
 // -----------------------------------------------------------------------------
 
+/*
 // A proxy for phpbb2_add_post() in phpbb2.inc
 function topic_add_post( $topic_id, $post_subject, $post_text,
                                                 $poster_name, $poster_is_real) {
@@ -38,6 +41,7 @@ phpbb2_add_post( $topic_id, $post_subject, $post_text, $poster_name, $poster_is_
     // $args = func_get_args();
     // call_phpbb2_function( 'add_post', $args );
 }
+*/
 
 // -----------------------------------------------------------------------------
 
@@ -96,6 +100,7 @@ function call_phpbb2_function( $func_name, $args ) {
 
 // -----------------------------------------------------------------------------
 
+/*
 function topic_change_forum( $topic_id, $to_forum_id) {
     assert( $topic_id != '' );
 
@@ -121,9 +126,11 @@ function topic_change_forum( $topic_id, $to_forum_id) {
         forum_resynch( $to_forum_id );
     }
 }
+*/
 
 // -----------------------------------------------------------------------------
 
+/*
 function forum_resynch( $forum_id ) {
     // Count the number of topics in the forum
     $res1 = mysql_query("
@@ -152,6 +159,6 @@ function forum_resynch( $forum_id ) {
             forum_last_post_id = $last_post
         WHERE forum_id = $forum_id");
 }
+*/
 
 // vim: sw=4 ts=4 expandtab
-?>

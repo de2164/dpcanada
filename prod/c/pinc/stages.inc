@@ -2,8 +2,18 @@
 
 // Declarations for all stages.
 // (Construction of all Stage objects.)
+/*
+Rounds
+    P1, P2, P3, F1, F2
+Stages
+    SR
+Pools
+    PP, PPV, CR
+*/
 
-include_once($relPath.'site_vars.php');
+global $relPath;
+
+include_once($relPath.'dpinit.php');
 include_once($relPath.'project_states.inc');
 include_once($relPath.'Stage.inc');
 include_once($relPath.'RoundDescriptor.inc');
@@ -11,57 +21,22 @@ include_once($relPath.'Pool.inc');
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-if ($site_supports_metadata)
-{
-
-new Stage(
-    'CA',
-    _('Clearance Approvals'),
-    array(),
-    'REQ-HUMAN',
-    _('A qualified person must confirm that the work is in the public domain.'),
-    NULL,
-    array(
-        'a',
-        'b',
-    ),
-    "tools/site_admin/proj_approvals.php"
-);
-
-}
-
-// -----------------------------------------------------------------------------
-
-if ($site_supports_metadata)
-{
-
-new Stage(
-    'MD',
-    _('Metadata Collection'),
-    array(),
-    'REQ-HUMAN',
-    _('We collect various bits of metadata for each page in a project.'),
-    NULL,
-    array(
-        'a',
-        'b',
-    ),
-    "tools/proofers/md_available.php"
-);
-
-}
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
 $pi_tools_for_P = array(
-    'popup_links'  => array('search_and_replace','greek_transliterator','hieroglyph_transliterator'),
-    'tool_buttons' => array('upper_case','title_case','lower_case'),
-    'tool_links'   => array('greek','note','brackets','blank_page'),
+    'popup_links'  => array('search_and_replace',
+                            'greek_transliterator'),
+    'tool_buttons' => array('remove_markup',
+                            'upper_case',
+                            'title_case',
+                            'lower_case'),
+    'tool_links'   => array('greek',
+                            'note',
+                            'curlybraces',
+                            'brackets',
+                            'blank_page'),
 );
-$pi_tools_for_F = array(
-    'popup_links'  => 'ALL',
-    'tool_buttons' => 'ALL',
-    'tool_links'   => 'ALL',
+$pi_tools_for_F = array( 'popup_links'  => 'ALL',
+                         'tool_buttons' => 'ALL',
+                         'tool_links'   => 'ALL',
 );
 
 new Round(
@@ -70,7 +45,7 @@ new Round(
     array(),
     'IMMEDIATE',
     _("The page-texts are the output from OCR software and need to have the text carefully compared to the image."),
-    'proofreading_guidelines.php',
+    $site_url."/wiki/index.php/Proofreading_Guidelines",
     array(
         0 => '#FFE4B5', // mocassin
         1 => '#FFF8DC', // cornsilk
@@ -109,10 +84,10 @@ new Round(
 new Round(
     'P2',
     _('Proofreading Round 2'),
-    array( 'R*+P1' => 300, 'days since reg' => 21, 'quiz/P' => 1 ),
+    array( 'P1' => 300, 'days since reg' => 21, 'quiz/P' => 1 ),
     'REQ-AUTO',
     _("The page-texts have already been proofread, and now need to have the text spellchecked and carefully compared to the image."),
-    'proofreading_guidelines.php',
+    $site_url."/wiki/index.php/Proofreading_Guidelines",
     array(
         0 => '#FFE4B5', // mocassin
         1 => '#FFF8DC', // cornsilk
@@ -154,7 +129,7 @@ new Round(
     array( 'P1+P2' => 400, 'F1' => 50, 'days since reg' => 42, 'quiz/P' => 1 ),
     'REQ-HUMAN',
     _("The page-texts have already been proofread, but now need to be examined <b>closely</b> for small errors that may have been missed."),
-    'proofreading_guidelines.php',
+    $site_url."/wiki/index.php/Proofreading_Guidelines",
     array(
         0 => '#DDA0DD', // plum
         1 => '#D8BFD8', // thistle
@@ -193,10 +168,10 @@ new Round(
 new Round(
     'F1',
     _('Formatting Round 1'),
-    array( 'R*+P1' => 300, 'days since reg' => 21, 'quiz/F' => 1 ),
+    array( 'P1' => 300, 'days since reg' => 21, 'quiz/F' => 1 ),
     'REQ-AUTO',
     _("The page-texts have already been proofread, but now need to be formatted with markup which may be specific to the project."),
-    'document.php',
+    $site_url."/wiki/index.php/Formatting_Guidelines",
     array(
         0 => '#FFE4B5', // mocassin
         1 => '#FFF8DC', // cornsilk
@@ -238,7 +213,7 @@ new Round(
     array( 'F1' => 400, 'days since reg' => 91 ), // 'F1' => 1000, 3 months after rollout
     'REQ-HUMAN', // "peer approval"
     _("The page-texts in this round need to be carefully checked to remove any remaining formatting or proofreading errors."),
-    'document.php',
+    $site_url."/wiki/index.php/Formatting_Guidelines",
     array(
         0 => '#DDA0DD', // plum
         1 => '#D8BFD8', // thistle
@@ -286,8 +261,8 @@ declare_mentoring_pair( 'P1', 'P2' );
 $someone_maintains_the_PP_faq =
     sprintf( _("%s (<a href='%s'>%s</a>) maintains our <a href='%s'>Post-Processing FAQ</a>."),
         'Julie Barkley DP-INT',
-        'http://www.pgdp.net/phpBB2/privmsg.php?mode=post&u=1674',
-        'juliebarkley',
+        url_for_pm('simple simon'),
+        'simple simon',
         "$code_url/faq/post_proof.php" );
 
 new Pool(
@@ -381,40 +356,5 @@ new Pool(
 
 // -----------------------------------------------------------------------------
 
-if ( $site_supports_corrections_after_posting )
-{
-
-new Pool(
-    'CR',
-    _('Corrections Review'),
-    array( 'F1' => 400 ),
-    'REQ-AUTO',
-    _('Readers can submit corrections. We need to review them and possibly revise the text.'), 
-    NULL,
-    array(
-        '#e0e8dd',
-        '#ffffff',
-    ),
-
-    PROJ_CORRECT_CHECKED_OUT,
-    PROJ_CORRECT_AVAILABLE,
-
-    _("Editor"),
-    'correctedby',
-
-    array(
-        "<p>",
-        _("The books listed below have already been posted to Project Gutenberg Canada, but a reader has found errors and submitted a corrected text."),
-        _("We need you to review the corrections to see if they're valid."),
-        _("Once you have checked out and downloaded a book it will remain checked out to you until you check it back in."),
-        _("When you have finished your work on the book, send the book to Project Gutenberg Canada to be posted."),
-        "</p>",
-    )
-);
-
-}
-
-// -----------------------------------------------------------------------------
 
 // vim: sw=4 ts=4 expandtab
-?>

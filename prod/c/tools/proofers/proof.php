@@ -5,12 +5,16 @@ include_once($relPath.'Project.inc');
 include_once($relPath.'slim_header.inc');
 
 // (User clicked on "Start Proofreading" link or
-// one of the links in "Done" or "In Progress" trays.)
+// one of the links in "Done" or "Save Draft" trays.)
 
 $projectid      = Arg("projectid")
     or die( "No project requested in proof.php." );
 
 $pagename       = Arg("pagename");
+
+$User->IsLoggedIn()
+    or RedirectToLogin();
+
 
 //if($User->Username() == 'dkretz') {
 //    divert("/e/proof/proofpage.php?projectid={$projectid}&pagename={$pagename}");
@@ -23,8 +27,22 @@ $roundid = $project->RoundId();
 if(! $User->MayWorkInRound($roundid))
     die("Not authorized for Round $roundid.");
 
+if( $User->IsAhmicLayout()) {
+    divert("../../ahmic/proofpage.php?projectid={$projectid}&pagename={$pagename}");
+    exit;
+}
+
+if( $User->IsPennaskLayout()) {
+    divert("../../pennask/proofpage.php?projectid={$projectid}&pagename={$pagename}");
+    exit;
+}
+
 if($User->IsWhistlerLayout()) {
     divert("./proofpage.php?projectid={$projectid}&pagename={$pagename}");
+    exit;
+}
+if($User->IsBlackcombLayout()) {
+    divert("../../blackcomb/proofpage.php?projectid={$projectid}&pagename={$pagename}");
     exit;
 }
 if($pagename == "") {

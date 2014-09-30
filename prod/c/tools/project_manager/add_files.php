@@ -1,51 +1,51 @@
 <?
+error_reporting(E_ALL);
 $relPath="./../../pinc/";
-include($relPath.'site_vars.php');
+include($relPath.'dpinit.php');
 include_once($relPath.'misc.inc');
 include($relPath.'metarefresh.inc');
-include($relPath.'dp_main.inc');
 include_once($relPath.'user_is.inc');
 include($relPath.'project_edit.inc');
-include($relPath.'DPage.inc');
+//include($relPath.'DPage.inc');
 
-$projectid = $_GET['project'];
+$projectid  =  $_GET['project'];
+$rel_source =  $_GET['rel_source'];
+$confirmed  = @$_GET['confirmed'];
+$tpnv       = @$_GET['tpnv'];
 
-abort_if_cant_edit_project( $projectid );
 
-$loading_tpnv = ( isset($_GET['tpnv']) && $_GET['tpnv'] == '1' );
+$loading_tpnv = ( $tpnv == '1' );
 
-if ( $_GET['rel_source'] == '' )
-{
+$project = new DpProject($projectid);
+$project->UserMayManage()
+    or die("Not permitted.");
+//abort_if_cant_edit_project( $projectid );
+
+if ( $rel_source == '' ) {
     die('rel_source parameter is empty or unset');
 }
-else
-{
-    $rel_source = stripslashes($_GET['rel_source']);
-    // Prevent sneaky parent-link tricks.
-    if ( ereg( '\.\.', $rel_source ) )
-    {
-        echo "Source directory '$rel_source' is not acceptable.";
-        echo "<hr>\n";
-        echo "Return to <a href='$code_url/project.php?id=$projectid'>Project Page</a>.\n";
-        return;
-    }
+
+$rel_source = stripslashes($rel_source);
+// Prevent sneaky parent-link tricks.
+if( left( $rel_source, 2) == ".." ) {
+    echo "Source directory '$rel_source' is not acceptable.";
+    echo "<hr>\n";
+    echo "Return to <a href='$code_url/project.php?id=$projectid'>Project Page</a>.\n";
+    return;
 }
 
 $abs_source = "$uploads_dir/$rel_source";
 
-if ( !file_exists($abs_source) )
-{
+if ( !file_exists($abs_source) ) {
     die( "source does not exist: $abs_source" );
 }
 
-if ( substr($abs_source, -4) == ".zip" )
-{
+if ( left( $abs_source, 4) == ".zip" ) {
     // $abs_source is a zip file containing the project files
 
     // We will unpack it to a sibling directory.
     $source_project_dir = substr($abs_source, 0, -4);
-    if (!file_exists($source_project_dir))
-    {
+    if ( ! file_exists($source_project_dir)) {
         mkdir($source_project_dir, 0777);
         chmod($source_project_dir, 0777);
     }
@@ -55,10 +55,9 @@ if ( substr($abs_source, -4) == ".zip" )
     // (Assuming the unzip worked), remove the zip file.
     unlink($abs_source);
 
-    $rel_source = substr($rel_source, 0, -4);
+    $rel_source = left( $rel_source, 0, mb_strlen( $rel_source, -4) );
 }
-else
-{
+else {
     $source_project_dir = $abs_source;
 }
 
@@ -69,16 +68,14 @@ exec("chmod -R a+r $source_project_dir");
 
 
 //if they are uploading tpnv files then put them in /tpnv 
-if ( $loading_tpnv )
-{
+if ( $loading_tpnv ) {
     $dest_project_dir = "$projects_dir/$projectid/tpnv";
-    if (!file_exists($dest_project_dir)) { 
+    if (! file_exists($dest_project_dir)) { 
         mkdir("$dest_project_dir", 0777);
         chmod("$dest_project_dir", 0777);
     }
 }
-else
-{
+else {
     $dest_project_dir   = "$projects_dir/$projectid";
 }
 
@@ -92,38 +89,39 @@ else
 // glob-special characters in $source_project_dir.
 // (There don't appear to be any chdir-special characters.)
 $r = chdir($source_project_dir);
-if ( !$r )
-{
+
+if ( ! $r ) {
     echo "Directory '$source_project_dir' does not exist, or is inaccessible.\n";
     echo "<hr>\n";
     echo "Return to <a href='$code_url/project.php?id=$projectid'>Project Page</a>.\n";
     return;
 }
 
-//MS
+/*
 $last_line = shell_exec('find *.png -size +100k -print');
-if (strlen($last_line) > 3)
-{
+
+if (mb_strlen($last_line) > 3) {
     echo "<pre>\n";
-    echo "The following page files are over 100KB.  Please change your image settings and upload the page files again.\n";
+    echo "The following page files are over 100KB.  Please change your image
+    settings and upload the page files again.\n"; 
     echo $last_line;
     echo "</pre>\n";
     echo "<hr>\n";
 }
+*/
 
 $last_line = "";
 $last_line = shell_exec('find *.jpg -size +500k -print');
-if (strlen($last_line) > 3)
-{
+if (mb_strlen($last_line) > 3) {
     echo "<pre>\n";
-    echo "The following illustration files are over 500KB.  Please change your image settings and upload the illustration files again.\n";
+    echo "The following illustration files are over 500KB.  Please change your
+    image settings and upload the illustration files again.\n";
     echo $last_line;
     echo "</pre>\n";
     echo "<hr>\n";
 }
 
-if ( $loading_tpnv )
-{
+if ( $loading_tpnv ) {
     echo "<pre>\n";
     echo "copying page-images from\n";
     echo "    $source_project_dir\n";
@@ -133,45 +131,39 @@ if ( $loading_tpnv )
     system("cp *.jpg $dest_project_dir");
     echo "</pre>\n";
 
-    $result = mysql_query("UPDATE projects SET state = 'project_new_waiting_app' WHERE projectid = '$projectid'");
+    $dpdb->SqlExecute("
+        UPDATE projects 
+        SET state = 'project_new_waiting_app' 
+        WHERE projectid = '$projectid'");
 }
-else
-{
+else {
     $loader = new Loader( $source_project_dir, $dest_project_dir, $projectid );
     $loader->analyze();
 
-    if ( !@$_GET['confirmed'] )
-    {
+    if ( ! $confirmed ) {
         $loader->display();
 
-        if ( $loader->has_errors() )
-        {
+        if ( $loader->has_errors() ) {
             echo _("Please fix errors and try again.");
         }
-        elseif ( $loader->would_do_nothing() )
-        {
+        elseif ( $loader->would_do_nothing() ) {
             echo _("Nothing to do.");
         }
-        else
-        {
+        else {
             $url = "?project=$projectid&amp;rel_source=$rel_source&amp;confirmed=1";
             echo "<a href='$url'>" . _('Proceed with load') . "</a>";
         }
     }
-    else
-    {
-        if ( $loader->has_errors() )
-        {
+    else {
+        if ( $loader->has_errors() ) {
             $loader->display();
             echo _("Please fix errors and try again.");
         }
-        elseif ( $loader->would_do_nothing() )
-        {
+        elseif ( $loader->would_do_nothing() ) {
             $loader->display();
             echo _("Nothing to do.");
         }
-        else
-        {
+        else {
             $loader->execute();
             echo _("Done.");
         }
@@ -179,15 +171,28 @@ else
 }
 
 echo "<hr>\n";
-echo "Return to <a href='$code_url/project.php?id=$projectid&detail_level=4'>Project Page</a>.\n";
+echo "Return to <a href='$code_url/project.php"
+            ."?id=$projectid"
+            ."&detail_level=4'>Project Page</a>.\n";
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 class Loader
 {
-    function Loader( $source_project_dir, $dest_project_dir, $projectid )
-    {
+    public $n_errors;
+    public $n_ops;
+    public $ignored_files;
+    private $non_page_files;
+    private $page_file_table;
+    private $db_text_for_base;
+    private $image_field_len;
+    private $dry_run;
+
+
+
+
+    function __construct( $source_project_dir, $dest_project_dir, $projectid ) {
         $this->source_project_dir = $source_project_dir;
         $this->dest_project_dir = $dest_project_dir;
         $this->projectid = $projectid;
@@ -195,8 +200,8 @@ class Loader
 
     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    function analyze()
-    {
+    function analyze() {
+        global $dpdb;
         $this->n_errors = 0;
         $this->n_ops = 0;
 
@@ -205,10 +210,10 @@ class Loader
 
         // Get the set of all 'image' fields in the page-table.
         $db_entries = array();
-        $res = mysql_query("SELECT image,master_text FROM $this->projectid");
-        while( list($image,$text) = mysql_fetch_row($res) )
-        {
-            $db_entries[$image] = $text;
+        $rows = $dpdb->SqlObjects("
+            SELECT image, master_text FROM $this->projectid");
+        foreach($rows as $row) {
+            $db_entries[$row->image] = $row->master_text;
         }
 
         // ---------------------------------------------------------------------
@@ -218,15 +223,12 @@ class Loader
 
         $this->ignored_files = array();
         $loadable_files = array();
-        foreach ( $source_files as $source_file )
-        {
+        foreach ( $source_files as $source_file ) {
             $reason_to_ignore = $this->_check_file( $source_file );
-            if ( $reason_to_ignore )
-            {
+            if ( $reason_to_ignore ) {
                 $this->ignored_files[$source_file] = $reason_to_ignore;
             }
-            else
-            {
+            else {
                 $loadable_files[] = $source_file;
             }
         }
@@ -242,7 +244,6 @@ class Loader
         // A non-page-related file is normally an illustration.
 
         // So how do we tell whether or not a file is page-related?
-        //
         // One way to do it would be via a filename convention
         // (e.g., non-page-related files begin with 'illus-').
         // However, we don't have such a convention in place.
@@ -256,18 +257,15 @@ class Loader
         // So we need a list of all the page-related bases.
         $page_related_bases = array();
 
-        foreach ( $loadable_files as $source_file )
-        {
+        foreach ( $loadable_files as $source_file ) {
             list($base,$ext) = split_filename($source_file);
-            if ( $ext == '.txt' )
-            {
+            if ( $ext == '.txt' ) {
                 $page_related_bases[$base] = 1;
             }
         }
 
-        foreach ( array_keys($db_entries) as $db_image_file )
-        {
-            list($base,$ext) = split_filename($db_image_file);
+        foreach ( array_keys($db_entries) as $db_image_file ) {
+            list($base, $ext) = split_filename($db_image_file);
             $page_related_bases[$base] = 1;
         }
 
@@ -281,15 +279,12 @@ class Loader
 
         $page_files = array();
         $this->non_page_files = array();
-        foreach ( $loadable_files as $loadable_file )
-        {
+        foreach ( $loadable_files as $loadable_file ) {
             list($base,$ext) = split_filename($loadable_file);
-            if ( array_key_exists( $base, $page_related_bases ) )
-            {
+            if ( array_key_exists( $base, $page_related_bases ) ) {
                 $page_files[] = $loadable_file;
             }
-            else
-            {
+            else {
                 $this->non_page_files[] = $loadable_file;
             }
         }
@@ -305,25 +300,20 @@ class Loader
         $this->page_file_table = array();
         $this->db_text_for_base = array();
 
-        foreach ( $page_files as $page_file )
-        {
+        foreach ( $page_files as $page_file ) {
             list($base,$ext) = split_filename($page_file);
-            if ( $ext == '.txt' )
-            {
+            if ( $ext == '.txt' ) {
                 $toi = 'text';
             }
-            else
-            {
+            else {
                 $toi = 'image';
             }
             $this->page_file_table[$base][$toi]['src'][] = $ext;
         }
 
-        foreach ( $db_entries as $db_image_file => $text )
-        {
+        foreach ( $db_entries as $db_image_file => $text ) {
             list($base,$ext) = split_filename($db_image_file);
-            if ( array_key_exists( $base, $this->page_file_table ) )
-            {
+            if ( array_key_exists( $base, $this->page_file_table ) ) {
                 $this->page_file_table[$base]['text']['db'][] = '.txt';
                 $this->page_file_table[$base]['image']['db'][] = $ext;
                 $this->db_text_for_base[$base] = $text;
@@ -337,25 +327,22 @@ class Loader
         // --------------------------------
 
         // Find out how long the 'image' field is.
-        $res = mysql_query("
-            SELECT image
-            FROM $this->projectid
-            LIMIT 0
-        ") or die(mysql_error());
-        $this->image_field_len = mysql_field_len($res,0);
+        // $res = mysql_query("
+            // SELECT image
+            // FROM $this->projectid
+            // LIMIT 0") or die(mysql_error());
+        $this->image_field_len = 12;
 
         // -----------
 
         // Now go through, looking for problems, deciding what to do.
 
-        foreach ( array_keys($this->page_file_table) as $base )
-        {
-            $row =& $this->page_file_table[$base];
+        foreach ( array_keys($this->page_file_table) as $base ) {
+            $row = $this->page_file_table[$base];
 
             $error_msgs = '';
 
-            foreach ( array('text','image') as $toi )
-            {
+            foreach ( array('text', 'image') as $toi ) {
                 $db_exts = @$row[$toi]['db'];
                 $src_exts = @$row[$toi]['src'];
 
@@ -363,25 +350,21 @@ class Loader
                     $this->_get_action( $base, $toi, $db_exts, $src_exts );
 
                 $row[$toi]['action'] = $action;
-                if ( $action == 'error' )
-                {
+                if ( $action == 'error' ) {
                     $this->n_errors++;
                     $error_msgs .= "$error_msg\n";
                 }
             }
 
             if ($row['text']['action'] == 'error' ||
-                $row['image']['action'] == 'error' )
-            {
+                $row['image']['action'] == 'error' ) {
                 // okay
             }
-            else
-            {
+            else {
                 // '', 'add', 'replace', 'same'
                 $combo = $row['text']['action'] . '|' . $row['image']['action'];
 
-                switch ( $combo )
-                {
+                switch ( $combo ) {
                     case 'add|add':
                         // Add both text and image (the normal case).
                         $this->n_ops += 1;
@@ -443,23 +426,19 @@ class Loader
 
             $row['error_msgs'] = $error_msgs;
         }
-
     }
 
     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    function _check_file( $filename )
     // If there is any reason to exclude the file from the load,
     // return it as a string.
     // Otherwise, return empty string.
-    {
-        if ( !is_file($filename) )
-        {
+    function _check_file( $filename ) {
+        if ( !is_file($filename) ) {
             return _('not a regular file');
         }
 
-        if ( !is_readable($filename) )
-        {
+        if ( !is_readable($filename) ) {
             return _('file is unreadable by server process');
         }
 
@@ -468,40 +447,34 @@ class Loader
             return _('filename has disallowed characters');
         }
 
-        if ( substr_count( $filename, '.' ) == 0 )
-        {
+        if ( substr_count( $filename, '.' ) == 0 ) {
             return _('filename does not contain a dot');
         }
 
         $ALLOWED_EXTENSIONS = array( '.txt', '.png', '.jpg' );
 
         list($base,$ext) = split_filename($filename);
-        if ( !in_array( $ext, $ALLOWED_EXTENSIONS ) )
-        {
+        if ( !in_array( $ext, $ALLOWED_EXTENSIONS ) ) {
             return _('filename has unrecognized suffix');
         }
 	// Task 851, complain if image file is under 100 bytes
-	else
-	{
-	    if ( $ext != ".txt" && (filesize($filename) < 100) )
-	    {
-	    return _('image file is small and probably bad');
-	    }
-	}
+        else {
+            if ( $ext != ".txt" && (filesize($filename) < 100) ) {
+            return _('image file is small and probably bad');
+            }
+        }
 
         return '';
     }
 
     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    function _get_action( $base, $toi, $db_exts, $src_exts )
-    {
+    function _get_action( $base, $toi, $db_exts, $src_exts ) {
         $action = null;
 
         // First, consider error conditions.
 
-        if ( count($db_exts) > 1 )
-        {
+        if ( count($db_exts) > 1 ) {
             // It would take some work to get this to occur.
             // I'm not even sure it could be done without
             // hand-tweaking the page-table.
@@ -511,8 +484,7 @@ class Loader
             );
         }
 
-        if ( count($src_exts) > 1 )
-        {
+        if ( count($src_exts) > 1 ) {
             // This, on the other hand, is easy.
             // e.g. src dir contains 001.txt 001.png 001.jpg
             return array(
@@ -521,8 +493,7 @@ class Loader
             );
         }
 
-        if ( count($src_exts) == 0 )
-        {
+        if ( count($src_exts) == 0 ) {
             // No file in source dir.
             // Nothing to do
             return array( '', '' );
@@ -533,14 +504,12 @@ class Loader
         list($src_ext) = $src_exts;
         $src_file = $base . $src_ext;
 
-        if ( $toi == 'text' )
-        {
+        if ( $toi == 'text' ) {
             // File must be world-readable, or
             // MySQL's LOAD_FILE() will return NULL.
 
             $perms = fileperms($src_file);
-            if ( $perms === FALSE )
-            {
+            if ( $perms === FALSE ) {
                 return array(
                     'error',
                     sprintf(
@@ -550,8 +519,7 @@ class Loader
                 );
             }
 
-            if ( ($perms & 0x0004) == 0 )
-            {
+            if ( ($perms & 0x0004) == 0 ) {
                 return array(
                     'error',
                     sprintf(
@@ -561,11 +529,9 @@ class Loader
                 );
             }
         }
-        elseif ( $toi == 'image' )
-        {
+        elseif ( $toi == 'image' ) {
             // Check that image filename will fit in db
-            if ( strlen($src_file) > $this->image_field_len )
-            {
+            if ( strlen($src_file) > $this->image_field_len ) {
                 return array(
                     'error',
                     sprintf(
@@ -575,13 +541,11 @@ class Loader
                 );
             }
         }
-        else
-        {
+        else {
             assert( FALSE );
         }
 
-        if ( count($db_exts) == 0 )
-        {
+        if ( count($db_exts) == 0 ) {
             // No info in db.
             return array( 'add', '' );
         }
@@ -591,17 +555,16 @@ class Loader
         list($db_ext) = $db_exts;
         $db_file = $base . $db_ext;
 
+        $same = null;
         // Check if it's the same content.
-        if ( $toi == 'text' )
-        {
+        if ( $toi == 'text' ) {
             $same = (
                 file_get_contents($src_file)
                 ==
                 $this->db_text_for_base[$base]
             );
         }
-        elseif ( $toi == 'image' )
-        {
+        elseif ( $toi == 'image' ) {
             $p_file = "$this->dest_project_dir/$db_file";
             $same = (
                 is_file($p_file)
@@ -609,33 +572,28 @@ class Loader
                 shell_exec( "cmp $src_file $p_file" ) == ''
             );
         }
-        if ( $same )
-        {
+        if ( $same ) {
             // content is same
             return array( 'same', '' );
         }
-        else
-        {
+        else {
             return array( 'replace', '' );
         }
     }
 
     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    function has_errors()
-    {
+    function has_errors() {
         return ( $this->n_errors > 0 );
     }
 
-    function would_do_nothing()
-    {
+    function would_do_nothing() {
         return ( $this->n_ops == 0 );
     }
 
     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    function display()
-    {
+    function display() {
         echo "<h2>";
         echo sprintf(
             _('Loading files from %s into project %s'),
@@ -647,12 +605,10 @@ class Loader
         // --------------
 
         echo "<h3>Ignored Files</h3>\n";
-        if ( count($this->ignored_files) == 0 )
-        {
+        if ( count($this->ignored_files) == 0 ) {
             echo "none";
         }
-        else
-        {
+        else {
             echo "<table border='1'>";
 
             echo "<tr>";
@@ -660,8 +616,7 @@ class Loader
             echo "<th>" . _('Reason') . "</th>";
             echo "</tr>\n";
 
-            foreach ( $this->ignored_files as $ignored_file => $reason )
-            {
+            foreach ( $this->ignored_files as $ignored_file => $reason ) {
                 echo "<tr><td>$ignored_file</td><td>$reason</td></tr>\n";
             }
             echo "</table>\n";
@@ -670,17 +625,14 @@ class Loader
         // --------------
 
         echo "<h3>Non-page files</h3>\n";
-        if ( count($this->non_page_files) == 0 )
-        {
+        if ( count($this->non_page_files) == 0 ) {
             echo "none";
         }
-        else
-        {
+        else {
             echo "(Usually these are illustrations.)\n";
             echo "They will simply be copied into the project directory.<br>\n";
             echo "<table border='1'>";
-            foreach ( $this->non_page_files as $filename )
-            {
+            foreach ( $this->non_page_files as $filename ) {
                 echo "<tr><td>$filename</td></tr>\n";
             }
             echo "</table>\n";
@@ -689,14 +641,11 @@ class Loader
         // --------------
 
         echo "<h3>Page files</h3>\n";
-        if ( count($this->page_file_table) == 0 )
-        {
+        if ( count($this->page_file_table) == 0 ) {
             echo "none";
         }
-        else
-        {
-            echo "<table border='1'>\n";
-            {
+        else {
+            echo "<table border='1'>\n"; {
                 echo "<tr>";
                 echo "<th rowspan='2'>base</th>";
                 echo "<th colspan='3'>text</th>";
@@ -704,23 +653,21 @@ class Loader
                 echo "<th rowspan='2'>error msgs</th>";
                 echo "</tr>";
             }
-            {
-                echo "<tr>";
-                echo "<th>pre-existing</th>";
-                echo "<th>new</th>";
-                echo "<th>action</th>";
-                echo "<th>pre-existing</th>";
-                echo "<th>new</th>";
-                echo "<th>action</th>";
-                echo "</tr>";
-            }
-            foreach ( $this->page_file_table as $base => $row )
-            {
+        
+            echo "<tr>";
+            echo "<th>pre-existing</th>";
+            echo "<th>new</th>";
+            echo "<th>action</th>";
+            echo "<th>pre-existing</th>";
+            echo "<th>new</th>";
+            echo "<th>action</th>";
+            echo "</tr>";
+        
+            foreach ( $this->page_file_table as $base => $row ) {
                 echo "<tr>";
                 echo "<td>$base</td>";
 
-                foreach ( array('text','image') as $toi )
-                {
+                foreach ( array('text','image') as $toi ) {
                     $db_exts = @$row[$toi]['db'];
                     $src_exts = @$row[$toi]['src'];
 
@@ -763,8 +710,7 @@ class Loader
 
     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    function execute()
-    {
+    function execute() {
         global $pguser;
 
         assert( $this->n_errors == 0 );
@@ -772,16 +718,14 @@ class Loader
         $this->dry_run = FALSE;
 
         // Non-page files
-        foreach ( $this->non_page_files as $filename )
-        {
+        foreach ( $this->non_page_files as $filename ) {
             $this->_do_command( "cp $filename $this->dest_project_dir" );
         }
 
         // Page files
         $now = time();
 
-        foreach ( $this->page_file_table as $base => $row )
-        {
+        foreach ( $this->page_file_table as $base => $row ) {
             $text_a  = $row['text']['action'];
             $image_a = $row['image']['action'];
 
@@ -795,17 +739,14 @@ class Loader
 
             $src_text_file_path = "$this->source_project_dir/$src_text_file_name";
 
-//MS
             echo "<pre>
             this->source_project_dir = $this->source_project_dir
             src_text_file_name = $src_text_file_name
             src_text_file_path = $src_text_file_path
             </pre>";
 
-            if ( $text_a == 'add' && $image_a == 'add' )
-            {
-                if ( $this->dry_run )
-                {
+            if ( $text_a == 'add' && $image_a == 'add' ) {
+                if ( $this->dry_run ) {
                     echo "
                         project_add_page(
                             $this->projectid,
@@ -816,8 +757,7 @@ class Loader
                             $now );<br>
                     ";
                 }
-                else
-                {
+                else {
                     $errs = project_add_page(
                         $this->projectid,
                         $base,
@@ -825,8 +765,7 @@ class Loader
                         $src_text_file_path,
                         $pguser,
                         $now );
-                    if ( $errs )
-                    {
+                    if ( $errs ) {
                         echo "for base=$base, project_add_page raised error:<br>";
                         echo "$errs<br>\n";
                     }
@@ -835,12 +774,9 @@ class Loader
                 $this->_do_command(
                     "cp $src_image_file_name $this->dest_project_dir" );
             }
-            else
-            {
-                if ( $text_a == 'replace' )
-                {
-                    if ( $this->dry_run )
-                    {
+            else {
+                if ( $text_a == 'replace' ) {
+                    if ( $this->dry_run ) {
                         echo "
                             Page_replaceText(
                                 $this->projectid,
@@ -849,8 +785,7 @@ class Loader
                                 $pguser );
                         ";
                     }
-                    else
-                    {
+                    else {
                         Page_replaceText(
                             $this->projectid,
                             $db_image_file_name,
@@ -859,14 +794,11 @@ class Loader
                     }
                 }
 
-                if ( $image_a == 'replace' )
-                {
-                    if ( $src_image_file_name != $db_image_file_name )
-                    {
+                if ( $image_a == 'replace' ) {
+                    if ( $src_image_file_name != $db_image_file_name ) {
                         // e.g., replacing 001.png with 001.jpg
 
-                        if ( $this->dry_run )
-                        {
+                        if ( $this->dry_run ) {
                             echo "
                                 Page_replaceImage(
                                     $this->projectid,
@@ -875,8 +807,7 @@ class Loader
                                     $pguser );
                             ";
                         }
-                        else
-                        {
+                        else {
                             Page_replaceImage(
                                 $this->projectid,
                                 $db_image_file_name,
@@ -895,17 +826,13 @@ class Loader
         }
     }
 
-    function _do_command( $cmd )
-    {
-        if ( $this->dry_run )
-        {
+    function _do_command( $cmd ) {
+        if ( $this->dry_run ) {
             echo "$cmd<br>";
         }
-        else
-        {
+        else {
             passthru($cmd, $exit_status); // 2008-09-17 jmdyck: change 'system' to 'passthru'
-            if ( $exit_status != 0 )
-            {
+            if ( $exit_status != 0 ) {
                 echo "$cmd:<br>";
                 echo "exit status was $exit_status<br>";
             }
@@ -915,19 +842,16 @@ class Loader
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-function split_filename( $filename )
 // Return an array of two strings:
 // -- the part of $filename before the rightmost dot, and
 // -- the part from the rightmost dot to the end.
-{
+function split_filename( $filename ) {
     $p = strrpos($filename,'.');
-    if ( $p === FALSE )
-    {
+    if ( $p === FALSE ) {
         // No '.' in $filename.
         return array( $filename, '' );
     }
-    else
-    {
+    else {
         return array(
             substr( $filename, 0, $p ),
             substr( $filename, $p )

@@ -1,9 +1,9 @@
 <?
 $relPath='../pinc/';
-include($relPath.'dpinit.php');
-include($relPath.'pg.inc');
-include($relPath.'theme.inc');
-$no_stats=1;
+include_once($relPath.'dpinit.php');
+include_once($relPath.'pg.inc');
+include_once($relPath.'theme.inc');
+$no_stats = 1;
 theme('Proofreading Guidelines -- Encyclopedias','header');
 ?>
 

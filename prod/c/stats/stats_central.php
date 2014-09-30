@@ -6,6 +6,7 @@ $relPath = './../pinc/';
 include_once $relPath . 'dpinit.php';
 include_once $relPath . 'site_news.inc';
 include_once $relPath . "month_chart.php";
+include_once $relPath . "day_chart.php";
 
 $js = array("https://www.google.com/jsapi", "/c/js/chart.js");
 
@@ -22,24 +23,23 @@ show_news_for_page("STATS");
 
 
 echo "
-<div class='w90'>
-      <div class='lfloat'>
+<div id='div_stats' class='w90'>
+      <div id='div_search' class='lfloat'>
       <form action='$code_url/stats/members/mbr_list.php' method='POST'>
       <a href='$code_url/stats/members/mbr_list.php'>"._("Member List")."</a>
           <input type='text' name='username' size='20'>&nbsp;
           <input type='submit' value='"._("Member Search")."'>
       </form>
-      </div>
+      </div> <!-- div_search -->
 
-      <div class='rfloat'>
+      <div class='rfloat' id='div_teams'>
       <form action='$code_url/stats/teams/teamlist.php' method='POST'>
       <a href='$code_url/stats/teams/teamlist.php'>"._("Team List")."</a>
           <input type='text' name='tname' size='20'>&nbsp;
           <input type='submit' value='"._("Team Search")."'>
       </form>
-      </div>
-  </div>
-</div>
+      </div> <!-- div_teams -->
+</div>  <!-- div_stats -->
 <br>\n";
 
 
@@ -112,7 +112,7 @@ echo "
 
     echo "<div id='genstats' class='center w95' style='margin: auto'>\n";
     $tbl->EchoTable();
-    echo "</div>";
+    echo "</div>  <!-- genstats -->";
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Miscellaneous Statistics
@@ -138,7 +138,7 @@ echo "
     $tbl->SetRows($rows);
     echo "<div id='miscstats' class='center w95' style='margin: auto'>\n";
     $tbl->EchoTable();
-echo "</div>";
+echo "</div> <!-- miscstats -->";
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Pages in Rounds
@@ -180,80 +180,22 @@ echo "</div>";
 
     echo "<div id='roundstats' class='center w95' style='margin: auto'>\n";
     $tbl->EchoTable();
-    echo "</div>\n";
+    echo "</div>  <!-- roundstats -->\n";
 
     echo "<div id='roundcounts' class='dpchart center w95' style='margin: auto'>";
     echo "<h3>"._("Page Counts in Rounds") . "</h3>\n";
 
-    echo PhaseWeeksChart("P1");
-    echo PhaseWeeksChart("P2");
-    echo PhaseWeeksChart("P3");
-    echo PhaseWeeksChart("F1");
-    echo PhaseWeeksChart("F2");
-    echo PhaseWeeksChart("All");
+    echo PhaseMonthsChart("P1");
+    echo PhaseMonthsChart("P2");
+    echo PhaseMonthsChart("P3");
+    echo PhaseMonthsChart("F1");
+    echo PhaseMonthsChart("F2");
+    echo PhaseMonthsChart("All");
 
-    echo "</div>\n";
+    echo PhaseDaysChart("All");
 
-/*
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// Projects by Status
+    echo "</div> <!-- roundcounts -->\n";
 
-$table = new ThemedTable(
-    3,
-    _("Projects by Status"),
-    array( 'width' => 99 ));
-
-$table->column_headers(
-    '',
-    _('Number So Far'),
-    _('Graphed Over Time'));
-
-foreach ( array('created','proofed','PPd','posted') as $which ) {
-    $psd = get_project_status_descriptor( $which );
-
-    $res = mysql_query("
-        SELECT state, COUNT(1) FROM projects
-        GROUP BY state");
-        // SELECT SUM(num_projects) FROM project_state_stats
-        // WHERE $psd->state_selector
-        // GROUP BY date
-        // ORDER BY date DESC
-        // LIMIT 1");
-    $num_so_far = mysql_result($res,0);
-
-    $table->row(
-        $psd->projects_Xed_title,
-        $num_so_far,
-        "<a href='projects_Xed_graphs.php?which=$which'>$psd->graphs_title</a>"
-    );
-}
-
-$table->end();
-*/
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// Total Projects Created, Proofread, Post-Processed and Posted
-
-/*
-$table = new ThemedTable(
-    1, 
-    _("Total Projects Created, Proofread, Post-Processed and Posted"),
-    array( 'width' => 99 )
-);
-
-$table->row(
-    '&nbsp;'
-);
-
-$img_url = "jpgraph_files/cumulative_total_proj_summary_graph.php";
-$alt_text = _("Total Projects Created, Proofed, PPd and Posted");
-
-$table->row(
-    "<img src='$img_url' alt='$alt_text'>"
-);
-
-$table->end();
-*/
 
 theme('','footer');
 

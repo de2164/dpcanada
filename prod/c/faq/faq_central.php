@@ -1,10 +1,11 @@
 <?
 $relPath='../pinc/';
 include_once($relPath.'dpinit.php');
-include_once($relPath.'pg.inc');
-include_once($relPath.'theme.inc');
+// include_once($relPath.'pg.inc');
+// include_once($relPath.'theme.inc');
 include_once($relPath.'site_news.inc');
-$no_stats=1;
+// $no_stats = 1;
+/*
 $theme_args = array("css_data" => "
 table.faqs td {font-family: Tahoma, sans-serif;}
 td.faqheader {background: $theme[color_headerbar_bg];
@@ -13,7 +14,9 @@ td.faqheader {background: $theme[color_headerbar_bg];
               vertical-align: middle;}
 table#faqtable table {align: left;}
 ");
-theme('FAQ Central','header', $theme_args);
+*/
+
+theme('FAQ Central','header');
 ?>
 
 <h1>FAQ Central</h1>
@@ -177,40 +180,6 @@ show_news_for_page("FAQ");
   </table>
 <br />
   
-
-<br /><br />
-  <table width='100%' cellpadding='4'>
-  <tr>
-   <td class='faqheader'>&nbsp;Project Gutenberg Canada</td>
-  </tr>
-  <tr>
-  <td>
-  <p><a href="<?=$PG_faq_url?>">Project Gutenberg Canada FAQ</a><br>
-  <font size="-1">The <i>massive</i> FAQ from our inspiration,
-      <a href="<?=$PG_home_url?>">Project Gutenberg Canada</a>.</font></p>
-  </td>
-  </tr>
- </table>
-</td>
-<td width='5'>&nbsp;</td>
-</tr>
-</table>
-<br><br>
-
-<table border='0' cellpadding='0' cellspacing='0' width='100%' bgcolor='silver'>
-<tr><td width='10'>&nbsp;</td>
-    <td width='100%' align="center"><font face='verdana, helvetica, sans-serif' size='1'>
-        Return to:
-        <a href="..">Distributed Proofreaders Canada home page</a>,
-        &nbsp;&nbsp;&nbsp;
-        <a href="faq_central.php">DPC FAQ Central page</a>,
-        &nbsp;&nbsp;&nbsp;
-        <a href="<? echo $PG_home_url; ?>">Project Gutenberg Canada home page</a>.
-        </font>
-
-    </td>
-</tr>
-</table>
 
 <?
 theme('','footer');

@@ -34,7 +34,6 @@ echo "
         </p>
     </div>\n";
 
-global $User;
 
 if($User->IsSiteManager() || $User->IsProjectFacilitator() || $User->IsProjectManager()) {
     echo "
@@ -46,6 +45,7 @@ if($User->IsSiteManager() || $User->IsProjectFacilitator() || $User->IsProjectMa
     <a href='http://www.pgdpcanada.net/c/user_pages.php'>User Diffs for a Round</a>
     <a href='http://www.pgdpcanada.net/c/tools/p1release.php'>Project P1 Release</a>
     <a href='http://www.pgdpcanada.net/c/tools/p1counts.php'>P1 Genre Counts</a>
+    <a href='http://www.pgdpcanada.net/c/tools/bad.php'>Bad Pages</a>
     <a href='http://www.pgdpcanada.net/c/tools/trace.php'>Project Trace</a>
     </pre>
     </div>
@@ -64,7 +64,7 @@ if ($pagecount <= 300) {
         <div class='center'>\n";
 
         echo _("
-        <p style='color: red;'>You have received a private message in your Inbox!</p>");
+        <p class='red'>You have received a private message in your Inbox!</p>");
         echo _("<p>This could be from somebody sending you feedback on some of the
         pages you had proofread earlier. We strongly recommend you READ your
         messages. In the links at the top of this page, there is one that says
@@ -82,7 +82,7 @@ if ($pagecount <= 100) {
     echo "
         <hr class='w75'>
         <div class='center'>
-        <h1 style='color: blue;'>"
+        <h1 class='blue'>"
         ._("Welcome")
         ."</h1>\n"
         ._("<p>Please see our ") ."<a href='$beginners_site_forum_url'>"
@@ -116,7 +116,7 @@ echo "
 
 if ( $User->IsProjectManager() ) {
     echo "
-    <li>" . link_to_projectmgr("Manage My Projects") . "</li>\n";
+    <li>" . link_to_project_manager("Manage My Projects") . "</li>\n";
 }
 
 // ----------------------------------
@@ -142,8 +142,6 @@ echo "
     . _("Find out how!")
     . "</a>
     </li>\n";
-
-global $Context;
 
 foreach ( $Context->Rounds() as $roundid ) {
     $phase_icon_path = "$dyn_dir/stage_icons/$roundid.jpg";
@@ -184,6 +182,17 @@ if ($n_checked_out) {
     echo sprintf( _("You currently have %d projects checked out in this phase."), $n_checked_out );
     echo "<br>\n";
 }
+
+
+$phase = "SR";
+$rname = _("Smooth Reading");
+$rdesc = _("Nearly completed projects are often made available for reading and checkproofing before posting.");
+$rlink = link_to_smooth_reading($rname);
+echo "
+        <li>
+        <hr class='w75'>
+        ($phase) $rlink <br> $rdesc <br /><br />\n";
+
 
 // ----------------------------------------------------
 
@@ -240,31 +249,48 @@ function summarize_projects( $phase) {
         return;
     }
 
+
     if($phase == "PP") {
         $row = $dpdb->SqlOneRow("
-             SELECT SUM(CASE WHEN IFNULL(postproofer, '') = '' THEN 1 ELSE 0 END) navail,
-                    COUNT(1) ntotal
+             SELECT SUM(IFNULL(postproofer, '') = '') navail,
+                    COUNT(1) ntotal,
+                    SUM(smoothread_deadline > UNIX_TIMESTAMP() ) nsmooth
              FROM projects where phase = '$phase'");
+        $navail = $row["navail"];
+        $ntotal = $row["ntotal"];
+        $nchecked_out = $ntotal - $navail;
+        $nsmooth = $row["nsmooth"];
+        echo _("
+        <table class='bordered hub_table'>
+        <tr class='navbar'><td rowspan='2'>All projects</td>
+                           <td>Available for $phase</td>
+                           <td>Checked Out</td>
+                           <td>Available for Smooth Reading</td>
+                           <td>Total Projects</td></tr>\n");
+        echo "
+        <tr><td>$navail</td><td>$nchecked_out</td><td>$nsmooth</td><td>$ntotal</td></tr>
+        </table>\n";
     }
     else {
         $row = $dpdb->SqlOneRow("
              SELECT SUM(CASE WHEN IFNULL(ppverifier, '') = '' THEN 1 ELSE 0 END) navail,
                     COUNT(1) ntotal
              FROM projects where phase = '$phase'");
-    }
-    $navail = $row["navail"];
-    $ntotal = $row["ntotal"];
-    $nchecked_out = $ntotal - $navail;
-
-    echo _("
+        $navail = $row["navail"];
+        $ntotal = $row["ntotal"];
+        $nchecked_out = $ntotal - $navail;
+        echo _("
         <table class='bordered hub_table'>
         <tr class='navbar'><td rowspan='2'>All projects</td>
                            <td>Available for $phase</td>
                            <td>Checked Out</td>
-                           <td>Total Projects</td></tr>
-
+                           <td>Total Projects</td></tr>\n");
+        echo "
         <tr><td>$navail</td><td>$nchecked_out</td><td>$ntotal</td></tr>
-        </table>\n");
+        </table>\n";
+    }
+
+
 
 }
 

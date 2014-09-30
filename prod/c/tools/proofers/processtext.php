@@ -108,7 +108,7 @@ if ($tbutton == B_QUIT) {
 
 switch( $tbutton ) {
     case B_TEMPSAVE:
-        $page->SaveTemp($text_data);
+        $page->SaveText($text_data);
         include('proof_frame.inc');
         break;
 
@@ -180,7 +180,7 @@ switch( $tbutton ) {
 
     case 102:
         $correct_text = spellcheck_quit();
-        $page->SaveTemp($text_data);
+        $page->SaveText($text_data);
         include('proof_frame.inc');
         break;
 

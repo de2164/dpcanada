@@ -8,15 +8,15 @@ function showtexts($etext_limit, $type, $orderby, $field_name, $search_char, $sh
 
 	if ($type == "bronze") {
 		$state = SQL_CONDITION_BRONZE;
-		$text = " "._("Now Proofreading")."</font>  "._("These books are currently being processed through our site; sign in and start helping!!!!")."<br>";
+		$text = " "._("Now Proofreading")."  "._("These books are currently being processed through our site; sign in and start helping!!!!")."<br>";
 	} 
     else if($type == "silver") {
 		$state = SQL_CONDITION_SILVER;
-		$text = " "._("In Progress")."</font>  "._("These books have been processed through our site but have not yet posted to the Project Gutenberg Canada archive (currently going through their final proofreading/assembly).")."<br>";
+		$text = " "._("In Progress")."  "._("These books have been processed through our site but have not yet posted to the Project Gutenberg Canada archive (currently going through their final proofreading/assembly).")."<br>";
 	} 
     else if($type == "gold") {
 		$state = SQL_CONDITION_GOLD;
-		$text = " "._("Complete")."</font>  "._("These books have been processed through our site and posted to the Project Gutenberg Canada archive.");
+		$text = " "._("Complete")."  "._("These books have been processed through our site and posted to the Project Gutenberg Canada archive.");
 		$text .= "
 			<a href='$code_url/feeds/backend.php?content=posted'>
 				<img src='$code_url/graphics/xml.gif' border='0' width='36' height='14' style='vertical-align:middle'></a>
@@ -26,7 +26,7 @@ function showtexts($etext_limit, $type, $orderby, $field_name, $search_char, $sh
 	} 
     else {
 		$state = "1";
-		$text = " "._("All")."</font>";
+		$text = " "._("All")."";
 	}
 
 	if (!empty($search_char)) {
@@ -44,13 +44,13 @@ function showtexts($etext_limit, $type, $orderby, $field_name, $search_char, $sh
 	}
 
 	if (!empty($show_total)) {
-		echo "<img src='$code_url/graphics/{$type}_star.jpg' border='0' height='38' width='40' alt='$type star'> = <font face='Verdana' size='4'>".number_format($total)." $text";
+		echo "<img src='$code_url/graphics/{$type}_star.jpg' border='0' height='38' width='40' alt='$type star'> = ".number_format($total)." $text";
 	}
 
 	list_projects( $state, "", "" );
 
 	if (!empty($show_total) && $total > $etext_limit) {
-		echo "<font face='Verdana' size='1'>--<a href='$code_url/stats/books/book_list.php?etext_limit=0&type=$type&orderby=$orderby&field_name=$field_name&search_char=$search_char&show_total='>"._("See more...")."</a></font><br><br>";
+		echo "--<a href='$code_url/stats/books/book_list.php?etext_limit=0&type=$type&orderby=$orderby&field_name=$field_name&search_char=$search_char&show_total='>"._("See more...")."</a><br><br>";
 	}
 }
 ?>

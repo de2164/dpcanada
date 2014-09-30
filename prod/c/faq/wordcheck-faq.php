@@ -1,9 +1,9 @@
 <?
 $relPath='../pinc/';
-include($relPath.'dpinit.php');
-include($relPath.'faq.inc');
-include($relPath.'wordcheck_engine.inc');
-include($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
+include_once($relPath.'faq.inc');
+include_once($relPath.'wordcheck_engine.inc');
+include_once($relPath.'theme.inc');
 $no_stats=1;
 theme('WordCheck FAQ','header');
 ?>

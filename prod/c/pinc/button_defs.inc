@@ -138,8 +138,8 @@ function echo_button( $button_id, $which_interface ) {
 			$attrs = array(
 				'accesskey' => "7",
 				'name'      => "button1",
-				$label      => _("Save as 'In Progress'"),
-				'title'     => _("Save as 'In Progress'"),
+				$label      => _("Save draft"),
+				'title'     => _("Save draft"),
 				'src'       => "gfx/bt3.png",);
 			break;
 
@@ -149,7 +149,7 @@ function echo_button( $button_id, $which_interface ) {
 				$label      => _("Set Image Zoom Percent"),
 				'title'     => _("Set Image Zoom Percent"),
 				'src'       => "gfx/bt10.png",
-				'onclick'   => "return showIZ();",);
+				'onclick'   => "return top.ChangeZoomValue();",);
 			break;
 
 		case SET_IMAGE_ACTUAL:
@@ -158,7 +158,7 @@ function echo_button( $button_id, $which_interface ) {
 				$label      => _("Zoom to Actual Size"),
 				'title'     => _("Zoom to Actual Size"),
 				'src'       => "gfx/bt18.png",
-				'onclick'   => "return(showActual());",);
+				'onclick'   => "return top.showActual());",);
 			break;
 
 		case SPELL_CHECK:
@@ -193,7 +193,8 @@ function echo_button( $button_id, $which_interface ) {
 	}
 	else if ($which_interface == 'a') {
 		$attrs['type' ] = 'image';
-		$attrs['align'] = 'top';
+		$attrs['class'] = 'top';
+		// $attrs['align'] = 'top';
 		$attrs['size' ] = '26';
 		$attrs['id'   ] = $attrs['name'];
 	}
@@ -238,7 +239,7 @@ function echo_img( $id )
 				'title'     => _("Preview formatted text"),);
 			break;
 	}
-	$attrs['align' ] = 'top';
+	$attrs['class' ] = 'top';
 	$attrs['width' ] = "26";
 	$attrs['height'] = "26";
 	$attrs['border'] = "0";

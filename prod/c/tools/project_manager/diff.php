@@ -9,8 +9,6 @@
 
 $relPath="./../../pinc/";
 require_once $relPath . "dpinit.php";
-require_once $relPath . "DpProject.class.php";
-require_once $relPath . "DpPage.class.php";
 require_once "DifferenceEngineWrapper.php";
 
 /** @var $User DpThisUser */
@@ -29,7 +27,7 @@ $btnprfprev      = IsArg("btnprfprev");
 
 if(! $projectid)
     die(_("Project id not provided."));
-if($imagefile == "" && $pagename == "")
+if(! $pagename)
     die(_("Page Name not provided."));
 if(! $roundid)
     die(_("Round id not provided."));
@@ -92,7 +90,7 @@ $prevlabel       = $project->UserMaySeeNames()
 // -----------------------------------------------------------------
 
 $pagename   = $page->PageName();
-$title      = "Diff {$page->Title()} ("._("page name ")."{$pagename})";
+$title      = "Page Diff — {$page->Title()} ("._("page name ")."{$pagename})";
 // $imgurl     = $page->ImageUrl();
 $projlink   = link_to_project($projectid, "Go to project page");
 

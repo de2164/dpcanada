@@ -8,6 +8,10 @@ $range   = Arg("range");
 
 $team = new DpTeam($tid);
 
+if(! $team->Exists()) {
+    die("No existing team selected.");
+}
+
 $stats = _("Statistics");
 
 theme($team->TeamName() . " " . $stats, "header");

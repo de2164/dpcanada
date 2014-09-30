@@ -40,7 +40,7 @@ elseif ( $current_quiz == "PQ" ) {
   echo "<a href='$code_url/faq/proofreading_guidelines.php' target='_top'><font face='$font_face' size='1' color='$font_color'>" . _("Proofreading Guidelines") . "</font></a>";
 }
 else {
-  echo "<a href='$code_url/faq/faq_central.php' target='_top'><font face='$font_face' size='1' color='$font_color'>" . _("Help") . "</font></a>";
+  echo "<a href='$wiki_url/faq/faq_central.php' target='_top'><font face='$font_face' size='1' color='$font_color'>" . _("Help") . "</font></a>";
 }
 echo "</td>";
 echo "</tr>";

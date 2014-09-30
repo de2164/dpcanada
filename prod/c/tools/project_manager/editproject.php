@@ -20,7 +20,7 @@ $project->UserMayManage()
 
 if($isdelete) {
     $project->DeleteProject();
-    divert(url_for_projectmgr());
+    divert(url_for_project_manager());
     exit;
 }
 $page_title = _("Edit a Project");
@@ -79,7 +79,7 @@ class ProjectInfoHolder
     public $username         = '';
     public $pper             = '';
     public $ppverifier       = '';
-    public $language         = '';
+    public $languagecode     = '';
     public $scannercredit    = '';
     public $comments         = '';
     public $clearance        = '';
@@ -123,7 +123,7 @@ class ProjectInfoHolder
         $this->authorsname      = $project->AuthorsName();
         $this->pper             = $project->PPer();
         $this->ppverifier       = $project->PPVer();
-        $this->language         = $project->LanguageCode();
+        $this->languagecode     = $project->LanguageCode();
         $this->scannercredit    = $project->ScannerCredit();
         $this->comments         = $project->Comments();
         $this->clearance        = $project->Clearance();
@@ -155,15 +155,16 @@ class ProjectInfoHolder
         $this->authorsname = Arg('authorsname');
         if ( $this->authorsname == '' ) { $errors .= "Author is required.<br>"; }
 
-        $pri_language = Arg('pri_language');
-        if ( $pri_language == '' ) { $errors .= "Primary Language is required.<br>"; }
+        $languagecode = Arg('pri_language');
+        if ( $languagecode == '' ) { $errors .= "Language is required.<br>"; }
 
-        $sec_language = Arg('sec_language');
+//        $sec_language = Arg('sec_language');
 
-        $this->language = (
-            $sec_language != ''
-            ? "$pri_language with $sec_language"
-            : $pri_language );
+        $this->languagecode = $languagecode;
+//        $this->language = (
+//            $sec_language != ''
+//            ? "$language with $sec_language"
+//            : $language );
 
         $this->genre = Arg('genre');
         if ( $this->genre == '' ) { $errors .= "Genre is required.<br>"; }
@@ -258,9 +259,9 @@ class ProjectInfoHolder
                 WHERE projectid='{$this->projectid}'";
 
         $args = array( &$this->nameofwork, &$this->authorsname,
-                    &$this->language, &$this->genre, &$this->difficulty,
+                    &$this->languagecode, &$this->genre, &$this->difficulty,
                     &$this->clearance, &$this->comments, &$this->image_source,
-                    &$$this->image_link,
+                    &$this->image_link,
                     &$this->scannercredit, &$this->pper, &$this->ppverifier,
                     &$postednum_str, &$this->image_preparer, &$this->text_preparer,
                     &$this->extra_credits);
@@ -295,7 +296,7 @@ class ProjectInfoHolder
         }
         $this->row( _("Name of Work"),                'text_field',          $this->nameofwork,      'nameofwork' );
         $this->row( _("Author's Name"),               'text_field',          $this->authorsname,     'authorsname' );
-        $this->row( _("Language"),                    'language_list',       $this->language         );
+        $this->row( _("Language"),                    'language_list',       $this->languagecode     );
         $this->row( _("Genre"),                       'genre_list',          $this->genre            );
         $this->row( _("Difficulty Level"),            'difficulty_list',     $this->difficulty);
         $this->row( _("Post Processor"),      'DP_user_field',       $this->pper,    'pper' );
@@ -348,7 +349,66 @@ class ProjectInfoHolder
     }
 
     // =========================================================================
+}
 
+function language_list($language) {
+    global $lang_codes;
+    if (strpos($language, "with") > 0) {
+        $pri_language = trim(substr($language, 0, strpos($language, "with")));
+        $sec_language = trim(substr($language, (strpos($language, "with")+5)));
+    }
+    else {
+        $pri_language = $language;
+        $sec_language = '';
+    }
+
+    if(isset($lang_codes[$pri_language])) {
+        $langcode = $pri_language;
+        // $langname = $lang_codes[$pri_language];
+    }
+    else {
+        $langcode = array_search($pri_language, $lang_codes);
+        // $langname = $pri_language;
+    }
+
+    echo "
+    <select name='pri_language'>
+    <option value=''>Primary Language</option>\n";
+
+    foreach($lang_codes as $code => $name) {
+        // for ($i = 0; $i<count($array_list); $i++) {
+        echo "<option value='$code'";
+
+        if ($langcode == $code) {
+            echo " SELECTED";
+        }
+        echo ">$name</option>\n";
+    }
+    echo "</select>\n";
+
+    if(isset($lang_codes[$sec_language])) {
+        $langcode = $sec_language;
+        // $langname = $lang_codes[$sec_language];
+    }
+    else {
+        $langcode = array_search($sec_language, $lang_codes);
+        // $langname = $sec_language;
+    }
+    echo "
+    &nbsp;&nbsp;
+    <select name='sec_language'>
+    <option value=''>Secondary Language</option>\n";
+
+    foreach($lang_codes as $code => $name) {
+        echo "<option value='$code'";
+
+        if ($langcode == $code) {
+            echo " SELECTED";
+        }
+        echo ">$name</option>";
+        echo "\n";
+    }
+    echo "</select>\n";
 }
 
 // vim: sw=4 ts=4 expandtab

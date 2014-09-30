@@ -11,9 +11,9 @@ $username = $User->Username();
 if (!isset($showLangF)) {
     $showLangF = TRUE;
 }
-if (!isset($showGenreF)) {
-    $showGenreF = TRUE;
-}
+//if (!isset($showGenreF)) {
+//    $showGenreF = TRUE;
+//}
 if (!isset($showPMsF)) {
     $showPMsF = TRUE;
 }
@@ -31,7 +31,8 @@ if (!isset($showPPersF)) {
 
 // if no filters enabled, don't show any
 
-if ($showLangF || $showGenreF 
+if ($showLangF
+//    || $showGenreF
   || $showPMsF || $showDiffF 
   || $showSpecialF || $showPPersF) {
 
@@ -39,7 +40,7 @@ if ($showLangF || $showGenreF
     // as some protection against "injection of SQL in URL" attacks
 
     $array_of_langs = array();
-    $array_of_genres = array();
+//    $array_of_genres = array();
     $array_of_PMs = array();
     $array_of_diffs = array();
     $array_of_PPers = array();
@@ -59,15 +60,15 @@ if ($showLangF) {
 
 // get legal genres
 
-if ($showGenreF) {
-    $genres = $dpdb->SqlValues("
-	    SELECT DISTINCT genre FROM projects	
-        WHERE $state_sql ORDER BY genre");
-    $i = 0;
-    foreach($genres as $val) {
-        $array_of_genres[$i++] = $val;
-    }
-}
+//if ($showGenreF) {
+//    $genres = $dpdb->SqlValues("
+//	    SELECT DISTINCT genre FROM projects
+//        WHERE $state_sql ORDER BY genre");
+//    $i = 0;
+//    foreach($genres as $val) {
+//        $array_of_genres[$i++] = $val;
+//    }
+//}
 
 
 // get legal PMs
@@ -159,21 +160,21 @@ if ($showLangF) {
 
 // GENRE filter
 
-if ($showGenreF) {
-    echo "\r\n<table style='float: left;' border=1>\n<tr>
-          <td>"._("Genre")."</td></tr><tr>
-        <td>
-        <select name='genre1[]' size=5  multiple>
-	    <option value=''>"._("All genres")."</option>\n";
-
-    echo build_selectlist( $state_sql, "genre", $array_of_genres);
-    echo "
-        </select>
-        </td>
-      </tr>
-     </table>
-   ";
-}
+//if ($showGenreF) {
+//    echo "\r\n<table style='float: left;' border=1>\n<tr>
+//          <td>"._("Genre")."</td></tr><tr>
+//        <td>
+//        <select name='genre1[]' size=5  multiple>
+//	    <option value=''>"._("All genres")."</option>\n";
+//
+//    echo build_selectlist( $state_sql, "genre", $array_of_genres);
+//    echo "
+//        </select>
+//        </td>
+//      </tr>
+//     </table>
+//   ";
+//}
 
 
 // PM filter
@@ -299,22 +300,22 @@ if ( isset($_POST["filter_$filtertype_stem"])
 
 	// construct genre clause of new filter
 
-	if ( isset($_POST['genre1']) && count($_POST['genre1']) > 0 ) {
-	    $condition1 .= " AND (0";
-	    $display_filter .= "<br>Genres=";
-	    foreach( $_POST['genre1'] as $genre ) {
-            if ( $genre == '' ) {
-                $condition1 .= " OR 1";
-            }
-            else {
-                if (!in_array($genre, $array_of_genres )) { echo "UHOH" &  exit(); }
-                $condition1 .= " OR genre='$genre'";
-                $display_filter .= $genre." ";
-                $show_df = TRUE;
-            }
-	    }
-	    $condition1 .= ")";
-	}
+//	if ( isset($_POST['genre1']) && count($_POST['genre1']) > 0 ) {
+//	    $condition1 .= " AND (0";
+//	    $display_filter .= "<br>Genres=";
+//	    foreach( $_POST['genre1'] as $genre ) {
+//            if ( $genre == '' ) {
+//                $condition1 .= " OR 1";
+//            }
+//            else {
+//                if (!in_array($genre, $array_of_genres )) { echo "UHOH" &  exit(); }
+//                $condition1 .= " OR genre='$genre'";
+//                $display_filter .= $genre." ";
+//                $show_df = TRUE;
+//            }
+//	    }
+//	    $condition1 .= ")";
+//	}
 
 	// construct PM clause of new filter
 

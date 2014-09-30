@@ -3,27 +3,31 @@ $relPath='../pinc/';
 include_once($relPath.'dpinit.php');
 
 $stats = $dpdb->SqlOneObject("
-    SELECT COUNT(1) nprojects, COUNT(DISTINCT postproofer) nproofers
-    FROM projects WHERE phase IN ('POSTED', 'PPV')");
+    SELECT COUNT(1) nprojects,
+           COUNT(DISTINCT postproofer) nproofers
+    FROM projects
+    WHERE phase IN ('POSTED', 'PPV')");
 
 $rows1 = array(array("nprojects" => $stats->nprojects));
-$tbl1 = new DpTable("tbl1", "dptable minitab", "Total Projects Post-Processed");
+$tbl1 = new DpTable("tbl1", "dptable minitab");
 $tbl1->SetRows($rows1);
-$tbl1->AddColumn("^Projects", "nprojects");
+$tbl1->AddColumn("^Total Projects Post-Processed", "nprojects");
 
 $rows2 = array(array("nproofers" => $stats->nproofers));
-$tbl2 = new DpTable("tbl2", "dptable minitab", "Number of Post-Processors");
+$tbl2 = new DpTable("tbl2", "dptable minitab");
 $tbl2->SetRows($rows2);
-$tbl2->AddColumn(">Projects", "nproofers");
+$tbl2->AddColumn("^Number of Post-Processors", "nproofers");
 
 $rows3 = $dpdb->SqlRows("
-    SELECT postproofer, COUNT(1) nprojects
-    FROM projects WHERE phase IN ('POSTED', 'PPV')
+    SELECT postproofer,
+           COUNT(1) nprojects
+    FROM projects
+    WHERE phase IN ('POSTED', 'PPV')
     GROUP BY postproofer
     ORDER BY COUNT(1) DESC");
 $tbl3 = new DpTable("tbl3", "dptable minitab", "Post-Processor Project Counts");
 $tbl3->AddColumn("<PPer", "postproofer");
-$tbl3->AddColumn(">Projects", "nprojects");
+$tbl3->AddColumn("^Projects", "nprojects");
 $tbl3->SetRows($rows3);
 
 $rows4 = $dpdb->SqlRows("
@@ -40,26 +44,24 @@ $title = "Post-Processing Statistics";
 theme($title,'header');
 
 echo "
-    <h2>$title</h2>
+    <h2 class='center'>$title</h2>
     ".link_to_pper_charts()."
 
-    <h3>" . _("Total Projects Post-Processed Since Statistics were Kept") . "</h3>\n";
+    <h3 class='center'>" . _("Total Projects Post-Processed Since Statistics were Kept") . "</h3>\n";
     $tbl1->EchoTable();
 
-echo "
-    <h3>" . _("Number of Distinct Post-Processors") . "</h3>\n";
     $tbl2->EchoTable();
 
 echo "
-    <h3>" . _("Most Prolific Post-Processors") . "</h3>
-    <h4>" . _("(Number of Projects Finished PPing)") . "</h4>\n";
+    <h3 class='center'>" . _("Most Prolific Post-Processors") . "</h3>
+    <h4 class='center'>" . _("(Number of Projects Finished PPing)") . "</h4>\n";
 
 $tbl3->EchoTable();
 
 
 echo "
-    <h3>" . _("Most Prolific Post-Processors") . "</h3>
-    <h4>" . _("(Number of Projects Posted)") . "</h4>\n";
+    <h3 class='center'>" . _("Most Prolific Post-Processors") . "</h3>
+    <h4 class='center'>" . _("(Number of Projects Posted)") . "</h4>\n";
 
 $tbl4->EchoTable();
 

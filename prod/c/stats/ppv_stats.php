@@ -1,35 +1,28 @@
 <?
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 $relPath='../pinc/';
 include_once($relPath.'dpinit.php');
-include_once($relPath.'dpsql.inc');
-include_once($relPath.'project_states.inc');
-include_once($relPath.'theme.inc');
 
 $title = _("Post-Processing Verification Statistics");
 theme($title,'header');
 
-echo "<br><br><h2>$title</h2>\n";
+echo "
+    <h2 class='center'>$title</h2>
+    <h3 class='center'>" . _("Post-Processing Verifiers") . "</h3>
+    <h4 class='center'>" . _("(Number of Projects Posted to FadedPage)") . "</h4>\n";
 
-echo "<br>\n";
+$sql = "SELECT ppverifier, COUNT(1) AS project_count
+        FROM projects
+        WHERE ppverifier != '{$User->Username()}'
+        GROUP BY ppverifier
+        ORDER BY COUNT(1) DESC";
 
-echo "<h3>" . _("Post-Processing Verifiers") . "</h3>\n";
-echo "<h4>" . _("(Number of Projects Posted to PG)") . "</h4>\n";
-
-$psd = get_project_status_descriptor('posted');
-dpsql_dump_themed_ranked_query("
-	SELECT ppverifier as 'PPVer', count(  *  ) as 'Projects PPVd'
-	FROM  `projects` , usersettings
-	WHERE 1  AND ppverifier != postproofer AND $psd->state_selector
-		and ppverifier = usersettings.username 
-		and setting = 'PPV.access' and value = 'yes' 
-	GROUP  BY 1 
-	ORDER  BY 2  DESC ");
-
-echo "<br>\n";
-
-echo _("Note that the above figures are as accurate as possible within the bounds of the current database structure");
-
-echo "<br>\n";
+$tbl = new DpTable();
+$tbl->SetRows($dpdb->SqlRows($sql));
+$tbl->AddColumn("<PP Verifier", "ppverifier");
+$tbl->AddColumn(">Projects", "project_count");
+$tbl->EchoTableNumbered();
 
 theme("","footer");
 ?>
