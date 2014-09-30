@@ -1,7 +1,7 @@
 <?PHP
 global $relPath;
-include_once($relPath.'iso_lang_list.inc');
-include_once($relPath.'genres.inc');
+require_once $relPath . "lists.php";
+//include_once($relPath.'genres.inc');
 
 function encodeFormValue($value) {
   return htmlspecialchars($value,ENT_QUOTES);
@@ -30,6 +30,7 @@ function DP_user_field( $field_value, $field_name ) {
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+/*
 function language_list($language) {
     if (strpos($language, "with") > 0) {
         $pri_language = trim(substr($language, 0, strpos($language, "with")));
@@ -39,8 +40,6 @@ function language_list($language) {
         $pri_language = $language;
         $sec_language = '';
     }
-
-    $array_list = $GLOBALS['lang_list'];
 
     echo "
     <select name='pri_language'>
@@ -53,7 +52,7 @@ function language_list($language) {
             . encodeFormValue($lang_name) . "'";
 
        if ($pri_language == $lang_name) {
-            echo " SELECTED"; 
+            echo " SELECTED";
        }
         echo ">$lang_name</option>\n";
     }
@@ -69,26 +68,26 @@ function language_list($language) {
             . encodeFormValue($lang_name) . "'";
 
         if ($sec_language == $lang_name) {
-            echo " SELECTED"; 
+            echo " SELECTED";
         }
         echo ">$lang_name</option>";
         echo "\n";
     }
     echo "</select>\n";
 }
+*/
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 function genre_list($genre) {
-    global $GENRES;
-    echo "<select name='genre'>";
-    foreach($GENRES as $k => $v) {
-        echo "<option value='".encodeFormValue($k)."'";
-        if ($genre == $k) { echo " SELECTED"; }
-        echo ">$v</option>";
-        echo "\n";
+    global $site_genres;
+    echo "<select name='genre'>\n";
+    foreach($site_genres as $key => $value) {
+        echo "<option value='$key'"
+        . ($genre == $key ? " SELECTED" : "")
+        . ">$value</option>\n";
     }
-    echo "</select>";
+    echo "</select>\n";
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

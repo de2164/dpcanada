@@ -5,18 +5,21 @@
 // During site configuration, identifiers delimited by double angle-brackets
 // are replaced by the corresponding values in SETUP/configuration.sh.
 
+$version = "0.9.2.0";
+
 define("DPC_PATH", "/sharehome/htdocs/");
 define("DPC_URL", "http://www.pgdpcanada.net");
 
 $site_name = "Distributed Proofreaders Canada";
 $site_url = DPC_URL;
-$logo_url = DPC_URL . "e/graphics/logo.gif";
-$ajax_url = DPC_URL . "/e/wc.php";
+$logo_url = DPC_URL . "c/graphics/logo.gif";
+$ajax_url = DPC_URL . "/c/wc.php";
 
-$code_url = DPC_URL . '/e';
+$code_url = DPC_URL . '/c';
 $pm_url   = $code_url . "/tools/project_manager";
+$wc_url   = DPC_URL . "/c/wc";
 
-$code_dir = DPC_PATH . 'e/';
+$code_dir = DPC_PATH . 'c/';
 $proof_dir = $code_dir . "tools/proofers/";
 $pm_dir = $code_dir . "tools/project_manager/";
 
@@ -59,11 +62,11 @@ $registration_url = "{$forums_url}/ucp.php?mode=register";
 $forum_login_url = "{$forums_url}/ucp.php?mode=login";
 $change_password_url = "$forums_url/ucp.php?i=profile&mode=reg_details";
 
-$team_avatars_dir = "/sharehome/htdocs/e/users/teams/avatar";
-$team_avatars_url = "/e/users/teams/avatar";
+$team_avatars_dir = "/sharehome/htdocs/c/users/teams/avatar";
+$team_avatars_url = "/c/users/teams/avatar";
 
-$team_icons_dir   = "/sharehome/htdocs/e/users/teams/icon";
-$team_icons_url   = "/e/users/teams/icon";
+$team_icons_dir   = "/sharehome/htdocs/c/users/teams/icon";
+$team_icons_url   = "/c/users/teams/icon";
 
 $general_forum_idx                = '5';
 $beginners_site_forum_idx         = '2';

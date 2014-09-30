@@ -8,7 +8,6 @@ include_once($relPath.'dpinit.php');
 include_once($relPath.'rounds.php');
 include_once($relPath.'RoundsInfo.php');
 include_once 'pt.inc'; // echo_page_table
-//include_once($relPath.'user_is.inc');
 include_once($relPath.'smoothread.inc');           // functions for smoothreading
 include_once $relPath . "export.php";
 
@@ -25,6 +24,7 @@ define("TIME_FORMAT", "%X");
 $projectid              = Arg('projectid', Arg('id'));
 $project                = new DpProject( $projectid );
 $detail_level           = Arg('detail_level', $project->UserMayManage() ? '3' : '2');
+$btn_manage_words       = IsArg("btn_manage_words");
 $btn_manage_files       = IsArg("btn_manage_files");
 $btn_manage_holds       = IsArg("btn_manage_holds");
 $submit_post_comments   = IsArg("submit_post_comments");
@@ -35,6 +35,16 @@ $export_roundid           = Arg("export_roundid", $project->Phase());
 $exact                  = IsArg("exact");
 $proofers               = IsArg("proofers");
 $linktotopic            = Arg("linktotopic");
+$srdays                 = Arg("srdays");
+$issrtime               = IsArg("submitSRtime");
+
+if($issrtime && intval($srdays) >= 0) {
+    $project->SetSmoothDeadlineDays($srdays);
+}
+if($btn_manage_words) {
+    divert(url_for_project_words($projectid));
+    exit;
+}
 
 if($btn_manage_files) {
     divert(url_for_project_files($projectid));
@@ -89,7 +99,7 @@ if($project->UserIsPPer() && $project->Phase() == "PP") {
 
 if ($detail_level == 1) {
     theme($title_for_theme, "header");
-    echo "<div id='tblproject' class='px800 lfloat clear'>
+    echo "<div id='tblproject' class='px1000 lfloat clear'>
             <h3 class='center'>"._("Project Page for")."</h3>
             <h1 class='center'>{$project->Title()}</h1>\n";
 
@@ -108,7 +118,7 @@ if ($detail_level == 1) {
 $no_stats = 1;
 theme($title_for_theme, "header");
 
-echo "<div id='tblproject' class='px800 lfloat clear'>
+echo "<div id='tblproject' class='px1000 lfloat clear'>
             <h3 class='center'>"._("Project Page for")."</h3>
             <h1 class='center'>{$project->Title()}</h1>\n";
 
@@ -225,7 +235,7 @@ function decide_status($project) {
         $msg = _("Project Status: {$project->Phase()}<br/>(not available for proofreading)");
         return array( $msg, $msg );
     }
-    if($project->AvailableCount() == 0) {
+    if(! $project->IsAvailableForActiveUser()) {
         $msg = _("Project Status: Available, but no available pages now.");
         return array( $msg, $msg );
     }
@@ -303,6 +313,7 @@ function show_status_box( $status ) {
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 function project_info_table($project) {
+    global $Context;
     global $code_url;
     global $dpdb, $User;
     global $detail_level;
@@ -349,11 +360,17 @@ function project_info_table($project) {
 
     $topic_id = $project->ForumTopicId();
     if ($topic_id) {
-        $last_post_date = $dpdb->SqlOneValue("
-            SELECT MAX(post_time) FROM forum.bb_posts 
-            WHERE topic_id = $topic_id"); 
-        $last_post_date = std_datetime($last_post_date);
-        echo_row_1_4( _("Last Forum Post"), $last_post_date );
+        if(! $Context->TopicExists($topic_id)) {
+            $topic_id = "";
+            $project->ClearForumTopicId();
+        }
+        else {
+            $last_post_date = $dpdb->SqlOneValue("
+                SELECT MAX(post_time) FROM forum.bb_posts
+                WHERE topic_id = $topic_id");
+            $last_post_date = std_datetime($last_post_date);
+            echo_row_1_4( _("Last Forum Post"), $last_post_date );
+        }
     }
 
     echo_row_1_4( _("Posted etext number"), 
@@ -361,8 +378,9 @@ function project_info_table($project) {
 
     // -----------------------
 
-    $status = ($topic_id == "") ? _("Start a discussion about this project")
-                                : _("Discuss this project");
+    $status = ($topic_id == "")
+                        ? _("Start a discussion about this project")
+                        : _("Discuss this project");
     $url = "?projectid={$projectid}&amp;linktotopic=1";
     echo_row_1_4( _("Forum"), "<a href='$url'>$status</a>" );
 
@@ -420,7 +438,7 @@ function project_info_table($project) {
     }
 
     // -------------------------------------------------------------------------
-    // Comments
+    // Post Comments
 
     $postcomments = maybe_convert($project->PostComments());
     $postcomments = str_replace("\n", "<br />", h($postcomments));
@@ -440,11 +458,11 @@ function project_info_table($project) {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Project Comments
+
     $comments = maybe_convert($project->Comments());
-    if ( $comments == '' ) {
-        $comments = '&nbsp;';
-    }
-    echo_row_one_cell( $comments );
+    echo_row_one_cell( str_replace("&", "&amp;", $comments) );
     echo "</table>";
 }
 
@@ -452,7 +470,7 @@ function project_info_table($project) {
 
 function echo_row_1_4( $left, $right) {
     echo "
-    <tr><td class='center bgCCCCCC'><b>$left</b></td>
+    <tr><td class='left w25 bgCCCCCC'><b>$left</b></td>
     <td colspan='4'>$right</td></tr> <!-- 1 -->\n";
 }
 
@@ -483,15 +501,15 @@ function your_recent_pages( $project, $wlist ) {
     $roundid = $project->RoundId();
 //    assert($round);
 
-    // saved or in progress?
+    // saved or checked out?
     if ($wlist == 0) {
-        $top = _("DONE");
+        $top = _("Pages Completed");
         $bottom = _("&nbsp;<b>My Recently Completed</b> - pages I've finished
         proofreading, that are available for correction");
         $bg_color = '#D3FFCE';
     }
     else {
-        $top = _("IN PROGRESS");
+        $top = _("Pages Checked Out");
         $bottom = _("&nbsp;<b>My Recently Proofread</b> - pages I haven't yet
         completed");
         $bg_color = '#FFEEBB';
@@ -582,6 +600,7 @@ function your_recent_pages( $project, $wlist ) {
 function show_uploads_box($project) {
     /** @var DpProject $project */
     $mng_holds = _("Manage Holds");
+    $mng_words = _("Manage Words");
     $projectid = $project->ProjectId();
     $nholds = $project->HoldCount();
     $sholds = ($nholds == 0
@@ -600,6 +619,9 @@ function show_uploads_box($project) {
             value='Manage Files'>
     <p>There $sholds currently in effect.
     <input type='submit' name='btn_manage_holds' id='btn_manage_holds' value='$mng_holds'>
+    </p>
+    <p>When WordCheck is in operation.
+    <input type='submit' name='btn_manage_words' id='btn_manage_words' value='$mng_words'>
     </p>
     </form>
     </div>\n";
@@ -703,7 +725,7 @@ function do_extra_files($project) {
     }
     // dump($notfiles);
 
-    echo "<ul>\n";
+    echo "<ul class='clean'>\n";
     foreach ($filenames as $filename) {
         $filename = basename($filename);
         if ( !in_array( $filename, $notfiles ) ) {
@@ -725,7 +747,7 @@ function offer_post_downloads($project, $export_roundid) {
     if($User->MayWorkInRound("PP")) {
         echo "
         <h4 class='clear'>". _("Post Downloads") . "</h4>
-        <ul>\n";
+        <ul class='clean'>\n";
 
         echo_download_zip($project, _("Download Zipped Images"), 'images' );
 
@@ -746,17 +768,16 @@ function offer_post_downloads($project, $export_roundid) {
     else {
         echo "
         <h4 class='clear'>". _("Concatenated Text Files")."</h4>
-        <ul>\n";
+        <ul class='clean'>\n";
     }
     echo "
     <li>
     <form method='post'>
-    <input type='hidden' name='projectid' value='$projectid'>\n";
+        <input type='hidden' name='projectid' value='$projectid'>
+      <ul>
+        <li>Download concatenated text from
+        <input type='radio' name='export_roundid' value='OCR'>OCR: ";
 
-    // $highest_round_id = get_Round_for_project_state($project->State());
-    echo "
-    Download concatenated text from
-    <input type='radio' name='export_roundid' value='OCR'>OCR&nbsp;\n";
     foreach ( $Context->Rounds() as $roundid ) {
         echo "<input type='radio'  name='export_roundid' value='$roundid'>$roundid&nbsp;\n";
         if ( $roundid == $export_roundid )  {
@@ -765,24 +786,20 @@ function offer_post_downloads($project, $export_roundid) {
     }
     echo "
     <input type='radio' name='export_roundid' value='newest' checked>Newest&nbsp;
-    <br>\n";
+    </li>\n";
     if ( $project->UserMaySeeNames() ) {
-        echo "
-        <input type='checkbox' name='proofers' id='proofers' />
-        Include proofer names? <br/>\n";
+        echo "<li><input type='checkbox' name='proofers' id='proofers' />
+        Include proofer names? </li>\n";
     }
     echo "
-    <input type='checkbox' id='exact' name='exact'>
+    <li><input type='checkbox' id='exact' name='exact'>
     For each page, include the round text, including blank text for unproofed pages.
     Otherwise the newest proofed text is included.  If every page has been proofed
-    in the round, the concatenated texts are identical.<br>\n";
-
-    // proofer names allowed for people who can see proofer names
-    // on the page details
-    /** @var DpProject project */
+    in the round, the concatenated texts are identical.</li>\n";
 
     echo "
-    <input type='submit' name='export' value='Download'>
+    <li><input type='submit' name='export' value='Download'></li>
+    </ul>
     </form>
     </li>
     </ul>\n";
@@ -797,7 +814,7 @@ function echo_uploaded_zips($project, $filetype, $upload_type) {
     $done_files = glob("$pdir/*".$filetype."*.zip");
   if ($done_files) {
       echo sprintf( _("Download %s file uploaded by:"), $upload_type);
-      echo "<ul>";
+      echo "<ul class='clean'>";
       foreach ($done_files as $filename) {
           $showname = basename($filename,".zip");
           $showname = substr($showname, strpos($showname,$filetype) + strlen($filetype));
@@ -853,13 +870,13 @@ function solicit_pp_report_card($project) {
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 function solicit_postcomments($project) {
-    global $forums_url;
+    global $forums_url, $User;
 
     /** @var DpProject $project */
 
     $projectid = $project->ProjectId();
 
-    if ($project->UserIsPPer()) {
+    if ($project->UserIsPPer() || $User->IsSiteManager()) {
         $postcomments = maybe_convert($project->PostComments());
         echo "<h4>" . _("Post-Processor's Comments") . "</h4>";
 
@@ -867,7 +884,7 @@ function solicit_postcomments($project) {
         // (limit of 90 days is mentioned below).
         echo '<p>' . sprintf(_("You can use this text area to enter comments on how you're
                      doing with the post-processing, both to keep track for yourself
-                     and so that we will know that there's still work in progress.
+                     and so that we will know that there's still work checked out.
                      You will not receive an e-mail reminder about this project for at
                      least another %1\$d days.") .
                      _("You can use this feature to keep track of your progress,
@@ -901,114 +918,105 @@ function solicit_smooth_reading($project) {
     $projectid = $project->ProjectId();
 
     echo "
+    <div id='divsmooth'>
     <h4>", _('Smooth Reading'), "</h4>
-    <ul>";
-
-    if ( ! $project->SmoothreadDeadline() ) {
-        echo _('<li>This project has not been made available for smooth reading.</li>');
-
-        if ($project->UserIsPPer() || $User->IsSiteManager()) {
-            $link_1 = link_to_smooth_upload($projectid, "1", "one week");
-            $link_2 = link_to_smooth_upload($projectid, "2", "two weeks");
-            $link_4 = link_to_smooth_upload($projectid, "4", "four weeks");
-            echo "
-            <li>\n";
-                echo _("<p>As the project's PPer, you can set the period of time 
-                it is available.</p>") ."
-                <ul>
-                <li>$link_1</li>
-                <li>$link_2</li>
-                <li>$link_4</li>
-                </ul>
-            </li>\n";
-        }
+    <ul class='clean'>\n";
+    if(! $project->IsAvailableForSmoothReading()) {
+        echo _('<li>This project is not currently available for smooth reading.</li>');
     }
     else {
-        // Project has been made available for SR
-
-        if ( $project->IsAvailableForSmoothReading()) {
-            echo _("<li>This project has been made available for smooth reading
-                until <b>{$project->SmoothReadDate()}</b>.</li>\n");
-
-            if (! $project->UserIsPPer()) {
-                echo "
-                <li>" . link_to_smooth_download($projectid,
-                                "Download zipped text for smoothreading") ." </li>
-                <li>" . link_to_smoothed_upload($projectid, "Upload a text you have smooth-read") ." </li>\n";
-
-                // The upload does not cause the project to change state --
-                // it's still checked out to PPer.
-
-                if (!sr_user_is_committed($projectid, $username)) {
-                    echo _('<li>You may indicate your commitment
-                        to smoothread this project to the PP by pressing:');
-                    sr_echo_commitment_form($projectid);
-                    echo "</li>\n";
-                }
-                else {
-                    echo _(
-                        '<li>You have committed to smoothread this project.
-                        If you want to withdraw your commitment, please press:');
-                    sr_echo_withdrawal_form($projectid);
-                    echo "</li>";
-                }
-            }
-            else {
-                echo "
-                <li>
-                <a href='$code_url/tools/upload_text.php"
-                            ."?projectid=$projectid"
-                            ."&amp;stage=smooth_avail"
-                            ."&amp;weeks=replace'>
-                "._("Replace the current file that's available for smooth-reading.")."
-                </a>
-                </li>\n";
-            }
-        }
-        else {
-            echo "
-            <li>
-            ". _('The deadline for smooth-reading this project has passed.')."
-            </li>\n";
-
-            if ($project->UserIsPPer()) {
-                $link_1 = link_to_upload_text($projectid, "smooth_avail", 1, "one week");
-                $link_2 = link_to_upload_text($projectid, "smooth_avail", 2, "two weeks");
-                $link_4 = link_to_upload_text($projectid, "smooth_avail", 4, "four weeks");
-                echo "
-            <li>\n";
-                echo _("<p>As the project's PPer, you can make it available
-                for a further period.</p>") ."
-                <ul>
-                <li>$link_1</li>
-                <li>$link_2</li>
-                <li>$link_4</li>
-                </ul>
-            </li>\n";
-            }
-        }
-
-        if ($project->UserIsPPer()) {
-
-            $sr_list = sr_get_committed_users($projectid);
-
-            if (count($sr_list) == 0) {
-                echo _('<p>Nobody has committed to smoothread this project.</p>');
-            }
-            else {
-                echo _("
-                <pre>The following users have committed to smoothread this project:\n");
-                foreach ($sr_list as $sr_user) {
-                    echo "<li>" . link_to_pm($sr_user) . "</li>\n";
-                }
-                echo "</pre>\n";
-            }
-
-            echo_uploaded_zips($project, '_smooth_done_', _('smoothread'));
-        }
+        echo _("<li>This project is available for smooth reading
+            until <b>{$project->SmoothReadDate()}</b>.</li>\n");
     }
 
-    echo "</ul>\n";
+        // Project has been made available for SR
+    if ( $project->IsAvailableForSmoothReading()) {
+
+        // The upload does not cause the project to change state --
+        // it's still checked out to PPer.
+
+        if (!sr_user_is_committed($projectid, $username)) {
+            echo _('<li>You may indicate your commitment
+                to smoothread this project to the PP by pressing:');
+            sr_echo_commitment_form($projectid);
+            echo "</li>\n";
+        }
+        else {
+            echo _(
+                '<li>You have committed to smoothread this project.
+                If you want to withdraw your commitment, please press:');
+            sr_echo_withdrawal_form($projectid);
+            echo "</li>";
+        }
+
+        echo "
+        <li>" . link_to_smooth_download($projectid,
+                "Download zipped text for smoothreading") ." </li>
+        <li>" . link_to_smoothed_upload($projectid, "Upload a text you have smooth-read") ." </li>\n";
+
+    }
+    if ( $project->UserIsPPer() || $User->IsSiteManager()) {
+        $days = $project->SmoothDaysLeft();
+        echo _("
+        <li>
+          <form name='srform' id='srform' method='POST'>
+            Set the smooth-reading deadline to how many days from today?
+            <input type='text' name='srdays' id='srdays' value='$days' size='3' />
+            <input type='submit' value='Submit' name='submitSRtime' id='submitSRtime' /></li>
+          </form>\n");
+        echo "
+        <li>
+        <a href='$code_url/tools/upload_text.php"
+                    ."?projectid=$projectid"
+                    ."&amp;stage=smooth_avail'>
+        "._("Upload a file for smooth-reading (new or replacement).")."
+        </a>
+        </li>\n";
+//    }
+//    else {
+//        echo "
+//        <li>
+//        ". _('The deadline for smooth-reading this project has passed.')."
+//        </li>\n";
+
+//        if ($project->UserIsPPer() || $User->IsSiteManager()) {
+//            $link_1 = link_to_upload_text_to_smooth($projectid, 1, "one week");
+//            $link_2 = link_to_upload_text_to_smooth($projectid, 2, "two weeks");
+//            $link_4 = link_to_upload_text_to_smooth($projectid, 4, "four weeks");
+//            echo "
+//        <li>\n";
+//            echo _("<p>As the project's PPer, you can make it available
+//            for a further period.</p>") ."
+//            <ul>
+//            <li>$link_1</li>
+//            <li>$link_2</li>
+//            <li>$link_4</li>
+//            </ul>
+//        </li>\n";
+//        }
+//    }
+
+//    if ($project->UserIsPPer() || $User->IsSiteManager()) {
+
+        $sr_list = sr_get_committed_users($projectid);
+
+        if (! count($sr_list) ) {
+            echo _('<p>No one has committed to smoothread this project.</p>');
+        }
+        else {
+            echo _("
+            <pre>The following users have committed to smoothread this project:\n");
+            foreach ($sr_list as $sr_user) {
+                echo "<li>" . link_to_pm($sr_user) . "</li>\n";
+            }
+            echo "</pre>\n";
+        }
+
+        echo_uploaded_zips($project, '_smooth_done_', _('smoothread'));
+    }
+
+    echo "</ul>
+    </div> <!-- divsmooth -->\n";
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1074,11 +1082,11 @@ function show_page_table($project) {
     <div id='page_table_key' class='clear'>
         <h4 class='lfloat'>". _('Pages proofread by you and...') . "</h4>
         <div style=' margin-bottom: .4em' class='pg_out bordered padded lfloat clear'>"
-        . _("IN PROGRESS (awaiting completion this round)") . "</div>
+        . _("Checked Out (awaiting completion this round)") . "</div>
         <div style=' margin-bottom: .4em' class='pg_completed bordered padded lfloat'>"
-        . _("DONE (still available for editing this round)") ."</div>
+        . _("Completed (still available for editing this round)") ."</div>
         <div style=' margin-bottom: .4em' class='pg_unavailable bordered padded lfloat'>"
-        . _("DONE in a previous round (no longer available for editing)") ."</div>
+        . _("Completed in a previous round (no longer available for editing)") ."</div>
     </div>
 
     <div class='lfloat clear'>\n";

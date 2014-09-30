@@ -83,7 +83,7 @@ href='%s/faq/faq_central.php'>FAQ Central</a> which provides helpful resources
 on how to proofread.  (See also the 'Help' at the top of any screen.)  After
 you have registered &amp; read through some of the intro documents, choose an
 interesting-looking book from our Current Projects and try proofreading a page
-or two.</p>\n"), $code_url);
+or two.</p>\n"), $wiki_url);
 
 echo _("<p>You don't even have to register to have a look at the <a
 href='tools/post_proofers/smooth_reading.php'>Smooth Reading Pool Preview</a>,

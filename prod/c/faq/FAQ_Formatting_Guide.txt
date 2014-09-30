@@ -608,8 +608,8 @@ the FAQ file with a snippet of PHP code like:
 
 <?
 $relPath='../pinc/';
-include($relPath.'dpinit.php');
-include($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
+include_once($relPath.'theme.inc');
 $no_stats=1;
 theme('Post-Processing FAQ','header');
 ?>
@@ -694,8 +694,8 @@ we can start our FAQs with
 
 <?
 $relPath='../pinc/';
-include($relPath.'dpinit.php');
-include($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
+include_once($relPath.'theme.inc');
 $no_stats=1;
 theme('Post-Processing FAQ','header');
 ?>

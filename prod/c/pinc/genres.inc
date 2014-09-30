@@ -1,6 +1,7 @@
 <?PHP
 
-$GENRES = array(
+/*
+$genres = array(
     'Other'              => _('Other'),
     'Adventure'          => _('Adventure'),
     'Agriculture'        => _('Agriculture'),
@@ -81,6 +82,7 @@ $GENRES = array(
     'Western'            => _('Western'),
     'Zoology'            => _('Zoology'),
 );
+*/
 
 // vim: sw=4 ts=4 expandtab
 ?>

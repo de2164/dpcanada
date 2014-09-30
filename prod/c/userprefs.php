@@ -367,9 +367,9 @@ function echo_proofreading_tab() {
     echo "<tr>\n";
     show_preference(
         _('Interface Type'), 'i_type', 'facetype',
-        $User->InterfaceIndex(),
-        'radio_group',
-        array( 0 => _("Standard"), 1 => _("Enhanced"), 2 => _("Whistler"))
+            $User->InterfaceIndex(),
+            'radio_group',
+            array( 0 => "Standard", 1 => "Enhanced", 2 => "Whistler", 3 => "Blackcomb", 4 => "Ahmic", 5 => "Pennask")
         );
     show_preference(
         _('Show Toolbar'), 'i_toolbar', 'toolbar',

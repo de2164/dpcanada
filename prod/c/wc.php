@@ -3,7 +3,7 @@
     js constructs the "new Object()".
     Then serializes it with 
         var jq = 'jsonqry=' + JSON.stringinify(obj);
-    ajax POSTs it here
+    ajax POSTs it in form variable jsonqry to wc.php (this file)
     php loads POST with 
         $jq = Arg("jsonqry");
     Then unserializes it with 
@@ -37,6 +37,7 @@ require_once $relPath."DpPage.class.php";
 include_once($relPath.'links.php');
 
 $jq             = Arg("jsonqry");
+$jq             = reampersand($jq);
 //$jq             = rawurldecode($jq);
 $json           = json_decode($jq);
 
@@ -61,18 +62,13 @@ $acceptwords        = @$json->acceptwords;
 $mode               = @$json->mode;
 $token              = @$json->token;
 $flags              = @$json->flags;
+
+// if a username is provided, reset active User
 if($username) {
     $User               = new DpUser($username);
 }
 
 // LogMsg("wc recv: $json");
-
-function send_alert($msg) {
-        $a          = array();
-        $a["querycode"] = "popupalert";
-        $a["alert"]     = _($msg);
-        json_echo($a);
-}
 
 // these queries come from dp_edit.js
 switch($querycode) {
@@ -80,7 +76,7 @@ switch($querycode) {
     // send back updated tags
     case "savetemp":
         $page = new DpPage($projectid, $pagename);
-        $page->SaveTemp($text);
+        $page->SaveText($text);
         // if($acceptwords && count($acceptwords) > 0) {
             // $words = preg_split("/\t/", $acceptwords);
             // $page->SuggestWordsArray($langcode, $words);
@@ -107,7 +103,7 @@ switch($querycode) {
 	    exit;
         }
         $a                  = array();
-	$a["querycode"]     = "do" . $querycode;
+        $a["querycode"]     = "do" . $querycode;
         json_echo($a);
         exit;
         
@@ -118,11 +114,26 @@ switch($querycode) {
     // 2) bad words a. on good list b. suggested; c. ok'ed d. virgin
     // 3) suggested words a. 
     // ?) ?say something here about suspect words?
-     case "wctext":
-
+    case "wctext":
+        $page           = new DpPage($projectid, $pagename);
+        // wordcheck the text and return marked-up version
+        $wct            = $page->WordCheckText($langcode, $text);
+        list($wccount, $wcscount, $wcbcount, $pvwtext) = $wct;
+        $a              = array();
+        $a["querycode"] = "wctext";
+        $a["token"]     = $token;
+        $a["wccount"]   = $wccount;
+        $a["wcscount"]  = $wcscount;
+        $a["wcbcount"]  = $wcbcount;
+        $a["pvwtext"]   = $pvwtext;
+        json_echo($a);
+        exit;
+     case "wctext2":
          $page           = new DpPage($projectid, $pagename);
+         $text           = utf8_uridecode($text);
         // wordcheck the text and return marked-up version
          $wct            = $page->WordCheckText($langcode, $text);
+         $wct            = utf8_uriencode($text);
          list($wccount, $wcscount, $wcbcount, $pvwtext) = $wct;
          $a              = array();
          $a["querycode"] = "wctext";
@@ -131,9 +142,10 @@ switch($querycode) {
          $a["wcscount"]  = $wcscount;
          $a["wcbcount"]  = $wcbcount;
          $a["pvwtext"]   = $pvwtext;
-         json_echo($a);
+         json_echo2($a);
          exit;
 
+/*
     // user chooses a wordlist
     // case "wclist":
 
@@ -162,57 +174,58 @@ switch($querycode) {
         // json_echo($a);
         // exit;
 
-    // 
+    //
+*/
 
-    // case "wccontext":
-        // $project  = new DpProject($projectid);
-        // switch($mode) {
-            // default:
-            // case "flagged":
-                // $awords = $project->FlaggedWordCountArray($langcode);
-                // $ak = array_keys($awords);
-                // $av = array_values($awords);
-                // array_multisort( $av, SORT_DESC, $ak, SORT_ASC, $awords);
-                // break;
+     case "wccontext":
+         $project  = new DpProject($projectid);
+         switch($mode) {
+             default:
+             case "flagged":
+                 $awords = $project->FlagWordCountArray($langcode);
+                 $ak = array_keys($awords);
+                 $av = array_values($awords);
+                 array_multisort( $av, SORT_DESC, $ak, SORT_ASC, $awords);
+                 break;
+//
+             case "suggested":
+                 $awords = $project->SuggestedWordCountArray($langcode);
+                 $ak = array_keys($awords);
+                 $av = array_values($awords);
+                 array_multisort( $av, SORT_DESC, $ak, SORT_ASC, $awords);
+                 break;
+//
+             case "good":
+                 $av = $project->GoodWordCountArray($langcode);
+                 break;
+//
+             case "bad":
+                 $av = $project->BadWordCountArray($langcode);
+                 break;
+//
+//             case "suspect":
+//                 $av = $project->SuspectWordCountArray($langcode);
+//                 break;
+         }
+         $a                  = array();
+         $a["querycode"]     = "wccontext";
+         $a["wordarray"]     = $av;
+         json_echo($a);
+         exit;
 
-            // case "suggested":
-                // $awords = $project->SuggestedWordCountArray($langcode);
-                // $ak = array_keys($awords);
-                // $av = array_values($awords);
-                // array_multisort( $av, SORT_DESC, $ak, SORT_ASC, $awords);
-                // break;
+     case "wordcontext":
+         $project  = new DpProject($projectid);
+         $wpc         = $project->WordContexts($word);
+//
+         $a                  = array();
+         $a["querycode"]     = "wordcontext";
+         $a["projectid"]     = $projectid;
+         $a["word"]          = $word;
+         $a["contextinfo"]   = $wpc;
+         json_echo($a);
+         exit;
 
-            // case "good":
-                // $av = $project->GoodWordCountArray($langcode);
-                // break;
-
-            // case "bad":
-                // $av = $project->BadWordCountArray($langcode);
-                // break;
-
-            // case "suspect":
-                // $av = $project->SuspectWordCountArray($langcode);
-                // break;
-        // }
-
-        // $a                  = array();
-        // $a["querycode"]     = "wccontext";
-        // $a["wordarray"]     = $av;
-        // json_echo($a);
-        // exit;
-
-    // case "wordcontext":
-        // $project  = new DpProject($projectid);
-        // $wpc         = $project->WordContexts($word);
-
-        // $a                  = array();
-        // $a["querycode"]     = "wordcontext";
-        // $a["projectid"]     = $projectid;
-        // $a["word"]          = $word;
-        // $a["contextinfo"]   = $wpc;
-        // json_echo($a);
-        // exit;
-
+/*
     // case "regexcontext":
         // $project            = new DpProject($projectid);
         // $rc                 = $project->RegexContexts($word, $flags);
@@ -225,6 +238,7 @@ switch($querycode) {
         // json_echo($a);
         // exit;
 
+/*
     case "setfontsize":
         $User->SetFontSize($data);
         $a                  = array();
@@ -265,8 +279,8 @@ switch($querycode) {
         $a["imgpct"]        = 100 - $User->TextFramePct();
         json_echo($a);
         exit;
+*/
 
-/*
     case "addgoodword":
         $project            = new DpProject($projectid);
         $project->AddGoodWord($langcode, $word);
@@ -285,88 +299,109 @@ switch($querycode) {
         json_echo($a);
         exit;
 
-    case "removegoodword":
-        $project            = new DpProject($projectid);
-        $project->DeleteGoodWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
+/*
+        case "removegoodword":
+            $project            = new DpProject($projectid);
+            $project->DeleteGoodWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
 
-    case "removesuggestedword":
-        $project            = new DpProject($projectid);
-        $project->DeleteSuggestedWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
+        case "removesuggestedword":
+            $project            = new DpProject($projectid);
+            $project->DeleteSuggestedWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
 
-    case "removebadword":
-        $project            = new DpProject($projectid);
-        $project->DeleteBadWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
+        case "removebadword":
+            $project            = new DpProject($projectid);
+            $project->DeleteBadWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
 
-    case "goodtobadword":
-        $project            = new DpProject($projectid);
-        $project->DeleteGoodWord($langcode, $word);
-        $project->AddBadWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
+        case "goodtobadword":
+            $project            = new DpProject($projectid);
+            $project->DeleteGoodWord($langcode, $word);
+            $project->AddBadWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
 
-    case "badtogoodword":
-        $project            = new DpProject($projectid);
-        $project->DeleteBadWord($langcode, $word);
-        $project->AddGoodWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
+        case "badtogoodword":
+            $project            = new DpProject($projectid);
+            $project->DeleteBadWord($langcode, $word);
+            $project->AddGoodWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
 
-    case "suggestedtobadword":
-        $project            = new DpProject($projectid);
-        $project->DeleteSuggestedWord($langcode, $word);
-        $project->AddBadWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
+        case "suggestedtobadword":
+            $project            = new DpProject($projectid);
+            $project->DeleteSuggestedWord($langcode, $word);
+            $project->AddBadWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
 
-    case "suggestedtogoodword":
-        $project            = new DpProject($projectid);
-        $project->DeleteSuggestedWord($langcode, $word);
-        $project->AddGoodWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
+        case "suggestedtogoodword":
+            $project            = new DpProject($projectid);
+            $project->DeleteSuggestedWord($langcode, $word);
+            $project->AddGoodWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
 
-    case "suspecttobadword":
-        $project            = new DpProject($projectid);
-        $project->DeleteSuspectWord($langcode, $word);
-        $project->AddBadWord($langcode, $word);
-        $a                  = array();
-        $a["querycode"]     = $querycode;
-        $a["response"]      = "ack";
-        json_echo($a);
-        exit;
-*/
+        case "suspecttobadword":
+            $project            = new DpProject($projectid);
+            $project->DeleteSuspectWord($langcode, $word);
+            $project->AddBadWord($langcode, $word);
+            $a                  = array();
+            $a["querycode"]     = $querycode;
+            $a["response"]      = "ack";
+            json_echo($a);
+            exit;
+    */
+}
+
+function send_alert($msg) {
+    $a          = array();
+    $a["querycode"] = "popupalert";
+    $a["alert"]     = _($msg);
+    json_echo($a);
+}
+
+function json_echo2($rsp) {
+    echo unampersand(json_encode($rsp));
 }
 
 function json_echo($rsp) {
-    $rsp = json_encode($rsp);
-//    $rsp = rawurlencode($rsp);
+    $rsp = unampersand(json_encode($rsp));
+//    echo unampersand(json_encode($rsp));
+    $rsp = rawurlencode($rsp);
     echo $rsp;
+}
+
+function unampersand($str) {
+    return preg_replace("/&/", "~~", $str);
+}
+
+function reampersand($str) {
+    return preg_replace("/~~/", "&", $str);
 }
 ?>

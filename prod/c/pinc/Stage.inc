@@ -8,10 +8,10 @@
 // It's a generalization of the existing ideas of 'round' and 'pool'.
 
 global $relPath;
-include_once($relPath.'TallyBoard.inc');
-include_once($relPath.'quizzes.inc');
-include_once($relPath.'misc.inc'); // startswith
-include_once($relPath.'page_header.inc');
+//include_once($relPath.'TallyBoard.inc');
+//include_once($relPath.'quizzes.inc');
+//include_once($relPath.'misc.inc'); // startswith
+//include_once($relPath.'page_header.inc');
 
 // $Stage_for_id_ and $CRITERIA are extended as Stages are defined.
 
@@ -19,10 +19,8 @@ $Stage_for_id_ = array();
 
 $CRITERIA = array(
     'days since reg' => _('days since registration'),
-    'quiz/P'         => sprintf(_("<a href='%s'>proofreading quiz</a> pass"),
-                        "$code_url/quiz/start.php?show_only=PQ"),
-    'quiz/F'         => sprintf(_("<a href='%s'>formatting quiz</a> pass"),
-                        "$code_url/quiz/start.php?show_only=FQ"),
+    'quiz/P'         => sprintf(_("<a href='%s'>proofreading quiz</a> pass"),"$code_url/quiz/start.php?show_only=PQ"),
+    'quiz/F'         => sprintf(_("<a href='%s'>formatting quiz</a> pass"),"$code_url/quiz/start.php?show_only=FQ"),
 );
 
 
@@ -370,10 +368,10 @@ function show_user_access_chart( $username ) {
     echo "<p>Use User Role Editor to change permissions.</p>\n";
 }
 
-function td_w_bgcolor( $text, $bool ) {
-    $bgcolor = ( $bool ? '#ccffcc' : '#ffcccc' );
-    return "<td align='right' bgcolor='$bgcolor'>$text</td>\n";
-}
+//function td_w_bgcolor( $text, $bool ) {
+//    $bgcolor = ( $bool ? '#ccffcc' : '#ffcccc' );
+//    return "<td align='right' bgcolor='$bgcolor'>$text</td>\n";
+//}
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 

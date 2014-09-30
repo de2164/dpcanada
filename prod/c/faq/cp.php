@@ -3,9 +3,9 @@ ini_set("display_errors", true);
 error_reporting(E_ALL);
 $relPath = '../pinc/';
 require_once $relPath . 'dpinit.php');
-include $relPath . 'faq.inc';
-include $relPath . 'pg.inc';
-include $relPath . 'theme.inc';
+include_once $relPath . 'faq.inc';
+include_once $relPath . 'pg.inc';
+include_once $relPath . 'theme.inc';
 
 $no_stats = 1;
 

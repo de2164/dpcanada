@@ -27,7 +27,7 @@ include_once($relPath.'helpers.php');
 
 $projectid      = Arg('projectid', Arg('project'));
 $upload_action  = Arg('stage', Arg('upload_action'));
-$weeks          = Arg('weeks');
+//$weeks          = Arg('weeks');
 $postcomments   = Arg('postcomments');
 $submit_upload  = IsArg('submit_upload');  
 
@@ -117,31 +117,28 @@ if ($isuploadfile) {       // we have a file now. do some more checks.
 
     switch($upload_action) {
         case "smooth_avail":
-            if($weeks == "replace") {
-                $project->LogProjectEvent( PJ_EVT_SMOOTH, 'text replaced' );
-                $sql = "
+//            if($weeks == "replace") {
+//                $project->LogProjectEvent( PJ_EVT_SMOOTH, 'text replaced' );
+//                $sql = "
+//                    UPDATE projects
+//                    SET postcomments = CONCAT(postcomments, ?)
+//                    WHERE projectid = '$projectid'";
+//            }
+//            else {
+            $sql = "
                     UPDATE projects
-                    SET postcomments = CONCAT(postcomments, ?)
+                    SET  postcomments = CONCAT(postcomments, ?)
                     WHERE projectid = '$projectid'";
-            }
-            else {
-                $project->LogProjectEvent( PJ_EVT_SMOOTH, "opened for $weeks weeks" );
-                $sql = "
-                    UPDATE projects
-                    SET smoothread_deadline = 
-                        UNIX_TIMESTAMP(DATE_ADD(CURRENT_DATE(), INTERVAL $weeks WEEK)),
-                        postcomments = CONCAT(postcomments, ?)
-                    WHERE projectid = '$projectid'";
-            }
+//            }
             $args = array(&$postcomments);
             $dpdb->SqlExecutePS($sql, $args);
 
-            if ( $weeks == "replace" ) {
-                $project->LogProjectEvent( 'smooth-reading', 'text replaced' );
-            }
-            else {
+//            if ( $weeks == "replace" ) {
+//                $project->LogProjectEvent( 'smooth-reading', 'text replaced' );
+//            }
+//            else {
                 $project->LogProjectEvent( 'smooth-reading', 'text available' );
-            }
+//            }
             break;
 
         case "smooth_done":
@@ -213,7 +210,6 @@ echo "
     <form action='' method='post' enctype='multipart/form-data'>
       <input type='hidden' name='project' value='$projectid' />
       <input type='hidden' name='upload_action' value='$upload_action' />
-      <input type='hidden' name='weeks' value='$weeks' />
       <input type='hidden' name='MAX_FILE_SIZE' value='300000000' />
     <div class='w50'>
       <input type='file' name='dpupload' class='center' size='50' maxsize='50' />

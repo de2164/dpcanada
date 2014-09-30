@@ -2171,7 +2171,7 @@ function eContextInit() {
     addEvent(formcontext.btnremove,  "click", eRemoveWordClick);
     addEvent(formcontext.btngood,    "click", eGoodWordClick);
     addEvent(formcontext.btnbad,     "click", eBadWordClick);
-//    addEvent(formcontext.btnrecompute,  "click", eRecomputeWordClick);  //The recompute button is served directly, not via Ajax query
+//    addEvent(formcontext.btnrefresh,  "click", eRefresh refresh button is served directly, not via Ajax query
 //    addEvent(formcontext.btnreplace, "click", eReplaceWordClick);  //this is a bogus function
 
     formcontext.btnremove.style.display = 
@@ -2189,7 +2189,7 @@ function eContextInit() {
             .indexOf($("mode").value) >= 0
         ? "inline-block"
         : "none";
-    formcontext.btnrecompute.style.display = 
+    formcontext.btnrefresh.style.display =
         ['suspect']
             .indexOf($("mode").value) >= 0
         ? "inline-block"
@@ -2294,7 +2294,7 @@ function eReplaceWordClick() {
     console.debug("eReplaceWordClick");
 }
 
-function eRecomputeWordClick(e) {
+function eRefreshWordClick(e) {
     switch($("mode").value) {
         case "good":
         case "bad":
@@ -2303,7 +2303,7 @@ function eRecomputeWordClick(e) {
         case "adhoc":
             break;
         case "suspect":
-            //awcRecomputeSuspectWords();  //The recompute button is served directly, not via Ajax query
+            //awcRefreshSuspectWords();  //The refresh button is served directly, not via Ajax query
             break;
     }
 //    sync_context();  //?needed?
@@ -2340,12 +2340,12 @@ function active_context() {
 }
 
 function eContextImgLoad() {
-    var context_image_scroll_pct = 
+    $('imgcontext').style.display = "block";
+    var context_image_scroll_pct =
         (active_context() && (active_context().lineindex > 0))
             ? 100 * active_context().lineindex 
                                 / active_context().linecount 
             : -1;
-    $('imgcontext').style.display = "block";
     set_scroll_pct($('div_context_image'), context_image_scroll_pct);
 }
 
@@ -2359,12 +2359,17 @@ function eSetContextWordIndex(index) {
     }
     _active_context_index = index;
     $('divctxt_'+index).style.backgroundColor = "white";
-    $('imgcontext').style.display = "none";
-    $('imgcontext').src = (active_context())
+    if($('imgcontext').src != active_context().imageurl) {
+        $('imgcontext').style.display = "none";
+        $('imgcontext').src = (active_context())
                         ? active_context().imageurl
                             .replace(/\s/g, "")
                             .replace(/\&amp;/g, "&")
                         : "";
+    }
+    else {
+        eContextImgLoad();
+    }
 }
 
 function requestContext() {
@@ -2583,9 +2588,9 @@ function awcSuspectToBadWord(i) {
 
 /*
 Unneeded, the request is synchronous
-function awcRecomputeSuspectWords(i) {
+function awcRefreshSuspectWords(i) {
     var qry = {};
-    qry['querycode']    = "recomputesuspectwords";
+    qry['querycode']    = "refreshsuspectwords";
     qry['projectid']    = formcontext.projectid.value;
     qry['langcode']     = formcontext.langcode.value;
     writeAjax(qry);
@@ -2738,7 +2743,7 @@ function eWCMonitor(msg) {
     case 'suggestedtobadword':
     case 'suggestedtogoodword':
     case 'suspecttobadword':
-//    case 'recomputesuspectwords': //Unneeded, the request is synchronous
+//    case 'refreshsuspectwords': //Unneeded, the request is synchronous
         break;
 
     case 'switchlayout':
@@ -2804,6 +2809,17 @@ function readyToSend() {
              || XMLHttpRequest.UNSENT == _ajax.readyState)
 }
 
+function writeAjax2(a_args) {
+    var discard_pending = false;
+    initAjax();
+    if (! readyToSend()) {
+        if (_pending_request == "") {
+            _pending_request = encodeURIComponent(JSON.stringify(a_args));
+            writeAjax2._pending_request_code = a_args['querycode'];
+            return;
+        }
+    }
+}
 function writeAjax(a_args) {
     var discard_pending = false;
 

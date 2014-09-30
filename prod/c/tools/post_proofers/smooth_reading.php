@@ -35,8 +35,8 @@ if ($User->IsLoggedIn()) {
 
     <p>
     The way to report errors is by adding a comment of the form
-        <blockquote>
-        <font color='red'>[**correction or query]</font><br>
+        <blockquote class='red'>
+        [**correction or query]<br>
         </blockquote>
     immediately after the problem spot.
     Do not correct or change the problem, just note it in the above format.
@@ -49,13 +49,7 @@ if ($User->IsLoggedIn()) {
     <li>that was the end[**.] However, the next day</li>
     <li>that was the emd.[**end] However, the next day</li>
     </ul>
-    </p>
-
-    <p>
-    For more information on the origin of smoothreading,
-    see <a href='{$forums_url}/viewtopic.php?t=3429'>this thread</a>.
-    </p>
-    ";
+    </p>\n";
 }
 else {
     echo "
@@ -66,8 +60,7 @@ else {
     <p>
     To be able to upload corrections, join DP.  There is a register link near
     the upper right corner of this page.
-    </p>
-    ";
+    </p>\n";
 }
 
 
@@ -80,9 +73,11 @@ $sql = "
                p.genre,
                p.n_pages,
                p.postproofer,
+               LOWER(p.postproofer) ppsort,
                DATEDIFF(DATE(FROM_UNIXTIME(p.smoothread_deadline)), 
                     CURRENT_DATE()) days_left,
-               p.username as PM
+               p.username as PM,
+               LOWER(p.username) as pmsort
         FROM projects p
         WHERE smoothread_deadline > UNIX_TIMESTAMP()
         ORDER BY p.smoothread_deadline";
@@ -95,8 +90,8 @@ $tbl->AddColumn("<Author", "authorsname");
 $tbl->AddColumn("<Language", "language");
 $tbl->AddColumn("<Genre", "genre");
 if($User->IsLoggedIn()) {
-    $tbl->AddColumn("<PM", "PM", "epm");
-    $tbl->AddColumn("<PPer", "postproofer", "epm");
+    $tbl->AddColumn("<PM", "PM", "epm", "sortkey=pmsort");
+    $tbl->AddColumn("<PPer", "postproofer", "epm", "sortkey=ppsort");
     $tbl->AddColumn("<Download", "projectid", "edownload");
     $tbl->AddColumn("^Upload", "projectid", "eupload");
 }
@@ -112,7 +107,7 @@ function eupload($projectid) {
     global $projects_dir;
     $nup = count(glob("$projects_dir/$projectid/*smooth*"));
     $nup -= 1;
-    $url = url_for_upload_text($projectid, "smooth_done");
+    $url = url_for_upload_smoothed_text($projectid);
     return "<a href='$url' title='$nup so far'>upload</a>\n";
 }
 function edownload($projectid) {

@@ -57,7 +57,7 @@ function theme($nameofpage, $location, $extra_args = array()) {
                 echo "
     </td>
     <td class='right top mainbody'>
-    <img src='$code_url/graphics/r_curve.gif' style='width: 13px;
+    <img src='$code_url/graphics/r_curve.gif'
     alt='Provides a round curve for a navigation bar'></td>
     <td class='left top mainbody'>\n";
             }
@@ -95,8 +95,7 @@ function theme($nameofpage, $location, $extra_args = array()) {
                 echo "
     </td>
     <td id='tbl2c2' class='right top'>
-        <img src='$code_url/graphics/r_curve.gif"
-            ."' style='width: 13px; position: relative; left: 0' alt=''>
+        <img src='$code_url/graphics/r_curve.gif' style='position: relative; top: -3px;' alt=''>
     </td>
     <td id='tbl2c3' class='navbar w25 left top'>\n";
                 html_statsbar($nameofpage);
@@ -144,7 +143,7 @@ function html_header($nameofpage, $extra_args = array()) {
                 break;
 
             case "css_file":
-                $incl .= "<link type='text/css' href='$val'>\n";
+                $incl .= "<link rel='stylesheet' href='$val'>\n";
                 break;
 
             case "css_data":
@@ -729,16 +728,18 @@ function timer_milestone($remark) {
 
 function html_footer() {
     global $User;
+    global $version;
     // $mtime = explode(" ", microtime());
     // $endtime = $mtime[1] + $mtime[0];
     // $totaltime = ($endtime - $GLOBALS['starttime']);
 
     $strtime = timer_string();
 
-    echo "<div id='divfooter' class='w100 em80 center white noserif redback'>\n";
-    echo _("Copyright")." "._("Distributed Proofreaders");
-    echo " (" . _("Page Build Time: {$strtime}");
-    echo "</div> <!-- divfooter -->\n";
+    echo "<div id='divfooter' class='w100 em80 center white noserif redback'>"
+        . _("Copyright Distributed Proofreaders Canada")
+        . _(" (Page Build Time: {$strtime} ")
+        . _(" Version $version")
+        . "</div> <!-- divfooter -->\n";
     if($User->Username() == 'dkretz') {
         echo implode("<br>\n", timer_array());
     }

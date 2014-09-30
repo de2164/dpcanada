@@ -3,7 +3,6 @@ $relPath='../pinc/';
 include_once($relPath.'dpinit.php');
 include_once($relPath.'dpsql.inc');
 include_once($relPath.'theme.inc');
-include_once($relPath.'page_tally.inc');
 
 $phase = Arg("phase", Arg("roundid"))
 	or die("parameter 'roundid' is unset/empty");

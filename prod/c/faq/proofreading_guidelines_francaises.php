@@ -3,10 +3,10 @@
 // Translated by user 'Pierre' at pgdp.net, 2006-02-08
 
 $relPath='../pinc/';
-include($relPath.'dpinit.php');
-include($relPath.'faq.inc');
-include($relPath.'pg.inc');
-include($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
+include_once($relPath.'faq.inc');
+include_once($relPath.'pg.inc');
+include_once($relPath.'theme.inc');
 $no_stats=1;
 theme('Directives de Relecture et correction','header');
 

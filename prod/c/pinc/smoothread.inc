@@ -32,8 +32,7 @@ function sr_user_is_committed($projectid, $username) {
     return $dpdb->SqlExists("
         SELECT 1 FROM smoothread
         WHERE projectid = '$projectid' 
-            AND user = '$username'
-            AND committed != 0");
+            AND user = '$username'");
 }
 
 
@@ -54,8 +53,7 @@ function sr_commit($projectid, $username) {
     $dpdb->SqlExecute("
         REPLACE INTO smoothread
         SET projectid='$projectid',  
-            user = '$username', 
-            committed = 1");
+            user = '$username'");
 
 }
 
@@ -93,8 +91,7 @@ function sr_get_committed_users($projectid) {
     global $dpdb;
     return $dpdb->SqlValues("
         SELECT user FROM smoothread
-        WHERE projectid = '$projectid' 
-            AND committed != 0");
+        WHERE projectid = '$projectid'");
 }
 
 /***************************************************************************************
@@ -111,8 +108,7 @@ function sr_number_users_committed($projectid) {
     global $dpdb;
     return $dpdb->SqlOneValue("
         SELECT COUNT(1) FROM smoothread
-        WHERE projectid = '$projectid' 
-            AND committed != 0");
+        WHERE projectid = '$projectid'");
 }
 
 /***************************************************************************************

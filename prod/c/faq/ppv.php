@@ -1,7 +1,7 @@
 <?
 $relPath='../pinc/';
-include($relPath.'dpinit.php');
-include($relPath.'theme.inc');
+include_once($relPath.'dpinit.php');
+include_once($relPath.'theme.inc');
 $no_stats=1;
 
 echo "<meta http-equiv='refresh' content='0;url=http://www.pgdpcanada.net/wiki/index.php/Post-Processing_Verification_Guidelines'>";

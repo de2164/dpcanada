@@ -1,8 +1,8 @@
 <?
 $relPath='../pinc/';
-include($relPath.'dpinit.php');
-include($relPath.'theme.inc');
-include($relPath.'faq.inc');
+include_once($relPath.'dpinit.php');
+include_once($relPath.'theme.inc');
+include_once($relPath.'faq.inc');
 
 if ( isset($_GET['i_type']) )
 {

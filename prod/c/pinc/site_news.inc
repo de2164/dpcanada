@@ -1,6 +1,5 @@
 <?PHP
 global $relPath;
-include_once($relPath.'stages.inc');
 
 $NEWS_PAGES = array(
     'PREP'    => _("Project Prep"),
@@ -86,8 +85,9 @@ function show_news_for_page( $news_page_id ) {
         }
         else {
             echo "
-            <div class='ph2'>$header_title
-            <p class='right em50 nomargin'>$echo_date</p></div>\n";
+            <div id='div_ph2' class='ph2'>$header_title
+            <p class='right em50 nomargin'>$echo_date</p>
+            </div>  <!-- div_ph2 -->\n";
         }
     }
 
@@ -97,10 +97,10 @@ function show_news_for_page( $news_page_id ) {
     if (count($rows) > 0) {
         foreach($rows as $news_item) {
             echo 
-            "<div class='article left'>
+            "<div id='article' class='article left'>
              ".$news_item['content']."
              <hr/>
-             </div>\n";
+             </div>  <!-- div_article -->\n";
         }
     }
 
@@ -110,9 +110,9 @@ function show_news_for_page( $news_page_id ) {
     if ($random != "") {
 
         echo "<h4>", _("Random News Item"), ":</h4>
-        <div clss='article'>
+        <div id='div_article' class='article'>
         $random
-        </div>\n";
+        </div>  <!-- div_article -->\n";
 
         $url = "$code_url/pastnews.php?news_page_id=$news_page_id";
         $linktext = _("See All Random News Items");

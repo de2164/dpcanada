@@ -168,6 +168,7 @@ echo "
     else 
         echo " ";
 
+/*
     // output the code allowing the user to select another language
     echo _("Use additional: ");
     echo "<select name='aux_language'>";
@@ -186,6 +187,7 @@ echo "
         echo ">$language</option>\n";
     }
     echo "</select>";
+*/
 
 echo "
 <input type='submit' name='rerunauxlanguage' value='" . _("Check") . "
