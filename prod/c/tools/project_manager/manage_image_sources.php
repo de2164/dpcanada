@@ -175,23 +175,23 @@ theme('','footer');
 class ImageSource
 {
     private $_row;
-    // public $code_name = "";
-    // public $display_name = "";
-    // public $full_name = "";
-    // public $is_active = "";
-    // public $credit = "";
-    // public $url = "";
-    // public $ok_keep_images = "";
-    // public $ok_show_images = "";
-    // public $info_page_visibility = "";
-    // public $public_comment = "";
-    // public $internal_comment = "";
+    public $code_name = "";
+    public $display_name = "";
+    public $full_name = "";
+    public $is_active = "";
+    public $credit = "";
+    public $url = "";
+    public $ok_keep_images = "";
+    public $ok_show_images = "";
+    public $info_page_visibility = "";
+    public $public_comment = "";
+    public $internal_comment = "";
 
-    function __construct($code_name = "") {
+    function new_source($code_name = "") {
         global $dpdb;
 
         if( $code_name != "" ) {
-            $$this->_row = $dpdb->SqlOneRow("
+            $this->_row = $dpdb->SqlOneRow("
                 SELECT * FROM image_sources
                 WHERE code_name = '$code_name'");
         }
@@ -310,7 +310,7 @@ class ImageSource
         <tr><td class='pa'>". _('Display name') . "</td>
             <td class='pb'>{$this->code_name()}</td></tr>\n";
         }
-        $this->_show_edit_row('display_name', , false, 30);
+        $this->_show_edit_row('display_name', false, 30);
         $this->_show_edit_row('full_name', _('Full name'));
         $this->_show_edit_row('url',_('Web site'));
         $this->_show_edit_row('credit', _('Credits line'), true);
@@ -493,11 +493,12 @@ class ImageSource
         $username = $row["username"];
         $email = $row["email"];
 
-        $subject = sprintf(_('DP: Image source %s has been approved!'), {$this->display_name);
+        $subject = sprintf(_('DP: Image source %s has been approved!'),
+            $this->display_name);
 
         $body = "Hello $username,\n\n" .
             "This is a message from the Distributed Proofreaders Canada website.\n\n".
-            "The image source that you proposed, ${this->display_name, has been\n".
+            "The image source that you proposed, {$this->display_name}, has been\n".
             "approved by {$User->Username()}. You can select it, and apply it to projects, from\n".
             "your project manager's page.\n\nThank you!\nDistributed Proofreaders Canada\n$site_url";
 
@@ -508,7 +509,7 @@ class ImageSource
         global $dpdb;
         $dpdb->SqlExecute("
             UPDATE image_sources SET $field = '$value'
-            WHERE code_name = '${this->code_name'");
+            WHERE code_name = '{$this->code_name}'");
         $this->$field = $value;
     }
 
